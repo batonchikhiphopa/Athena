@@ -536,13 +536,12 @@ These are current facts, not future promises:
 
 ## Screenshots
 
-No screenshots are committed in this README right now.
+### Editor
+<img src="client/assets/editor.png" width="700" />
 
-If screenshots are added later, put them somewhere stable in the repository, for example:
+### Entries
+<img src="client/assets/entries.png" width="700" />
 
-```text
-docs/screenshots/
-```
 
 Then reference them from this README with relative Markdown image links.
 
