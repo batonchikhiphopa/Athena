@@ -538,12 +538,8 @@ These are current facts, not future promises:
 
 ### Editor
 <img src="client/assets/editor.png" width="700" />
-
 ### Entries
 <img src="client/assets/entries.png" width="700" />
-
-
-Then reference them from this README with relative Markdown image links.
 
 ## Design Direction
 
