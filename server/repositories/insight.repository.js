@@ -53,6 +53,7 @@ export async function getSnapshot(db, { layer, periodStart, periodEnd }) {
       layer,
       period_start,
       period_end,
+      topic,
       text,
       generated_at,
       expires_at,
@@ -75,6 +76,7 @@ export async function getLatestVisibleSnapshot(db, { layer, today }) {
       layer,
       period_start,
       period_end,
+      topic,
       text,
       generated_at,
       expires_at
@@ -97,6 +99,7 @@ export async function listVisibleSnapshots(db) {
       layer,
       period_start,
       period_end,
+      topic,
       text,
       generated_at,
       expires_at
@@ -136,6 +139,7 @@ export async function upsertSnapshot(
     periodStart,
     periodEnd,
     text,
+    topic,
     generatedAt,
     expiresAt,
     schemaVersion,
@@ -154,6 +158,7 @@ export async function upsertSnapshot(
       UPDATE insight_snapshots
       SET
         text = ?,
+        topic = ?,
         generated_at = ?,
         expires_at = ?,
         schema_version = ?,
@@ -162,6 +167,7 @@ export async function upsertSnapshot(
       `,
       [
         text,
+        topic,
         generatedAt,
         expiresAt,
         schemaVersion,
@@ -176,17 +182,19 @@ export async function upsertSnapshot(
         layer,
         period_start,
         period_end,
+        topic,
         text,
         generated_at,
         expires_at,
         schema_version,
         prompt_version
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         layer,
         periodStart,
         periodEnd,
+        topic,
         text,
         generatedAt,
         expiresAt,

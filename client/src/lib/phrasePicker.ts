@@ -10,7 +10,7 @@ function getBagKey(group: string) {
 export function pickPhrase(group: string, phrases: Phrase[]): string {
     const allIds = phrases.map((p) => p.id);
 
-    let bag: string[] = [];
+    let bag: string[];
     try {
         const raw = localStorage.getItem(getBagKey(group));
         bag = raw ? JSON.parse(raw) : [];

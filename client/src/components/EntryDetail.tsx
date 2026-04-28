@@ -14,11 +14,7 @@ export function EntryDetail({
   onEditEntry,
 }: EntryDetailProps) {
   if (!entry) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-8 text-sm text-zinc-400">
-        Выбери запись.
-      </div>
-    );
+    return;
   }
 
   return (

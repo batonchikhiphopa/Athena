@@ -22,3 +22,30 @@ input {
 ::-webkit-scrollbar {
   display: none;
 }
+
+.entries-feed-scroll {
+  scrollbar-color: #d4d4d8 transparent;
+  scrollbar-width: thin;
+}
+
+.entries-feed-scroll::-webkit-scrollbar {
+  display: block;
+  width: 10px;
+}
+
+.entries-feed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.entries-feed-scroll::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.entries-feed-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}

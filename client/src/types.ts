@@ -101,6 +101,7 @@ export type InsightSnapshot = {
   layer: "day" | "week" | "month";
   period_start: string;
   period_end: string;
+  topic: string | null;
   text: string;
   generated_at: string;
   expires_at: string;

@@ -15,9 +15,14 @@ import { pickLatestUnseenEditorInsight } from "../editor/editorInsight";
 type UseInsightsOptions = {
   draftLoaded: boolean;
   draftText: string;
+  personaTextEnabled: boolean;
 };
 
-export function useInsights({ draftLoaded, draftText }: UseInsightsOptions) {
+export function useInsights({
+  draftLoaded,
+  draftText,
+  personaTextEnabled,
+}: UseInsightsOptions) {
   const [insights, setInsights] = useState<InsightSnapshot[]>([]);
   const [editorInsight, setEditorInsight] = useState<InsightSnapshot | null>(
     null,
@@ -45,6 +50,11 @@ export function useInsights({ draftLoaded, draftText }: UseInsightsOptions) {
   }, []);
 
   useEffect(() => {
+    if (!personaTextEnabled) {
+      if (editorInsight) setEditorInsight(null);
+      return;
+    }
+
     if (!draftLoaded || draftText.trim() || editorInsight) return;
 
     const nextInsight = pickLatestUnseenEditorInsight(
@@ -55,7 +65,7 @@ export function useInsights({ draftLoaded, draftText }: UseInsightsOptions) {
 
     setEditorInsight(nextInsight);
     markEditorInsightSeen(nextInsight.id);
-  }, [draftLoaded, draftText, editorInsight, insights]);
+  }, [draftLoaded, draftText, editorInsight, insights, personaTextEnabled]);
 
   async function deleteInsight(insight: InsightSnapshot) {
     try {

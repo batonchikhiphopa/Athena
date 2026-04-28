@@ -15,11 +15,12 @@ export function useAthenaApp() {
     refreshEntries: entries.refreshEntries,
     selectEntry: entries.selectEntry,
   });
+  const settings = useSettingsState();
   const insights = useInsights({
     draftLoaded: editor.draftLoaded,
     draftText: editor.draftText,
+    personaTextEnabled: settings.personaTextEnabled,
   });
-  const settings = useSettingsState();
   const initializeDraft = editor.initializeDraft;
   const refreshEntries = entries.refreshEntries;
   const refreshInsights = insights.refreshInsights;
@@ -137,6 +138,7 @@ export function useAthenaApp() {
     insights: insights.insights,
     observationHistory: insights.observationHistory,
     page,
+    personaTextEnabled: settings.personaTextEnabled,
     reprocessMessage: settings.reprocessMessage,
     reprocessStatus: settings.reprocessStatus,
     saveStatus: editor.saveStatus,
@@ -159,6 +161,7 @@ export function useAthenaApp() {
       reprocessFallbackEntries: handleReprocessFallbackEntries,
       selectEntry: entries.selectEntry,
       toggleDebugMode: settings.toggleDebugMode,
+      togglePersonaText: settings.togglePersonaText,
     },
   };
 }

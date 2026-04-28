@@ -1,6 +1,7 @@
 import { formatLongDate, todayDateOnly } from "../lib/dates";
 import type { InsightSnapshot } from "../types";
 import { generateAthenaPlaceholder } from "../lib/athenaPlaceholder";
+import { formatInsightText } from "../lib/insightText";
 
 type DraftStatus = "loading" | "saved" | "saving";
 type SaveStatus = "idle" | "saving" | "saved" | "local-only" | "empty" | "error";
@@ -10,6 +11,7 @@ type EditorProps = {
   entryDate: string;
   editorInsight: InsightSnapshot | null;
   isEditing: boolean;
+  personaTextEnabled: boolean;
   saveStatus: SaveStatus;
   text: string;
   onChangeText: (value: string) => void;
@@ -21,17 +23,25 @@ type EditorProps = {
 export function Editor({
   entryDate,
   editorInsight,
+  personaTextEnabled,
   text,
   onChangeText,
   onNewBlankPage,
 }: EditorProps) {
-const insightMap: Partial<Record<InsightSnapshot["layer"], string>> =
-editorInsight ? { [editorInsight.layer]: editorInsight.text } : {};
+  const editorInsightText = editorInsight
+    ? formatInsightText(editorInsight, { personaTextEnabled })
+    : null;
+  const insightMap: Partial<Record<InsightSnapshot["layer"], string>> =
+    editorInsight && editorInsightText
+      ? { [editorInsight.layer]: editorInsightText }
+      : {};
 
-const athenaPlaceholder = generateAthenaPlaceholder(insightMap);
+  const athenaPlaceholder = personaTextEnabled
+    ? generateAthenaPlaceholder(insightMap)
+    : "";
   return (
     <section className="flex min-h-screen w-full max-w-6xl flex-col px-1.5">
-      <div aria-hidden="true" className="h-20 shrink-0" />
+      <div aria-hidden="true" className="h-8 shrink-0" />
 
       <div className="relative flex min-h-[min(720px,calc(100vh-180px))] flex-1 flex-col rounded-lg border border-zinc-200 bg-white shadow-sm">
 

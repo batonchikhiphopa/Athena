@@ -29,9 +29,9 @@ export function EntriesPage({
   onSelectEntry,
 }: EntriesPageProps) {
   return (
-    <section className="grid min-h-screen grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
-      <div className="border-r border-zinc-200 bg-zinc-50 px-6 py-8">
-        <div className="mb-5 flex items-center justify-between">
+    <section className="-mx-4 grid min-h-screen w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
+      <div className="grid h-screen min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
+        <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div>
             <div className="text-xs uppercase text-zinc-400">Записи</div>
           </div>
@@ -45,7 +45,7 @@ export function EntriesPage({
           </button>
         </div>
 
-        <div className="mb-4 inline-flex rounded-md border border-zinc-200 bg-white p-1 text-sm">
+        <div className="mb-4 inline-grid w-max grid-cols-2 rounded-md border border-zinc-200 bg-white p-1 text-sm">
           <button
             className={[
               "rounded px-3 py-1.5 transition",
@@ -72,7 +72,7 @@ export function EntriesPage({
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="entries-feed-scroll min-h-0 space-y-2 overflow-y-auto pr-3">
           {entries.map((entry) => (
             <div
               className={[
@@ -88,7 +88,7 @@ export function EntriesPage({
                 onClick={() => onSelectEntry(entry.id)}
                 type="button"
               >
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <div className="grid grid-flow-col auto-cols-max items-center justify-start gap-2 text-xs text-zinc-400">
                   <span>{formatLongDate(entry.entryDate)}</span>
                   {entry.isDraft && (
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-500">
@@ -100,10 +100,10 @@ export function EntriesPage({
                   {excerpt(entry.text, 160)}
                 </div>
                 {entry.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="mt-3 space-x-1.5 space-y-1.5">
                     {entry.tags.map((tag) => (
                       <span
-                        className="rounded-full bg-sky-50 px-2 py-1 text-xs text-sky-700"
+                        className="inline-block rounded-full bg-sky-50 px-2 py-1 text-xs text-sky-700"
                         key={tag}
                       >
                         #{tag}
@@ -113,10 +113,10 @@ export function EntriesPage({
                 )}
               </button>
 
-              <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+              <div className="absolute right-3 top-3 grid grid-flow-col auto-cols-[2rem] gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
                   aria-label="Редактировать запись"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
                   onClick={(event) => {
                     event.stopPropagation();
                     onEditEntry(entry);
@@ -127,7 +127,7 @@ export function EntriesPage({
                 </button>
                 <button
                   aria-label="Удалить запись"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-red-50 hover:text-red-700"
+                  className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-red-50 hover:text-red-700"
                   onClick={(event) => {
                     event.stopPropagation();
                     onDeleteEntry(entry);

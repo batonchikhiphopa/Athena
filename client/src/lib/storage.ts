@@ -8,6 +8,7 @@ const CURRENT_DRAFT_ID = "current";
 const DEBUG_MODE_KEY = "athena_debug_mode";
 const EXTRACTION_SETTINGS_KEY = "athena_extraction_settings";
 const ENTRY_SORT_DIRECTION_KEY = "athena_entry_sort_direction";
+const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
 
 type DraftRecord = {
@@ -24,6 +25,14 @@ export function getDebugMode() {
 
 export function setDebugMode(value: boolean) {
   localStorage.setItem(DEBUG_MODE_KEY, String(value));
+}
+
+export function getPersonaTextEnabled() {
+  return localStorage.getItem(PERSONA_TEXT_ENABLED_KEY) !== "false";
+}
+
+export function setPersonaTextEnabled(value: boolean) {
+  localStorage.setItem(PERSONA_TEXT_ENABLED_KEY, String(value));
 }
 
 export function getExtractionSettings(): ExtractionSettings | null {
@@ -173,6 +182,7 @@ export async function deleteAthenaLocalData() {
   localStorage.removeItem(DEBUG_MODE_KEY);
   localStorage.removeItem(EXTRACTION_SETTINGS_KEY);
   localStorage.removeItem(ENTRY_SORT_DIRECTION_KEY);
+  localStorage.removeItem(PERSONA_TEXT_ENABLED_KEY);
   localStorage.removeItem(SEEN_EDITOR_INSIGHT_IDS_KEY);
 
   await new Promise<void>((resolve, reject) => {

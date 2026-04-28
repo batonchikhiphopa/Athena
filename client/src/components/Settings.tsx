@@ -35,6 +35,7 @@ type SettingsProps = {
   extractionConfig: ExtractionConfig | null;
   extractionSettings: ExtractionSettings;
   extractionStatus: ExtractionStatus | null;
+  personaTextEnabled: boolean;
   reprocessMessage: string;
   reprocessStatus: "idle" | "running" | "done" | "error";
   onChangeExtractionSettings: (value: ExtractionSettings) => void;
@@ -42,6 +43,7 @@ type SettingsProps = {
   onRefreshExtractionStatus: () => void;
   onReprocessFallbackEntries: () => void;
   onToggleDebugMode: (value: boolean) => void;
+  onTogglePersonaText: (value: boolean) => void;
 };
 
 const statusLabels: Record<string, string> = {
@@ -58,6 +60,7 @@ export function Settings({
   extractionConfig,
   extractionSettings,
   extractionStatus,
+  personaTextEnabled,
   reprocessMessage,
   reprocessStatus,
   onChangeExtractionSettings,
@@ -65,6 +68,7 @@ export function Settings({
   onRefreshExtractionStatus,
   onReprocessFallbackEntries,
   onToggleDebugMode,
+  onTogglePersonaText,
 }: SettingsProps) {
   const providers = extractionConfig?.providers ?? fallbackProviders;
   const selectedProvider =
@@ -177,6 +181,23 @@ export function Settings({
             checked={debugMode}
             className="h-5 w-5 accent-zinc-950"
             onChange={(event) => onToggleDebugMode(event.target.checked)}
+            type="checkbox"
+          />
+        </label>
+
+        <label className="flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+          <div>
+            <div className="text-sm font-medium text-zinc-950">
+              Текст персоны
+            </div>
+            <div className="mt-1 text-sm text-zinc-400">
+              Показывает Athena-подсказки в пустом редакторе.
+            </div>
+          </div>
+          <input
+            checked={personaTextEnabled}
+            className="h-5 w-5 accent-zinc-950"
+            onChange={(event) => onTogglePersonaText(event.target.checked)}
             type="checkbox"
           />
         </label>

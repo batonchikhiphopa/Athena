@@ -83,8 +83,16 @@ test("current insights appear only for valid-day sufficiency", async () => {
       insights.map((insight) => insight.layer),
       ["day", "week"],
     );
-    assert.equal(insights[0].text, "Вчерашний день зафиксирован.");
-    assert.equal(insights[1].text, "На неделе возвращалась тема: работа.");
+    assert.equal(insights[0].topic, "сон");
+    assert.equal(
+      insights[0].text,
+      "Вчера снова возвращалась тема сна. Начни с базы: чуть меньше экрана, чуть больше тишины и нормальный вечер без перегруза.",
+    );
+    assert.equal(insights[1].topic, "работа");
+    assert.equal(
+      insights[1].text,
+      "На этой неделе снова возвращалась тема работы. Попробуй выбрать один следующий шаг, а не держать весь ком задач в голове.",
+    );
   } finally {
     await db.close();
   }

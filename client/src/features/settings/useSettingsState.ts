@@ -10,8 +10,10 @@ import { extractSignalForText } from "../../lib/extraction";
 import {
   getDebugMode,
   getExtractionSettings,
+  getPersonaTextEnabled,
   setDebugMode as persistDebugMode,
   setExtractionSettings as persistExtractionSettings,
+  setPersonaTextEnabled as persistPersonaTextEnabled,
   updateLocalEntry,
 } from "../../lib/storage";
 import {
@@ -29,6 +31,9 @@ type ReprocessCallbacks = {
 
 export function useSettingsState() {
   const [debugMode, setDebugMode] = useState(() => getDebugMode());
+  const [personaTextEnabled, setPersonaTextEnabled] = useState(() =>
+    getPersonaTextEnabled(),
+  );
   const [extractionConfig, setExtractionConfig] =
     useState<ExtractionConfig | null>(null);
   const [extractionSettings, setExtractionSettings] =
@@ -89,6 +94,11 @@ export function useSettingsState() {
   function toggleDebugMode(nextValue: boolean) {
     setDebugMode(nextValue);
     persistDebugMode(nextValue);
+  }
+
+  function togglePersonaText(nextValue: boolean) {
+    setPersonaTextEnabled(nextValue);
+    persistPersonaTextEnabled(nextValue);
   }
 
   async function reprocessFallbackEntries(
@@ -156,12 +166,14 @@ export function useSettingsState() {
 
   function resetAfterLocalDataClear() {
     setDebugMode(false);
+    setPersonaTextEnabled(true);
     setReprocessStatus("idle");
     setReprocessMessage("");
   }
 
   return {
     debugMode,
+    personaTextEnabled,
     extractionConfig,
     extractionSettings,
     extractionStatus,
@@ -173,5 +185,6 @@ export function useSettingsState() {
     reprocessFallbackEntries,
     resetAfterLocalDataClear,
     toggleDebugMode,
+    togglePersonaText,
   };
 }

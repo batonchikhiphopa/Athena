@@ -103,6 +103,7 @@ async function createOrRefreshSnapshot(
     layer,
     periodStart,
     periodEnd,
+    topic: topTopic,
     text,
     generatedAt,
     expiresAt,
@@ -114,15 +115,18 @@ async function createOrRefreshSnapshot(
 function composeInsightText({ layer, topTopic }) {
   if (!topTopic) return null;
 
+  const subject = topicSubject(topTopic);
+  const advice = topicAdvice(topTopic);
+
   if (layer === "day") {
-    return `Вчера снова проступала тема: ${topTopic}.`;
+    return `Вчера снова возвращалась тема ${subject}. ${advice}`;
   }
 
   if (layer === "week") {
-    return `На неделе возвращалась тема: ${topTopic}.`;
+    return `На этой неделе снова возвращалась тема ${subject}. ${advice}`;
   }
 
-  return `В месяце вновь проступала тема: ${topTopic}.`;
+  return `За месяц тема ${subject} появлялась чаще других. ${advice}`;
 }
 
 function toPublicSnapshot(snapshot) {
@@ -131,10 +135,93 @@ function toPublicSnapshot(snapshot) {
     layer: snapshot.layer,
     period_start: snapshot.period_start,
     period_end: snapshot.period_end,
+    topic: snapshot.topic ?? null,
     text: snapshot.text,
     generated_at: snapshot.generated_at,
     expires_at: snapshot.expires_at,
   };
+}
+
+function topicSubject(topic) {
+  const normalized = normalizeTopic(topic);
+  const knownSubjects = {
+    health: "самочувствия",
+    здоровье: "самочувствия",
+    самочувствие: "самочувствия",
+    wellbeing: "самочувствия",
+    "well-being": "самочувствия",
+    sleep: "сна",
+    сон: "сна",
+    rest: "отдыха",
+    отдых: "отдыха",
+    recovery: "восстановления",
+    восстановление: "восстановления",
+    work: "работы",
+    работа: "работы",
+    job: "работы",
+    career: "работы",
+    focus: "фокуса",
+    фокус: "фокуса",
+    productivity: "продуктивности",
+    продуктивность: "продуктивности",
+    learning: "обучения",
+    обучение: "обучения",
+    study: "обучения",
+    family: "семьи",
+    семья: "семьи",
+    home: "дома",
+    дом: "дома",
+    relationship: "отношений",
+    relationships: "отношений",
+    отношения: "отношений",
+    money: "денег",
+    деньги: "денег",
+    finance: "денег",
+    finances: "денег",
+  };
+
+  return knownSubjects[normalized] ?? `«${topic.trim()}»`;
+}
+
+function topicAdvice(topic) {
+  const normalized = normalizeTopic(topic);
+
+  if (
+    ["health", "здоровье", "самочувствие", "wellbeing", "well-being"].includes(
+      normalized,
+    )
+  ) {
+    return "Не раскручивай это в тревогу: выбери один простой шаг заботы о себе сегодня.";
+  }
+
+  if (
+    ["sleep", "сон", "rest", "отдых", "recovery", "восстановление"].includes(
+      normalized,
+    )
+  ) {
+    return "Начни с базы: чуть меньше экрана, чуть больше тишины и нормальный вечер без перегруза.";
+  }
+
+  if (
+    [
+      "work",
+      "работа",
+      "job",
+      "career",
+      "focus",
+      "фокус",
+      "productivity",
+      "продуктивность",
+    ].includes(normalized)
+  ) {
+    return "Попробуй выбрать один следующий шаг, а не держать весь ком задач в голове.";
+  }
+
+  return "Выбери один маленький шаг, который сделает эту тему понятнее или легче.";
+}
+
+function normalizeTopic(topic) {
+  return String(topic).trim().toLowerCase();
 }
 
 function isDateOnly(value) {

@@ -1,8 +1,10 @@
 import { formatLongDate } from "../lib/dates";
+import { formatInsightText } from "../lib/insightText";
 import type { InsightSnapshot } from "../types";
 
 type ObservationsProps = {
   insights: InsightSnapshot[];
+  personaTextEnabled: boolean;
   onDeleteInsight: (insight: InsightSnapshot) => void;
   onRefresh: () => void;
 };
@@ -15,6 +17,7 @@ const layerLabels: Record<InsightSnapshot["layer"], string> = {
 
 export function Observations({
   insights,
+  personaTextEnabled,
   onDeleteInsight,
   onRefresh,
 }: ObservationsProps) {
@@ -64,7 +67,9 @@ export function Observations({
                           {formatPeriod(insight)}
                         </div>
                         <p className="mt-2 text-sm leading-6 text-zinc-800">
-                          {insight.text}
+                          {formatInsightText(insight, {
+                            personaTextEnabled,
+                          })}
                         </p>
                         <div className="mt-3 text-xs text-zinc-400">
                           {formatGeneratedAt(insight.generated_at)}

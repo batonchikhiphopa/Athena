@@ -40,6 +40,7 @@ export default function App() {
               entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
               editorInsight={app.editorInsight}
               isEditing={Boolean(app.editingEntryId)}
+              personaTextEnabled={app.personaTextEnabled}
               draftStatus={app.draftStatus}
               saveStatus={app.saveStatus}
               text={app.draftText}
@@ -67,6 +68,7 @@ export default function App() {
           {app.page === "observations" && (
             <Observations
               insights={app.observationHistory}
+              personaTextEnabled={app.personaTextEnabled}
               onDeleteInsight={(insight) => void handlers.deleteInsight(insight)}
               onRefresh={() => void handlers.refreshObservationHistory()}
             />
@@ -81,6 +83,7 @@ export default function App() {
               extractionConfig={app.extractionConfig}
               extractionSettings={app.extractionSettings}
               extractionStatus={app.extractionStatus}
+              personaTextEnabled={app.personaTextEnabled}
               reprocessMessage={app.reprocessMessage}
               reprocessStatus={app.reprocessStatus}
               onChangeExtractionSettings={(settings) =>
@@ -94,6 +97,7 @@ export default function App() {
                 void handlers.reprocessFallbackEntries()
               }
               onToggleDebugMode={handlers.toggleDebugMode}
+              onTogglePersonaText={handlers.togglePersonaText}
             />
           )}
         </main>
