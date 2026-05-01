@@ -6,6 +6,7 @@ import { useEntries } from "../features/entries/useEntries";
 import { useInsights } from "../features/insights/useInsights";
 import { processPendingReextractEntries } from "../features/settings/pendingReextract";
 import { useSettingsState } from "../features/settings/useSettingsState";
+import { useOnlineStatus } from "../lib/offline";
 
 export function useAthenaApp() {
   const [page, setPage] = useState<Page>("editor");
@@ -33,6 +34,8 @@ export function useAthenaApp() {
       null,
     [editor.editingEntryId, entries.entries],
   );
+
+  const isOnline = useOnlineStatus();
 
   const initialize = useCallback(async () => {
     try {
@@ -124,6 +127,7 @@ export function useAthenaApp() {
   }
 
   return {
+    isOnline,
     activeEntry,
     debugMode: settings.debugMode,
     draftStatus: editor.draftStatus,

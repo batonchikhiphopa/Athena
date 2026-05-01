@@ -4,6 +4,7 @@ import {
   DEFAULT_GEMINI_MODEL,
   DEFAULT_OLLAMA_MODEL,
 } from "../config/versions.js";
+import { MARKERS } from "../core/markers.js";
 import {
   createFallbackSignal,
   sanitizeSignalCandidate,
@@ -16,22 +17,7 @@ export const EXTRACTION_PROVIDERS = {
 };
 
 const GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
-const ALLOWED_MARKERS = [
-  "deadline_pressure",
-  "context_switching",
-  "deep_work",
-  "admin_work",
-  "creative_work",
-  "social_interaction",
-  "conflict",
-  "uncertainty",
-  "health",
-  "sleep",
-  "exercise",
-  "learning",
-  "recovery",
-  "travel",
-];
+const ALLOWED_MARKERS = MARKERS;
 
 const SIGNAL_JSON_SCHEMA = {
   type: "object",
@@ -312,7 +298,10 @@ function buildSystemInstruction() {
     "No markdown. No explanation. No text outside JSON.",
     "Use the same language as the entry for topics and activities.",
     "Do not translate.",
+    "Markers are first-class context and event flags, not weak numeric scores.",
+    "Use concrete markers when the entry directly names a context, symptom, rhythm, or event.",
     "If there is not enough evidence for load, fatigue, or focus, use null.",
+    "Do not invent load, fatigue, or focus from a marker alone.",
     "Allowed signal_quality values: valid, sparse.",
     "Do not output fallback. Fallback is created only by the app.",
   ].join("\n");
@@ -339,6 +328,14 @@ function buildUserExtractionPrompt(rawText) {
     "- markers: enum[], 0-8",
     "- load/fatigue/focus: integer 0-10 or null",
     "- no extra fields",
+    "",
+    "Marker guidance:",
+    "- insomnia, бессонница, poor sleep, waking at night -> sleep_issue",
+    "- ideas arriving late at night or before sleep -> late_night_ideas",
+    "- explicitly needing rest, pause, recovery -> recovery_need",
+    "- illness, pain, feeling physically unwell -> health_issue",
+    "- normal sleep context without a problem can use sleep",
+    "- keep state scores null unless the entry gives enough direct evidence",
     "",
     "Allowed markers:",
     ALLOWED_MARKERS.join(", "),

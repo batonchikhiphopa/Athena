@@ -36,6 +36,7 @@ type SettingsProps = {
   extractionSettings: ExtractionSettings;
   extractionStatus: ExtractionStatus | null;
   personaTextEnabled: boolean;
+  isOnline: boolean;
   reprocessMessage: string;
   reprocessStatus: "idle" | "running" | "done" | "error";
   onChangeExtractionSettings: (value: ExtractionSettings) => void;
@@ -55,6 +56,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export function Settings({
+  isOnline,
   debugMode,
   entries,
   extractionConfig,
@@ -86,7 +88,9 @@ export function Settings({
         <div className="text-xs uppercase text-zinc-400">Настройки</div>
         <h1 className="mt-2 text-2xl font-medium text-zinc-950">Параметры</h1>
       </div>
-
+          <div className="rounded-2xl border border-zinc-200/70 bg-white/45 p-3 text-xs text-zinc-600">
+              Network: {isOnline ? "online" : "offline"}
+          </div>
       <div className="space-y-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start justify-between gap-4">

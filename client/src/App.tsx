@@ -39,14 +39,10 @@ export default function App() {
             <Editor
               entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
               editorInsight={app.editorInsight}
-              isEditing={Boolean(app.editingEntryId)}
               personaTextEnabled={app.personaTextEnabled}
-              draftStatus={app.draftStatus}
-              saveStatus={app.saveStatus}
               text={app.draftText}
               onChangeText={handlers.editorTextChange}
               onNewBlankPage={() => void handlers.newBlankPage()}
-              onClearLocalData={() => void handlers.clearLocalData()}
             />
           )}
 
@@ -79,6 +75,7 @@ export default function App() {
           {app.page === "settings" && (
             <Settings
               debugMode={app.debugMode}
+              isOnline={app.isOnline}
               entries={app.entries}
               extractionConfig={app.extractionConfig}
               extractionSettings={app.extractionSettings}

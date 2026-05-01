@@ -10,6 +10,7 @@ import {
   listEntries,
   updateEntry,
 } from "../server/services/entry.service.js";
+import { ACTIVE_SCHEMA_VERSION } from "../server/config/versions.js";
 
 async function createTestDb() {
   const db = await open({
@@ -63,7 +64,7 @@ test("entry create/read flow stores only textless metadata and signals", async (
     assert.equal(entry.source_text_hash, "a".repeat(64));
     assert.deepEqual(entry.signal.topics, ["работа"]);
     assert.equal(entry.signal.load, 4);
-    assert.equal(entry.metadata.schema_version, "signal.v1");
+    assert.equal(entry.metadata.schema_version, ACTIVE_SCHEMA_VERSION);
     assert.equal(entry.metadata.provider, "ollama");
     assert.equal(entry.metadata.error_code, null);
     assert.ok(entry.created_at);

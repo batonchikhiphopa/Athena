@@ -12,6 +12,7 @@ import {
   calculateDensity,
   normalizeRows,
 } from "../server/services/analytics.service.js";
+import { generateObservation } from "../server/services/observation.service.js";
 
 async function createTestDb() {
   const db = await open({
@@ -195,6 +196,60 @@ test("analytics reads latest overrides through effective signals", async () => {
   }
 });
 
+test("observation keeps sparse sleep markers visible", () => {
+  const observation = generateObservation({
+    metrics: {
+      finalized_entries: 1,
+      valid_entries: 0,
+      density: 0,
+    },
+    flags: {},
+    gaps: {
+      total_missing_days: 0,
+    },
+    top_topics: [],
+    top_markers: [{ name: "sleep", count: 1 }],
+    recurrence: {
+      topics: [],
+      markers: [],
+    },
+  });
+
+  assert.match(observation, /Плотность валидных сигналов низкая/);
+  assert.match(observation, /маркер: сон/);
+});
+
+test("buildSummary treats sparse markers as first-class context", async () => {
+  const db = await createTestDb();
+
+  try {
+    await addEntry(
+      db,
+      "entry-sleep-issue",
+      "2026-04-30",
+      sparseSignal({
+        topics: ["сон"],
+        markers: ["sleep_issue", "late_night_ideas"],
+      })
+    );
+
+    const summary = await buildSummary(db, {
+      from: "2026-04-30",
+      to: "2026-04-30",
+      window: "day",
+    });
+
+    assert.equal(summary.metrics.valid_entries, 0);
+    assert.equal(summary.metrics.sparse_entries, 1);
+    assert.equal(summary.markers.sleep_issue, 1);
+    assert.equal(summary.context.top_markers[0].name, "sleep_issue");
+    assert.match(summary.observation, /Плотность валидных сигналов низкая/);
+    assert.match(summary.observation, /нарушение сна/);
+  } finally {
+    await db.close();
+  }
+});
+
 test("mixed signal versions are explicit version boundaries", async () => {
   const db = await createTestDb();
 
@@ -208,7 +263,7 @@ test("mixed signal versions are explicit version boundaries", async () => {
       SET schema_version = ?
       WHERE entry_id = ?
       `,
-      ["signal.v2", entryId]
+      ["signal.v1", entryId]
     );
 
     const summary = await buildSummary(db, {

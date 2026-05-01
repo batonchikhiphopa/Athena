@@ -1,21 +1,7 @@
 import { z } from "zod";
+import { MARKERS } from "./markers.js";
 
-export const markerSchema = z.enum([
-  "deadline_pressure",
-  "context_switching",
-  "deep_work",
-  "admin_work",
-  "creative_work",
-  "social_interaction",
-  "conflict",
-  "uncertainty",
-  "health",
-  "sleep",
-  "exercise",
-  "learning",
-  "recovery",
-  "travel",
-]);
+export const markerSchema = z.enum(MARKERS);
 
 const scoreSchema = z.number().int().min(0).max(10).nullable();
 

@@ -49,14 +49,19 @@ type AppendSignalPayload = {
 };
 
 export async function loadServerEntries() {
-  const response = await fetch("/entries");
+  try {
+    const response = await fetch("/entries");
 
-  if (!response.ok) {
-    throw new Error("Failed to load entries");
+    if (!response.ok) {
+      throw new Error("Failed to load entries");
+    }
+
+    const data = (await response.json()) as EntriesResponse;
+    return data.entries ?? [];
+  } catch (error) {
+    console.warn("[api:entries:list]", error);
+    return [];
   }
-
-  const data = (await response.json()) as EntriesResponse;
-  return data.entries ?? [];
 }
 
 export async function createEntry(payload: CreateEntryPayload) {
@@ -179,26 +184,36 @@ export async function appendEntrySignal(
 }
 
 export async function loadCurrentInsights(today: string) {
-  const params = new URLSearchParams({ today });
-  const response = await fetch(`/insights/current?${params.toString()}`);
+  try {
+    const params = new URLSearchParams({ today });
+    const response = await fetch(`/insights/current?${params.toString()}`);
 
-  if (!response.ok) {
-    throw new Error("Failed to load current insights");
+    if (!response.ok) {
+      throw new Error("Failed to load current insights");
+    }
+
+    const data = (await response.json()) as CurrentInsightsResponse;
+    return data.insights ?? [];
+  } catch (error) {
+    console.warn("[api:insights:current]", error);
+    return [];
   }
-
-  const data = (await response.json()) as CurrentInsightsResponse;
-  return data.insights ?? [];
 }
 
 export async function loadInsightHistory() {
-  const response = await fetch("/insights");
+  try {
+    const response = await fetch("/insights");
 
-  if (!response.ok) {
-    throw new Error("Failed to load insight history");
+    if (!response.ok) {
+      throw new Error("Failed to load insight history");
+    }
+
+    const data = (await response.json()) as InsightHistoryResponse;
+    return data.insights ?? [];
+  } catch (error) {
+    console.warn("[api:insights:history]", error);
+    return [];
   }
-
-  const data = (await response.json()) as InsightHistoryResponse;
-  return data.insights ?? [];
 }
 
 export async function deleteInsightSnapshot(insightId: number | string) {

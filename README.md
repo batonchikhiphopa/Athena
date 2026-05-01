@@ -14,7 +14,9 @@ Athena currently has five main screens:
 - Entries: a list/detail view of local entries merged with backend metadata.
 - Graph: a visual mock only. It is not real graph analytics yet.
 - Observations: history of generated day/week/month insight snapshots.
-- Settings: extraction provider/model, status check, fallback reprocessing, debug mode, persona text toggle, local data clearing.
+- Settings: extraction provider/model, status check, network status, fallback reprocessing, debug mode, persona text toggle, local data clearing.
+
+The current client also has an offline-first app shell. After the first successful online load, the app shell and static assets can be served from the service worker cache. Local writing remains available without network/backend access, while server-backed reads degrade quietly until connectivity returns.
 
 The guiding rule is:
 
@@ -31,6 +33,7 @@ Athena is currently:
 - a hidden signal extraction pipeline over personal writing;
 - a deterministic analytics layer over stored signals;
 - an observation system that reveals recurrence over time;
+- an offline-capable browser app shell after first load;
 - a privacy-oriented prototype where the app backend stores no raw diary text.
 
 Athena is currently not:
@@ -42,6 +45,7 @@ Athena is currently not:
 - a quantified-self dashboard;
 - a real graph explorer;
 - a mobile app.
+- a multi-device sync product.
 
 ## How To Run
 
@@ -213,6 +217,7 @@ Settings and UI state are stored in `localStorage`, including:
 - debug mode;
 - extraction settings;
 - entry sort direction;
+- online/offline derived UI state;
 - persona text toggle;
 - seen editor insight IDs;
 - insight phrase choice/bag state.
@@ -259,6 +264,18 @@ user writes locally
 
 Extraction sees only the current entry. It does not read note history, prior trends, database state, or graph context.
 
+## Offline Behavior
+
+Athena has a small offline-first shell:
+
+- `client/public/sw.js` caches the app shell, `index.html`, and same-origin static assets.
+- `client/src/lib/serviceWorker.ts` registers the service worker from the browser client.
+- `client/src/lib/offline.ts` tracks `navigator.onLine` and browser `online` / `offline` events.
+- Settings shows the current network status.
+- Entry and insight list reads return empty arrays on API failure instead of breaking the writing surface.
+
+This is not a full sync engine yet. The app does not currently include a background sync queue, offline API analytics cache, push notifications, or multi-device conflict handling.
+
 ## Signals
 
 Signals currently contain:
@@ -279,18 +296,24 @@ context_switching
 deep_work
 admin_work
 creative_work
+late_night_ideas
 social_interaction
 conflict
 uncertainty
 health
+health_issue
 sleep
+sleep_issue
 exercise
 learning
 recovery
+recovery_need
 travel
 ```
 
 Fallback means the system did not get a usable signal. Fallback values do not pretend to be real measurements.
+
+The active signal schema is currently `signal.v2`, and the active extraction prompt contract is `extraction.v2`.
 
 ## Analytics
 
@@ -302,7 +325,7 @@ The backend currently computes:
 - signal density;
 - average load/fatigue/focus from valid signals only;
 - topic counts;
-- marker distribution;
+- marker distribution with marker-specific priority ordering;
 - recurrence;
 - daily states;
 - entry gaps;
@@ -332,6 +355,8 @@ The server snapshot stores:
 - schema/prompt version.
 
 The client then formats the visible observation text through phrase libraries.
+
+Observations can also surface first-class context markers, including sparse markers that do not carry numeric state scores.
 
 ## Persona Text And Insight Phrase Libraries
 
@@ -372,6 +397,7 @@ Current behavior:
 
 - opens to a blank writing surface;
 - autosaves after a short delay;
+- includes a local privacy toggle that visually hides or reveals the current text;
 - empty input deletes the active local entry and tries to delete its server metadata if it exists;
 - `#tags` are extracted locally from the text;
 - source text hash is calculated locally;
@@ -402,6 +428,7 @@ Settings currently include:
 - extraction provider select;
 - model select;
 - extraction status check;
+- network status;
 - fallback reprocessing for entries that still have local text;
 - debug mode toggle;
 - persona text toggle;

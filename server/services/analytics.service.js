@@ -1,4 +1,5 @@
 import { getEntriesWithSignalsInRange } from "../repositories/analytics.repository.js";
+import { markerPriority } from "../core/markers.js";
 import { generateObservation } from "./observation.service.js";
 
 const FINAL_STATUSES = new Set(["extracted", "fallback", "failed"]);
@@ -69,7 +70,7 @@ export function calculateTopicCounts(meaningful) {
 }
 
 export function calculateMarkerDistribution(meaningful) {
-  return countUniqueValues(meaningful, "markers");
+  return sortMarkerCountObject(countUniqueValuesUnsorted(meaningful, "markers"));
 }
 
 export const calculateMarkerCounts = calculateMarkerDistribution;
@@ -103,7 +104,7 @@ export function calculateDailyStates(finalized) {
 export function calculateMonthlyRecurrence(meaningful) {
   return {
     topics: calculateRecurrence(meaningful, "topics"),
-    markers: calculateRecurrence(meaningful, "markers"),
+    markers: calculateMarkerRecurrence(meaningful),
   };
 }
 
@@ -171,21 +172,13 @@ export function collectVersions(finalized) {
 }
 
 export function buildInterpretationInput(summary) {
-  const topTopics = Object.entries(summary.topics)
-    .slice(0, 3)
-    .map(([name, count]) => ({ name, count }));
-
-  const topMarkers = Object.entries(summary.markers)
-    .slice(0, 3)
-    .map(([name, count]) => ({ name, count }));
-
   return {
     window: summary.window,
     metrics: summary.metrics,
     gaps: summary.gaps,
     flags: summary.flags,
-    top_topics: topTopics,
-    top_markers: topMarkers,
+    top_topics: summary.context.top_topics,
+    top_markers: summary.context.top_markers,
     recurrence: summary.recurrence,
   };
 }
@@ -210,6 +203,8 @@ export async function buildSummary(db, { from, to, window }) {
   const markers = calculateMarkerDistribution(meaningful);
   const gaps = calculateEntryGaps(finalized, { from, to });
   const versions = collectVersions(finalized);
+  const recurrence = calculateMonthlyRecurrence(meaningful);
+  const context = buildContext({ topics, markers, recurrence });
 
   const summary = {
     window,
@@ -234,7 +229,8 @@ export async function buildSummary(db, { from, to, window }) {
     daily: calculateDailyStates(finalized),
     topics,
     markers,
-    recurrence: calculateMonthlyRecurrence(meaningful),
+    context,
+    recurrence,
     gaps,
 
     flags: {
@@ -264,6 +260,21 @@ export async function buildSummary(db, { from, to, window }) {
   };
 }
 
+function buildContext({ topics, markers, recurrence }) {
+  return {
+    top_topics: topCountItems(topics),
+    top_markers: topCountItems(markers),
+    recurring_topics: recurrence.topics.slice(0, 3),
+    recurring_markers: recurrence.markers.slice(0, 3),
+  };
+}
+
+function topCountItems(counts) {
+  return Object.entries(counts)
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+}
+
 function normalizeScore(value) {
   return Number.isFinite(value) ? value : null;
 }
@@ -281,6 +292,10 @@ function parseJsonArray(value) {
 }
 
 function countUniqueValues(items, key) {
+  return sortCountObject(countUniqueValuesUnsorted(items, key));
+}
+
+function countUniqueValuesUnsorted(items, key) {
   const counts = {};
 
   for (const item of items) {
@@ -291,7 +306,7 @@ function countUniqueValues(items, key) {
     }
   }
 
-  return sortCountObject(counts);
+  return counts;
 }
 
 function sortCountObject(counts) {
@@ -299,6 +314,17 @@ function sortCountObject(counts) {
     Object.entries(counts).sort(
       ([leftName, leftCount], [rightName, rightCount]) =>
         rightCount - leftCount || leftName.localeCompare(rightName)
+    )
+  );
+}
+
+function sortMarkerCountObject(counts) {
+  return Object.fromEntries(
+    Object.entries(counts).sort(
+      ([leftName, leftCount], [rightName, rightCount]) =>
+        rightCount - leftCount ||
+        markerPriority(rightName) - markerPriority(leftName) ||
+        leftName.localeCompare(rightName)
     )
   );
 }
@@ -335,6 +361,16 @@ function calculateRecurrence(items, key) {
         right.count - left.count ||
         left.name.localeCompare(right.name)
     );
+}
+
+function calculateMarkerRecurrence(items) {
+  return calculateRecurrence(items, "markers").sort(
+    (left, right) =>
+      right.days - left.days ||
+      right.count - left.count ||
+      markerPriority(right.name) - markerPriority(left.name) ||
+      left.name.localeCompare(right.name)
+  );
 }
 
 function calculateMetricSamples(valid) {

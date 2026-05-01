@@ -107,6 +107,24 @@ test("backend overrides AI signal_quality to sparse when no scores exist", () =>
   assert.equal(result.data.signal_quality, "sparse");
 });
 
+test("accepts first-class context markers without numeric state", () => {
+  const result = sanitizeSignalCandidate(
+    validCandidate({
+      topics: ["сон"],
+      activities: [],
+      markers: ["sleep_issue", "late_night_ideas"],
+      load: null,
+      fatigue: null,
+      focus: null,
+      signal_quality: "sparse",
+    })
+  );
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.data.markers, ["sleep_issue", "late_night_ideas"]);
+  assert.equal(result.data.signal_quality, "sparse");
+});
+
 test("backend overrides AI signal_quality to valid when score exists", () => {
   const result = sanitizeSignalCandidate(
     validCandidate({
