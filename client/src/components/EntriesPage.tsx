@@ -2,6 +2,8 @@ import type { EntrySortDirection, EntryView } from "../types";
 import { EntryDetail } from "./EntryDetail";
 import { excerpt } from "../lib/text";
 import { formatLongDate } from "../lib/dates";
+import { normalizeTag } from "../features/entries/entryFilters";
+import { EyeClosedIcon, EyeOpenIcon } from "./icon";
 
 type EntriesPageProps = {
   debugMode: boolean;
@@ -9,11 +11,20 @@ type EntriesPageProps = {
   selectedEntry: EntryView | null;
   selectedEntryId: string | null;
   sortDirection: EntrySortDirection;
+  searchQuery: string;
+  includedTags: string[];
+  availableTags: Array<{ tag: string; count: number }>;
+  hasActiveFilters: boolean;
+  isSearching: boolean;
   onChangeSortDirection: (direction: EntrySortDirection) => void;
+  onClearFilters: () => void;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
   onRefresh: () => void;
+  onSearchQueryChange: (query: string) => void;
   onSelectEntry: (id: string) => void;
+  onToggleEntryAnalysis: (entry: EntryView) => void;
+  onToggleTag: (tag: string) => void;
 };
 
 export function EntriesPage({
@@ -22,15 +33,24 @@ export function EntriesPage({
   selectedEntry,
   selectedEntryId,
   sortDirection,
+  searchQuery,
+  includedTags,
+  availableTags,
+  hasActiveFilters,
+  isSearching,
   onChangeSortDirection,
+  onClearFilters,
   onDeleteEntry,
   onEditEntry,
   onRefresh,
+  onSearchQueryChange,
   onSelectEntry,
+  onToggleEntryAnalysis,
+  onToggleTag,
 }: EntriesPageProps) {
   return (
     <section className="-mx-4 grid min-h-screen w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
-      <div className="grid h-screen min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
+      <div className="grid h-screen min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
         <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div>
             <div className="text-xs uppercase text-zinc-400">Записи</div>
@@ -72,6 +92,66 @@ export function EntriesPage({
           </button>
         </div>
 
+        <div className="mb-4 space-y-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <input
+              aria-label="Поиск по записям"
+              className="
+                h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm
+                text-zinc-800 outline-none transition
+                placeholder:text-zinc-400
+                focus:border-zinc-400
+              "
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder="Поиск по тексту, дате или тегу"
+              type="search"
+              value={searchQuery}
+            />
+
+            {hasActiveFilters && (
+              <button
+                className="rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950"
+                onClick={onClearFilters}
+                type="button"
+              >
+                Сбросить
+              </button>
+            )}
+          </div>
+
+          {availableTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {availableTags.map(({ tag, count }) => {
+                const isActive = includedTags.some(
+                  (includedTag) => normalizeTag(includedTag) === normalizeTag(tag),
+                );
+
+                return (
+                  <button
+                    aria-pressed={isActive}
+                    className={[
+                      "rounded-full border px-2.5 py-1 text-xs transition",
+                      isActive
+                        ? "border-zinc-950 bg-zinc-950 text-white"
+                        : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:text-zinc-950",
+                    ].join(" ")}
+                    key={tag}
+                    onClick={() => onToggleTag(tag)}
+                    type="button"
+                  >
+                    #{tag}
+                    <span className="ml-1 opacity-60">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {isSearching && (
+            <div className="text-xs text-zinc-400">Ищу…</div>
+          )}
+        </div>
+
         <div className="entries-feed-scroll min-h-0 space-y-2 overflow-y-auto pr-3">
           {entries.map((entry) => (
             <div
@@ -84,7 +164,7 @@ export function EntriesPage({
               key={entry.id}
             >
               <button
-                className="block w-full p-4 pr-20 text-left"
+                className="block w-full p-4 pr-28 text-left"
                 onClick={() => onSelectEntry(entry.id)}
                 type="button"
               >
@@ -115,6 +195,22 @@ export function EntriesPage({
 
               <div className="absolute right-3 top-3 grid grid-flow-col auto-cols-[2rem] gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
+                  aria-label={
+                    entry.analysisEnabled
+                      ? "Запретить анализ записи"
+                      : "Разрешить анализ записи"
+                  }
+                  aria-pressed={entry.analysisEnabled}
+                  className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleEntryAnalysis(entry);
+                  }}
+                  type="button"
+                >
+                  {entry.analysisEnabled ? <EyeOpenIcon /> : <EyeClosedIcon />}
+                </button>
+                <button
                   aria-label="Редактировать запись"
                   className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
                   onClick={(event) => {
@@ -142,7 +238,7 @@ export function EntriesPage({
 
           {entries.length === 0 && (
             <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400">
-              Пока пусто.
+              {hasActiveFilters ? "Ничего не найдено." : "Пока пусто."}
             </div>
           )}
         </div>

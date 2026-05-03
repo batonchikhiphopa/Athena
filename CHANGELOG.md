@@ -2,6 +2,31 @@
 
 All notable changes to Athena are documented here.
 
+## v0.3.0 - 2026-05-03
+
+### Added
+
+- Added Sprint 2 local retrieval for Entries: debounced text/date/tag search, included tag filters, available tag counts, filter reset, and quiet no-results state.
+- Added pure entry search/filter helper coverage for query normalization, tag normalization, AND/NOT tag filtering, stale tag filter pruning, search ranking, and stable empty-search ordering.
+- Added manual tag controls in Editor, including visible tag chips, editable/removable tags, `#` insertion, and local tag autocomplete from existing tags.
+- Added per-entry analysis permission controls through eye buttons in Editor and Entries.
+- Added browser-local Gemini daily extraction accounting with a 20-request daily limit.
+
+### Changed
+
+- Bumped the app package version to `0.3.0`.
+- Editor tags are now first-class local draft state instead of being extracted implicitly from text alone.
+- Entries now keeps selected entries stable while search/filter state changes.
+- Entries clears selected tag filters when the last matching local tag disappears.
+- Pending extraction and fallback reprocessing skip entries whose analysis is disabled.
+- Fallback reprocessing with Gemini respects the remaining local daily quota and avoids writing a new fallback over an existing fallback when quota is exhausted.
+
+### Notes
+
+- The analysis eye is a consent control for text analysis, not an LLM tag suggestion feature.
+- Disabling analysis for an already synced entry removes its textless server entry and leaves the raw text local.
+- The Gemini daily counter is browser-local and resets by local calendar date.
+
 ## v0.2.0 - 2026-05-01
 
 ### Added
@@ -26,4 +51,3 @@ All notable changes to Athena are documented here.
 
 - Raw diary text remains browser-local. The backend stores textless metadata, hashes, sanitized signals, analytics aggregates, and insight snapshots.
 - The offline layer is an app shell and local-writing improvement, not a full sync queue or multi-device sync system.
-

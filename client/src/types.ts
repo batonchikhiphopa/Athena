@@ -29,6 +29,7 @@ export type LocalEntry = {
   text: string;
   entry_date: string;
   tags: string[];
+  analysis_enabled: boolean;
   source_text_hash: string;
   signals: Signal;
   metadata: SignalMetadata;
@@ -57,6 +58,7 @@ export type EntryView = {
   textUnavailable: boolean;
   entryDate: string;
   tags: string[];
+  analysisEnabled: boolean;
   sourceTextHash: string;
   signals: Signal;
   metadata: SignalMetadata;

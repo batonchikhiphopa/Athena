@@ -13,7 +13,6 @@ import {
   saveLocalEntry,
   updateLocalEntry,
 } from "../../lib/storage";
-import { extractTags } from "../../lib/text";
 
 export type DraftStatus = "loading" | "saved" | "saving";
 export type SaveStatus =
@@ -30,12 +29,31 @@ type UseEditorDraftOptions = {
   selectEntry: (id: string) => void;
 };
 
+function normalizeDraftTags(tags: string[]) {
+  return Array.from(
+    new Set(
+      tags
+        .map((tag) => tag.trim().replace(/^#+/, "").toLocaleLowerCase())
+        .filter(Boolean),
+    ),
+  ).slice(0, 12);
+}
+
+function tagsAreEqual(left: string[], right: string[]) {
+  return (
+    normalizeDraftTags(left).join("\u0000") ===
+    normalizeDraftTags(right).join("\u0000")
+  );
+}
+
 export function useEditorDraft({
   clearSelectedEntry,
   refreshEntries,
   selectEntry,
 }: UseEditorDraftOptions) {
   const [draftText, setDraftText] = useState("");
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const [draftAnalysisEnabled, setDraftAnalysisEnabled] = useState(true);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftStatus>("loading");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -43,8 +61,20 @@ export function useEditorDraft({
 
   const activeEntryIdRef = useRef<string | null>(null);
   const lastPersistedTextRef = useRef("");
+  const lastPersistedTagsRef = useRef<string[]>([]);
+  const lastPersistedAnalysisEnabledRef = useRef(true);
+  const draftTagsRef = useRef<string[]>([]);
+  const draftAnalysisEnabledRef = useRef(true);
   const autosaveRunRef = useRef(0);
   const autosaveTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    draftTagsRef.current = draftTags;
+  }, [draftTags]);
+
+  useEffect(() => {
+    draftAnalysisEnabledRef.current = draftAnalysisEnabled;
+  }, [draftAnalysisEnabled]);
 
   const persistEditorText = useCallback(
     async (nextText: string) => {
@@ -54,16 +84,22 @@ export function useEditorDraft({
       const text = nextText;
       const trimmed = text.trim();
       const activeEntryId = activeEntryIdRef.current;
+      const tags = normalizeDraftTags(draftTagsRef.current);
+      const analysisEnabled = draftAnalysisEnabledRef.current;
+      const tagsChanged = !tagsAreEqual(tags, lastPersistedTagsRef.current);
+      const analysisEnabledChanged =
+        analysisEnabled !== lastPersistedAnalysisEnabledRef.current;
+      const hasContent = trimmed.length > 0 || tags.length > 0;
 
       setDraftStatus("saving");
 
-      // ❗ главный блок: пустой ввод
-      if (!trimmed) {
+      if (!hasContent) {
         if (activeEntryId) {
           const existing = await getLocalEntry(activeEntryId);
           if (runId !== autosaveRunRef.current) return;
 
           await deleteLocalEntry(activeEntryId);
+
           if (existing?.serverId) {
             await deleteServerEntry(existing.serverId).catch((error) =>
               console.warn("[entry:delete-empty-server]", error),
@@ -77,13 +113,23 @@ export function useEditorDraft({
         }
 
         lastPersistedTextRef.current = "";
-        setDraftText(""); // 🔧 синхронизация UI
+        lastPersistedTagsRef.current = [];
+        lastPersistedAnalysisEnabledRef.current = analysisEnabled;
+        draftTagsRef.current = [];
+        draftAnalysisEnabledRef.current = analysisEnabled;
+        setDraftText("");
+        setDraftTags([]);
         setDraftStatus("saved");
         setSaveStatus("idle");
         return;
       }
 
-      if (text === lastPersistedTextRef.current && activeEntryId) {
+      if (
+        text === lastPersistedTextRef.current &&
+        !tagsChanged &&
+        !analysisEnabledChanged &&
+        activeEntryId
+      ) {
         setDraftStatus("saved");
         return;
       }
@@ -91,16 +137,16 @@ export function useEditorDraft({
       const sourceTextHash = await createTextHash(text);
       if (runId !== autosaveRunRef.current) return;
 
-      const tags = extractTags(text);
       const now = new Date().toISOString();
 
       let targetEntryId = activeEntryId;
+      let existingEntry: LocalEntry | null = null;
 
       if (targetEntryId) {
-        const existing = await getLocalEntry(targetEntryId);
+        existingEntry = (await getLocalEntry(targetEntryId)) ?? null;
         if (runId !== autosaveRunRef.current) return;
 
-        if (!existing) {
+        if (!existingEntry) {
           activeEntryIdRef.current = null;
           setEditingEntryId(null);
           clearSelectedEntry();
@@ -117,10 +163,11 @@ export function useEditorDraft({
           text,
           entry_date: todayDateOnly(),
           tags,
+          analysis_enabled: analysisEnabled,
           source_text_hash: sourceTextHash,
           signals: createFallbackSignal(),
           metadata: createFallbackMetadata(),
-          sync_status: "pending_reextract",
+          sync_status: analysisEnabled ? "pending_reextract" : "local_only",
           createdAt: now,
           updatedAt: now,
         };
@@ -132,16 +179,29 @@ export function useEditorDraft({
         setEditingEntryId(id);
         selectEntry(id);
       } else {
+        if (!analysisEnabled && existingEntry?.serverId) {
+          await deleteServerEntry(existingEntry.serverId).catch((error) =>
+            console.warn("[entry:disable-analysis-server]", error),
+          );
+        }
+
         await updateLocalEntry(targetEntryId, {
+          serverId: analysisEnabled ? existingEntry?.serverId ?? null : null,
           text,
           tags,
+          analysis_enabled: analysisEnabled,
           source_text_hash: sourceTextHash,
-          sync_status: "pending_reextract",
+          sync_status: analysisEnabled ? "pending_reextract" : "local_only",
           updatedAt: now,
         });
       }
 
       lastPersistedTextRef.current = text;
+      lastPersistedTagsRef.current = tags;
+      lastPersistedAnalysisEnabledRef.current = analysisEnabled;
+      draftTagsRef.current = tags;
+      draftAnalysisEnabledRef.current = analysisEnabled;
+      setDraftTags(tags);
       setDraftStatus("saved");
       setSaveStatus("saved");
       await refreshEntries();
@@ -169,9 +229,19 @@ export function useEditorDraft({
     }
 
     autosaveTimerRef.current = window.setTimeout(() => {
-      if (!draftText.trim()) {
-        setDraftText("");
+      const normalizedTags = normalizeDraftTags(draftTags);
+      const hasContent =
+        draftText.trim().length > 0 || normalizedTags.length > 0;
+
+      if (!hasContent) {
         lastPersistedTextRef.current = "";
+        lastPersistedTagsRef.current = [];
+        lastPersistedAnalysisEnabledRef.current = draftAnalysisEnabledRef.current;
+        draftTagsRef.current = [];
+        setDraftText("");
+        setDraftTags([]);
+        setDraftStatus("saved");
+        setSaveStatus("idle");
         return;
       }
 
@@ -183,10 +253,24 @@ export function useEditorDraft({
         window.clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [draftLoaded, draftText, persistEditorText]);
+  }, [draftLoaded, draftText, draftTags, persistEditorText]);
 
   function changeText(value: string) {
     setDraftText(value);
+    setDraftStatus("saving");
+    setSaveStatus("idle");
+  }
+
+  function changeTags(nextTags: string[]) {
+    const normalizedTags = normalizeDraftTags(nextTags);
+
+    setDraftTags(normalizedTags);
+    setDraftStatus("saving");
+    setSaveStatus("idle");
+  }
+
+  function toggleAnalysisEnabled() {
+    setDraftAnalysisEnabled((currentValue) => !currentValue);
     setDraftStatus("saving");
     setSaveStatus("idle");
   }
@@ -195,28 +279,32 @@ export function useEditorDraft({
     clearAutosaveTimer();
     await persistEditorText(draftText);
 
-    if (!draftText.trim()) {
-      setDraftText("");
-      lastPersistedTextRef.current = "";
-    }
-
     resetDraftState();
     clearSelectedEntry();
   }
 
   async function editEntry(entry: EntryView) {
-    if (!entry.text) return;
+    if (!entry.text && entry.tags.length === 0) return;
 
     clearAutosaveTimer();
     await persistEditorText(draftText);
 
+    const normalizedTags = normalizeDraftTags(entry.tags);
+
     activeEntryIdRef.current = entry.id;
     setEditingEntryId(entry.id);
     setDraftText(entry.text);
+    setDraftTags(normalizedTags);
+    setDraftAnalysisEnabled(entry.analysisEnabled);
+    draftTagsRef.current = normalizedTags;
+    draftAnalysisEnabledRef.current = entry.analysisEnabled;
     lastPersistedTextRef.current = entry.text;
+    lastPersistedTagsRef.current = normalizedTags;
+    lastPersistedAnalysisEnabledRef.current = entry.analysisEnabled;
 
     selectEntry(entry.id);
     setDraftStatus("saved");
+    setSaveStatus("saved");
   }
 
   function clearIfEditingEntry(entryId: string) {
@@ -225,15 +313,27 @@ export function useEditorDraft({
     activeEntryIdRef.current = null;
     setEditingEntryId(null);
     setDraftText("");
+    setDraftTags([]);
+    setDraftAnalysisEnabled(true);
+    draftTagsRef.current = [];
+    draftAnalysisEnabledRef.current = true;
     lastPersistedTextRef.current = "";
+    lastPersistedTagsRef.current = [];
+    lastPersistedAnalysisEnabledRef.current = true;
   }
 
   function resetAfterLocalDataClear() {
     activeEntryIdRef.current = null;
     setDraftText("");
+    setDraftTags([]);
+    setDraftAnalysisEnabled(true);
     setEditingEntryId(null);
     setSaveStatus("idle");
+    draftTagsRef.current = [];
+    draftAnalysisEnabledRef.current = true;
     lastPersistedTextRef.current = "";
+    lastPersistedTagsRef.current = [];
+    lastPersistedAnalysisEnabledRef.current = true;
   }
 
   function activeEntryId() {
@@ -243,6 +343,7 @@ export function useEditorDraft({
   function clearAutosaveTimer() {
     if (autosaveTimerRef.current) {
       window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
   }
 
@@ -250,16 +351,25 @@ export function useEditorDraft({
     activeEntryIdRef.current = null;
     setEditingEntryId(null);
     setDraftText("");
+    setDraftTags([]);
+    setDraftAnalysisEnabled(true);
+    draftTagsRef.current = [];
+    draftAnalysisEnabledRef.current = true;
     lastPersistedTextRef.current = "";
+    lastPersistedTagsRef.current = [];
+    lastPersistedAnalysisEnabledRef.current = true;
   }
 
   return {
     draftLoaded,
+    draftAnalysisEnabled,
     draftStatus,
+    draftTags,
     draftText,
     editingEntryId,
     saveStatus,
     activeEntryId,
+    changeTags,
     changeText,
     clearAutosaveTimer,
     clearIfEditingEntry,
@@ -268,5 +378,6 @@ export function useEditorDraft({
     newBlankPage,
     persistEditorText,
     resetAfterLocalDataClear,
+    toggleAnalysisEnabled,
   };
 }

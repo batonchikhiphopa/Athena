@@ -30,6 +30,7 @@ Athena is currently:
 
 - a local-first daily writing surface;
 - a note-first reflection app;
+- a local search and tag filtering surface for entries;
 - a hidden signal extraction pipeline over personal writing;
 - a deterministic analytics layer over stored signals;
 - an observation system that reveals recurrence over time;
@@ -191,6 +192,8 @@ These options are exposed in Settings under `AI extraction`.
 
 Important privacy detail: the backend does not persist raw diary text, but the current extraction endpoint does receive the current entry text transiently in order to call the selected provider. With `ollama`, that provider is intended to be local. With `gemini`, the current entry text is sent to the Gemini API.
 
+The client keeps a browser-local Gemini extraction counter and limits Gemini extraction to 20 requests per local calendar day. Pending extraction and fallback reprocessing respect the remaining daily quota.
+
 ## Data And Privacy Model
 
 Athena splits data between browser-local storage and backend SQLite.
@@ -207,7 +210,8 @@ Local entries include:
 
 - raw text;
 - local entry date;
-- tags extracted from `#tags`;
+- manually managed local tags;
+- per-entry analysis permission;
 - source text hash;
 - latest known signal metadata;
 - sync status.
@@ -252,6 +256,7 @@ The current end-to-end flow is:
 ```text
 user writes locally
 -> browser stores raw text in IndexedDB
+-> user may allow or block analysis for the entry
 -> browser hashes raw text
 -> extraction runs for the current entry only
 -> extraction returns a signal candidate
@@ -262,7 +267,7 @@ user writes locally
 -> UI renders short observations
 ```
 
-Extraction sees only the current entry. It does not read note history, prior trends, database state, or graph context.
+Extraction sees only the current entry and only runs for entries whose analysis is enabled. It does not read note history, prior trends, database state, or graph context.
 
 ## Offline Behavior
 
@@ -397,11 +402,12 @@ Current behavior:
 
 - opens to a blank writing surface;
 - autosaves after a short delay;
-- includes a local privacy toggle that visually hides or reveals the current text;
+- includes an eye control for allowing or blocking text analysis for the current entry;
+- supports visible local tags above the writing surface;
+- supports adding tags through `#`, local tag autocomplete, editing tags, and removing tags;
 - empty input deletes the active local entry and tries to delete its server metadata if it exists;
-- `#tags` are extracted locally from the text;
 - source text hash is calculated locally;
-- new or changed entries are marked `pending_reextract`;
+- new or changed entries are marked `pending_reextract` only when analysis is enabled;
 - pending entries are processed during app initialization.
 
 The editor placeholder can use Athena persona text when the persona toggle is enabled.
@@ -413,9 +419,13 @@ The Entries page shows local entries merged with backend metadata.
 Current behavior:
 
 - list entries newest-first or oldest-first;
+- search local entries by text, date, or tag;
+- filter entries by one or more included tags;
+- clear stale tag filters when the last matching tag disappears;
 - select entry to read details;
 - edit an entry by reopening it in the editor;
 - delete local entry and attempt to delete server metadata;
+- allow or block analysis per entry through the eye control in the feed;
 - show tags;
 - show internal signal details only when debug mode is enabled.
 
@@ -430,6 +440,7 @@ Settings currently include:
 - extraction status check;
 - network status;
 - fallback reprocessing for entries that still have local text;
+- Gemini daily extraction limit protection for fallback reprocessing;
 - debug mode toggle;
 - persona text toggle;
 - local data clearing.

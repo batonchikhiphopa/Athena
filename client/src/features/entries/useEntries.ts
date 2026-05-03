@@ -6,8 +6,10 @@ import {
   getAllLocalEntries,
   getEntrySortDirection,
   setEntrySortDirection as persistEntrySortDirection,
+  updateLocalEntry,
 } from "../../lib/storage";
-import { mergeEntryState, sortEntries } from "./entryState";
+import { mergeEntryState } from "./entryState";
+import { useEntrySearch } from "./useEntrySearch";
 
 export function useEntries() {
   const [entries, setEntries] = useState<EntryView[]>([]);
@@ -15,14 +17,14 @@ export function useEntries() {
   const [entrySortDirection, setEntrySortDirection] =
     useState<EntrySortDirection>(() => getEntrySortDirection());
 
-  const visibleEntries = useMemo(
-    () => sortEntries(entries, entrySortDirection),
-    [entries, entrySortDirection],
-  );
+  const entrySearch = useEntrySearch({
+    entries,
+    sortDirection: entrySortDirection,
+  });
 
   const selectedEntry = useMemo(
-    () => visibleEntries.find((entry) => entry.id === selectedEntryId) ?? null,
-    [selectedEntryId, visibleEntries],
+    () => entries.find((entry) => entry.id === selectedEntryId) ?? null,
+    [entries, selectedEntryId],
   );
 
   const refreshEntries = useCallback(async () => {
@@ -71,18 +73,45 @@ export function useEntries() {
     return merged;
   }, []);
 
-  const deleteEntry = useCallback(async (entry: EntryView) => {
-    await deleteLocalEntry(entry.id);
+  const deleteEntry = useCallback(
+    async (entry: EntryView) => {
+      await deleteLocalEntry(entry.id);
 
-    if (entry.serverId) {
-      await deleteServerEntry(entry.serverId).catch((error) =>
-        console.warn("[entry:delete-server]", error),
-      );
-    }
+      if (entry.serverId) {
+        await deleteServerEntry(entry.serverId).catch((error) =>
+          console.warn("[entry:delete-server]", error),
+        );
+      }
 
-    setSelectedEntryId(null);
-    await refreshEntries();
-  }, [refreshEntries]);
+      setSelectedEntryId(null);
+      await refreshEntries();
+    },
+    [refreshEntries],
+  );
+
+  const toggleEntryAnalysisEnabled = useCallback(
+    async (entry: EntryView) => {
+      const nextAnalysisEnabled = !entry.analysisEnabled;
+      const nextSyncStatus = nextAnalysisEnabled
+        ? "pending_reextract"
+        : "local_only";
+
+      if (!nextAnalysisEnabled && entry.serverId) {
+        await deleteServerEntry(entry.serverId).catch((error) =>
+          console.warn("[entry:disable-analysis-server]", error),
+        );
+      }
+
+      await updateLocalEntry(entry.id, {
+        serverId: nextAnalysisEnabled ? entry.serverId : null,
+        analysis_enabled: nextAnalysisEnabled,
+        sync_status: nextSyncStatus,
+      });
+
+      await refreshEntries();
+    },
+    [refreshEntries],
+  );
 
   function changeEntrySortDirection(nextValue: EntrySortDirection) {
     setEntrySortDirection(nextValue);
@@ -92,6 +121,7 @@ export function useEntries() {
   function resetEntries() {
     setEntries([]);
     setSelectedEntryId(null);
+    entrySearch.clearFilters();
   }
 
   return {
@@ -99,11 +129,22 @@ export function useEntries() {
     entrySortDirection,
     selectedEntry,
     selectedEntryId,
-    visibleEntries,
+    visibleEntries: entrySearch.visibleEntries,
+
+    entrySearchQuery: entrySearch.query,
+    includedEntryTags: entrySearch.includedTags,
+    availableEntryTags: entrySearch.availableTags,
+    hasActiveEntryFilters: entrySearch.hasActiveFilters,
+    isSearchingEntries: entrySearch.isSearching,
+
     changeEntrySortDirection,
+    clearEntryFilters: entrySearch.clearFilters,
     deleteEntry,
     refreshEntries,
     resetEntries,
     selectEntry: setSelectedEntryId,
+    setEntrySearchQuery: entrySearch.setQuery,
+    toggleEntryAnalysisEnabled,
+    toggleIncludedEntryTag: entrySearch.toggleIncludedTag,
   };
 }

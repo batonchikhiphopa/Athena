@@ -1,18 +1,38 @@
 import type { ExtractionSettings } from "../../types";
 import { createEntry, updateServerEntry } from "../../lib/api";
 import { extractSignalForText } from "../../lib/extraction";
-import { getAllLocalEntries, updateLocalEntry } from "../../lib/storage";
+import {
+  getAllLocalEntries,
+  getRemainingGeminiDailyExtractions,
+  updateLocalEntry,
+} from "../../lib/storage";
 
 export async function processPendingReextractEntries(
   settings: ExtractionSettings,
 ) {
   const pendingEntries = (await getAllLocalEntries()).filter(
-    (entry) => entry.sync_status === "pending_reextract",
+    (entry) =>
+      entry.sync_status === "pending_reextract" &&
+      entry.analysis_enabled !== false,
   );
+  const processableEntries =
+    settings.provider === "gemini"
+      ? pendingEntries.slice(0, getRemainingGeminiDailyExtractions())
+      : pendingEntries;
 
-  for (const entry of pendingEntries) {
+  for (const entry of processableEntries) {
     try {
       const extraction = await extractSignalForText(entry.text, settings);
+
+      if (
+        extraction.signal.signal_quality === "fallback" &&
+        ["gemini_daily_limit", "quota_error"].includes(
+          extraction.metadata.error_code ?? "",
+        )
+      ) {
+        break;
+      }
+
       const payload = {
         entry_date: entry.entry_date,
         tags: entry.tags,

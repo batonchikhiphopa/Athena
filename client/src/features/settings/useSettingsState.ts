@@ -8,8 +8,10 @@ import type {
 import { appendEntrySignal, loadExtractionConfig, loadExtractionStatus } from "../../lib/api";
 import { extractSignalForText } from "../../lib/extraction";
 import {
+  GEMINI_DAILY_EXTRACTION_LIMIT,
   getDebugMode,
   getExtractionSettings,
+  getRemainingGeminiDailyExtractions,
   getPersonaTextEnabled,
   setDebugMode as persistDebugMode,
   setExtractionSettings as persistExtractionSettings,
@@ -106,22 +108,53 @@ export function useSettingsState() {
     callbacks: ReprocessCallbacks,
   ) {
     const candidates = entries.filter(
-      (entry) => entry.signals.signal_quality === "fallback" && entry.text,
+      (entry) =>
+        entry.analysisEnabled &&
+        entry.signals.signal_quality === "fallback" &&
+        entry.text,
     );
+    const remainingGeminiExtractions =
+      extractionSettings.provider === "gemini"
+        ? getRemainingGeminiDailyExtractions()
+        : Number.POSITIVE_INFINITY;
+    const processableCandidates = candidates.slice(0, remainingGeminiExtractions);
+    const skippedByGeminiLimit = candidates.length - processableCandidates.length;
 
     setReprocessStatus("running");
-    setReprocessMessage(`В очереди: ${candidates.length}`);
+    setReprocessMessage(
+      extractionSettings.provider === "gemini"
+        ? `В очереди: ${processableCandidates.length}/${candidates.length}, Gemini осталось: ${remainingGeminiExtractions}/${GEMINI_DAILY_EXTRACTION_LIMIT}`
+        : `В очереди: ${candidates.length}`,
+    );
 
     let processed = 0;
     let recovered = 0;
     let failed = 0;
+    let skippedFallback = 0;
 
-    for (const entry of candidates) {
+    for (const entry of processableCandidates) {
       try {
         const extraction = await extractSignalForText(
           entry.text,
           extractionSettings,
         );
+
+        if (extraction.signal.signal_quality === "fallback") {
+          skippedFallback += 1;
+
+          if (
+            ["gemini_daily_limit", "quota_error"].includes(
+              extraction.metadata.error_code ?? "",
+            )
+          ) {
+            break;
+          }
+
+          setReprocessMessage(
+            `Готово: ${processed + skippedFallback}/${processableCandidates.length}`,
+          );
+          continue;
+        }
 
         if (entry.serverId) {
           const serverEntry = await appendEntrySignal(entry.serverId, {
@@ -146,8 +179,8 @@ export function useSettingsState() {
         }
 
         processed += 1;
-        if (extraction.signal.signal_quality !== "fallback") recovered += 1;
-        setReprocessMessage(`Готово: ${processed}/${candidates.length}`);
+        recovered += 1;
+        setReprocessMessage(`Готово: ${processed}/${processableCandidates.length}`);
       } catch (error) {
         failed += 1;
         console.error("[fallback:reprocess]", error);
@@ -160,7 +193,17 @@ export function useSettingsState() {
 
     setReprocessStatus(failed > 0 ? "error" : "done");
     setReprocessMessage(
-      `Обработано: ${processed}, восстановлено: ${recovered}, ошибок: ${failed}`,
+      [
+        `Обработано: ${processed}`,
+        `восстановлено: ${recovered}`,
+        `fallback пропущено: ${skippedFallback}`,
+        skippedByGeminiLimit > 0
+          ? `отложено из-за Gemini лимита: ${skippedByGeminiLimit}`
+          : null,
+        `ошибок: ${failed}`,
+      ]
+        .filter(Boolean)
+        .join(", "),
     );
   }
 

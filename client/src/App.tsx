@@ -36,14 +36,19 @@ export default function App() {
         />
         <main className="flex-1 px-4 flex justify-center">
           {app.page === "editor" && (
-            <Editor
-              entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
-              editorInsight={app.editorInsight}
-              personaTextEnabled={app.personaTextEnabled}
-              text={app.draftText}
-              onChangeText={handlers.editorTextChange}
-              onNewBlankPage={() => void handlers.newBlankPage()}
-            />
+        <Editor
+          analysisEnabled={app.draftAnalysisEnabled}
+          availableTags={app.availableEntryTags}
+          entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
+          editorInsight={app.editorInsight}
+          personaTextEnabled={app.personaTextEnabled}
+          tags={app.draftTags}
+          text={app.draftText}
+          onChangeTags={handlers.editorTagsChange}
+          onChangeText={handlers.editorTextChange}
+          onNewBlankPage={() => void handlers.newBlankPage()}
+          onToggleAnalysisEnabled={handlers.toggleDraftAnalysisEnabled}
+        />
           )}
 
           {app.page === "entries" && (
@@ -53,11 +58,22 @@ export default function App() {
               selectedEntry={app.selectedEntry}
               selectedEntryId={app.selectedEntryId}
               sortDirection={app.entrySortDirection}
+              searchQuery={app.entrySearchQuery}
+              includedTags={app.includedEntryTags}
+              availableTags={app.availableEntryTags}
+              hasActiveFilters={app.hasActiveEntryFilters}
+              isSearching={app.isSearchingEntries}
               onChangeSortDirection={handlers.changeEntrySortDirection}
+              onClearFilters={handlers.clearEntryFilters}
               onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
               onEditEntry={(entry) => void handlers.editEntry(entry)}
               onRefresh={() => void handlers.refreshEntries()}
+              onSearchQueryChange={handlers.setEntrySearchQuery}
               onSelectEntry={handlers.selectEntry}
+              onToggleEntryAnalysis={(entry) =>
+                void handlers.toggleEntryAnalysisEnabled(entry)
+              }
+              onToggleTag={handlers.toggleIncludedEntryTag}
             />
           )}
 

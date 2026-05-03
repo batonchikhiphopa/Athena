@@ -8,13 +8,20 @@ const CURRENT_DRAFT_ID = "current";
 const DEBUG_MODE_KEY = "athena_debug_mode";
 const EXTRACTION_SETTINGS_KEY = "athena_extraction_settings";
 const ENTRY_SORT_DIRECTION_KEY = "athena_entry_sort_direction";
+const GEMINI_DAILY_EXTRACTION_USAGE_KEY = "athena_gemini_daily_extraction_usage";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
+export const GEMINI_DAILY_EXTRACTION_LIMIT = 20;
 
 type DraftRecord = {
   id: typeof CURRENT_DRAFT_ID;
   text: string;
   updatedAt: string;
+};
+
+type GeminiDailyExtractionUsage = {
+  date: string;
+  count: number;
 };
 
 let athenaDbPromise: Promise<IDBDatabase> | null = null;
@@ -66,6 +73,54 @@ export function getEntrySortDirection(): EntrySortDirection {
 
 export function setEntrySortDirection(value: EntrySortDirection) {
   localStorage.setItem(ENTRY_SORT_DIRECTION_KEY, value);
+}
+
+export function getGeminiDailyExtractionUsage(): GeminiDailyExtractionUsage {
+  const today = localDateKey();
+  const raw = localStorage.getItem(GEMINI_DAILY_EXTRACTION_USAGE_KEY);
+
+  if (!raw) return { date: today, count: 0 };
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<GeminiDailyExtractionUsage>;
+    const count =
+      typeof parsed.count === "number" && Number.isFinite(parsed.count)
+        ? Math.max(0, Math.floor(parsed.count))
+        : 0;
+
+    if (parsed.date !== today) {
+      return { date: today, count: 0 };
+    }
+
+    return {
+      date: today,
+      count: Math.min(count, GEMINI_DAILY_EXTRACTION_LIMIT),
+    };
+  } catch {
+    return { date: today, count: 0 };
+  }
+}
+
+export function getRemainingGeminiDailyExtractions() {
+  const usage = getGeminiDailyExtractionUsage();
+
+  return Math.max(0, GEMINI_DAILY_EXTRACTION_LIMIT - usage.count);
+}
+
+export function reserveGeminiDailyExtraction() {
+  const usage = getGeminiDailyExtractionUsage();
+
+  if (usage.count >= GEMINI_DAILY_EXTRACTION_LIMIT) return false;
+
+  localStorage.setItem(
+    GEMINI_DAILY_EXTRACTION_USAGE_KEY,
+    JSON.stringify({
+      date: usage.date,
+      count: usage.count + 1,
+    } satisfies GeminiDailyExtractionUsage),
+  );
+
+  return true;
 }
 
 export function getSeenEditorInsightIds() {
@@ -182,6 +237,7 @@ export async function deleteAthenaLocalData() {
   localStorage.removeItem(DEBUG_MODE_KEY);
   localStorage.removeItem(EXTRACTION_SETTINGS_KEY);
   localStorage.removeItem(ENTRY_SORT_DIRECTION_KEY);
+  localStorage.removeItem(GEMINI_DAILY_EXTRACTION_USAGE_KEY);
   localStorage.removeItem(PERSONA_TEXT_ENABLED_KEY);
   localStorage.removeItem(SEEN_EDITOR_INSIGHT_IDS_KEY);
 
@@ -248,4 +304,13 @@ function compareLocalEntries(left: LocalEntry, right: LocalEntry) {
   if (dateOrder !== 0) return dateOrder;
 
   return right.createdAt.localeCompare(left.createdAt);
+}
+
+function localDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
