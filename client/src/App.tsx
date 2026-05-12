@@ -6,14 +6,14 @@ import { Nav } from "./components/Nav";
 import { Observations } from "./components/Observations";
 import { Settings } from "./components/Settings";
 import { todayDateOnly } from "./lib/dates";
-import logoImg from "./logo.png";
+import logoImg from "./assets/logo-bg.jpg";
 
 export default function App() {
   const app = useAthenaApp();
   const { handlers } = app;
 
   return (
-    <div className="min-h-screen bg-[#f4efe6] text-zinc-950">
+    <div className="h-screen overflow-hidden bg-[#f4efe6] text-zinc-950">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <img
           src={logoImg}
@@ -29,12 +29,12 @@ export default function App() {
           "
         />
       </div>
-      <div className="flex">
+      <div className="flex h-full min-h-0">
         <Nav
           currentPage={app.page}
           onNavigate={(nextPage) => void handlers.navigate(nextPage)}
         />
-        <main className="flex-1 px-4 flex justify-center">
+        <main className="flex h-full min-w-0 flex-1 justify-center overflow-hidden px-4">
           {app.page === "editor" && (
         <Editor
           analysisEnabled={app.draftAnalysisEnabled}
@@ -99,6 +99,7 @@ export default function App() {
               personaTextEnabled={app.personaTextEnabled}
               reprocessMessage={app.reprocessMessage}
               reprocessStatus={app.reprocessStatus}
+              queueSnapshot={app.queueSnapshot}
               onChangeExtractionSettings={(settings) =>
                 void handlers.changeExtractionSettings(settings)
               }
@@ -109,6 +110,11 @@ export default function App() {
               onReprocessFallbackEntries={() =>
                 void handlers.reprocessFallbackEntries()
               }
+              onRetryRecoverableQueueJobs={() =>
+                void handlers.retryRecoverableQueueJobs()
+              }
+              onPauseQueue={handlers.pauseQueue}
+              onStartQueue={handlers.startQueue}
               onToggleDebugMode={handlers.toggleDebugMode}
               onTogglePersonaText={handlers.togglePersonaText}
             />

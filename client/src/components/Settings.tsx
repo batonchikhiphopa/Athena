@@ -4,6 +4,7 @@ import type {
   ExtractionSettings,
   ExtractionStatus,
 } from "../types";
+import type { QueueSnapshot } from "../lib/queueTypes";
 
 const fallbackProviders: ExtractionConfig["providers"] = [
   {
@@ -37,12 +38,16 @@ type SettingsProps = {
   extractionStatus: ExtractionStatus | null;
   personaTextEnabled: boolean;
   isOnline: boolean;
+  queueSnapshot: QueueSnapshot;
   reprocessMessage: string;
   reprocessStatus: "idle" | "running" | "done" | "error";
   onChangeExtractionSettings: (value: ExtractionSettings) => void;
   onClearLocalData: () => void;
   onRefreshExtractionStatus: () => void;
   onReprocessFallbackEntries: () => void;
+  onRetryRecoverableQueueJobs: () => void;
+  onPauseQueue: () => void;
+  onStartQueue: () => void;
   onToggleDebugMode: (value: boolean) => void;
   onTogglePersonaText: (value: boolean) => void;
 };
@@ -63,12 +68,16 @@ export function Settings({
   extractionSettings,
   extractionStatus,
   personaTextEnabled,
+  queueSnapshot,
   reprocessMessage,
   reprocessStatus,
   onChangeExtractionSettings,
   onClearLocalData,
   onRefreshExtractionStatus,
   onReprocessFallbackEntries,
+  onRetryRecoverableQueueJobs,
+  onPauseQueue,
+  onStartQueue,
   onToggleDebugMode,
   onTogglePersonaText,
 }: SettingsProps) {
@@ -76,21 +85,24 @@ export function Settings({
   const selectedProvider =
     providers.find((provider) => provider.id === extractionSettings.provider) ??
     providers[0];
+
   const fallbackCandidates = entries.filter(
     (entry) => entry.signals.signal_quality === "fallback" && entry.text,
   ).length;
-  const canReprocess =
-    fallbackCandidates > 0 && reprocessStatus !== "running";
+
+  const canReprocess = fallbackCandidates > 0 && reprocessStatus !== "running";
 
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-8 py-8">
+    <section className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-y-auto px-8 py-8">
       <div className="mb-5">
         <div className="text-xs uppercase text-zinc-400">Настройки</div>
         <h1 className="mt-2 text-2xl font-medium text-zinc-950">Параметры</h1>
       </div>
-          <div className="rounded-2xl border border-zinc-200/70 bg-white/45 p-3 text-xs text-zinc-600">
-              Network: {isOnline ? "online" : "offline"}
-          </div>
+
+      <div className="mb-4 rounded-2xl border border-zinc-200/70 bg-white/45 p-3 text-xs text-zinc-600">
+        Network: {isOnline ? "online" : "offline"}
+      </div>
+
       <div className="space-y-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start justify-between gap-4">
@@ -102,6 +114,7 @@ export function Settings({
                 {formatStatus(extractionStatus)}
               </div>
             </div>
+
             <button
               className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
               onClick={onRefreshExtractionStatus}
@@ -117,7 +130,8 @@ export function Settings({
               <select
                 className="mt-2 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-zinc-400"
                 onChange={(event) => {
-                  const provider = event.target.value as ExtractionSettings["provider"];
+                  const provider = event.target
+                    .value as ExtractionSettings["provider"];
                   const option = providers.find((item) => item.id === provider);
 
                   onChangeExtractionSettings({
@@ -163,6 +177,7 @@ export function Settings({
               Fallback с локальным текстом: {fallbackCandidates}
               {reprocessMessage ? ` · ${reprocessMessage}` : ""}
             </div>
+
             <button
               className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={!canReprocess}
@@ -174,6 +189,57 @@ export function Settings({
           </div>
         </div>
 
+        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="text-sm font-medium text-zinc-950">Operation queue</div>
+          <div className="mt-1 text-sm text-zinc-400">
+            Durable local jobs. Пока только infrastructure layer.
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-500 sm:grid-cols-3">
+            <QueueStat label="queued" value={queueSnapshot.queued} />
+            <QueueStat label="running" value={queueSnapshot.running} />
+            <QueueStat label="failed" value={queueSnapshot.failed} />
+            <QueueStat label="blocked" value={queueSnapshot.blocked} />
+            <QueueStat label="cancelled" value={queueSnapshot.cancelled} />
+            <QueueStat label="succeeded" value={queueSnapshot.succeeded} />
+          </div>
+
+          <div className="mt-3 text-xs text-zinc-400">
+            Processor: {queueSnapshot.isProcessing ? "running" : "idle"}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
+              onClick={onStartQueue}
+              type="button"
+            >
+              Start
+            </button>
+            <button
+              className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
+              onClick={onPauseQueue}
+              type="button"
+            >
+              Pause
+            </button>
+            <button
+              className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={queueSnapshot.failed + queueSnapshot.blocked === 0}
+              onClick={onRetryRecoverableQueueJobs}
+              type="button"
+            >
+              Retry failed
+            </button>
+          </div>
+
+          {queueSnapshot.lastError ? (
+            <div className="mt-2 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {queueSnapshot.lastError}
+            </div>
+          ) : null}
+        </div>
+
         <label className="flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div>
             <div className="text-sm font-medium text-zinc-950">Debug mode</div>
@@ -181,6 +247,7 @@ export function Settings({
               Показывает внутренний слой в деталях записи.
             </div>
           </div>
+
           <input
             checked={debugMode}
             className="h-5 w-5 accent-zinc-950"
@@ -198,6 +265,7 @@ export function Settings({
               Показывает Athena-подсказки в пустом редакторе.
             </div>
           </div>
+
           <input
             checked={personaTextEnabled}
             className="h-5 w-5 accent-zinc-950"
@@ -210,6 +278,7 @@ export function Settings({
           <div className="text-sm font-medium text-zinc-950">
             Локальные данные
           </div>
+
           <button
             className="mt-4 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 transition hover:border-red-300 hover:bg-red-50"
             onClick={onClearLocalData}
@@ -220,6 +289,15 @@ export function Settings({
         </div>
       </div>
     </section>
+  );
+}
+
+function QueueStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2">
+      <div className="uppercase tracking-wide text-zinc-400">{label}</div>
+      <div className="mt-1 text-sm text-zinc-700">{value}</div>
+    </div>
   );
 }
 

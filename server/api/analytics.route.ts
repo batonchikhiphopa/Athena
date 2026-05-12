@@ -2,12 +2,18 @@ import express from "express";
 import { getDb } from "../db/sqlite.js";
 import { buildSummary } from "../services/analytics.service.js";
 
+type LatestEntryDateRow = {
+  date: string | null;
+};
+
 const router = express.Router();
 
 router.get("/analytics/summary", async (_req, res) => {
   try {
     const db = await getDb();
-    const latest = await db.get("SELECT MAX(entry_date) AS date FROM entries");
+    const latest = await db.get<LatestEntryDateRow>(
+      "SELECT MAX(entry_date) AS date FROM entries",
+    );
 
     if (!latest?.date) {
       return res.json({ week: null, month: null });
@@ -34,7 +40,7 @@ router.get("/analytics/summary", async (_req, res) => {
 
 export default router;
 
-function subtractDays(dateOnly, days) {
+function subtractDays(dateOnly: string, days: number): string {
   const [year, month, day] = dateOnly.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   date.setUTCDate(date.getUTCDate() - days);

@@ -2,6 +2,31 @@
 
 All notable changes to Athena are documented here.
 
+## v0.4.0 - 2026-05-12
+
+### Added
+
+- Added Sprint 3a durable operation queue infrastructure backed by IndexedDB.
+- Added generic queue job types, persisted job status, retry/backoff, cancellation, stale running job recovery, pruning, queue size limits, and idempotency-key coalescing.
+- Added queue health and controls in Settings, including queued/running/failed/blocked counts, processor state, last error, pause/start, and retry failed jobs.
+- Added queue-backed fallback reprocessing through `entry.reprocess_signal` without storing raw diary text in queue payloads.
+- Added SQLite write-concurrency coverage and idempotent duplicate entry create tests.
+
+### Changed
+
+- Bumped the app package version to `0.4.0`.
+- Migrated the server runtime source to TypeScript with `tsx` development/test execution and server type checking.
+- Serialized SQLite write transactions to avoid nested transaction failures on concurrent requests.
+- Made `POST /entries` idempotent by `client_entry_id` when `source_text_hash` matches.
+- Kept source hash mismatch as a real conflict instead of hiding it as normal sync failure.
+- Updated docs to describe the current Sprint 3a reliability layer and its remaining limits.
+
+### Notes
+
+- Sprint 3a is reliability-only: Signal Contract v3, local emotion inference, and semantic indexing remain future work.
+- Queue payloads reference local source records and must not duplicate raw diary text.
+- Background sync and full autosave-backed remote sync are still out of scope for this release.
+
 ## v0.3.0 - 2026-05-03
 
 ### Added

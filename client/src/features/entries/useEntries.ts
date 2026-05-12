@@ -41,6 +41,9 @@ export function useEntries() {
     const visibleServerEntries = serverEntries.filter((entry) =>
       localById.has(entry.client_entry_id),
     );
+    const visibleServerByClientId = new Map(
+      visibleServerEntries.map((entry) => [entry.client_entry_id, entry]),
+    );
     const serverOnlyEntries = serverEntries.filter(
       (entry) => !localById.has(entry.client_entry_id),
     );
@@ -58,9 +61,7 @@ export function useEntries() {
     const merged = localEntries.map((localEntry) =>
       mergeEntryState(
         localEntry,
-        visibleServerEntries.find(
-          (entry) => entry.client_entry_id === localEntry.id,
-        ) ?? null,
+        visibleServerByClientId.get(localEntry.id) ?? null,
       ),
     );
 

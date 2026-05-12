@@ -24,7 +24,7 @@ export function Observations({
   const groups = groupInsightsByDate(insights);
 
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-8 py-8">
+    <section className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-y-auto px-8 py-8">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="text-xs uppercase text-zinc-400">Observations</div>

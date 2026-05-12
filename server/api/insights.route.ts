@@ -12,7 +12,7 @@ router.get("/insights/current", async (req, res) => {
   try {
     const db = await getDb();
     const snapshots = await getCurrentInsightSnapshots(db, {
-      today: req.query.today,
+      today: typeof req.query.today === "string" ? req.query.today : undefined,
     });
 
     return res.json({ insights: snapshots });

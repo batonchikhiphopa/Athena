@@ -2,6 +2,8 @@ import {
   ACTIVE_PROMPT_VERSION,
   ACTIVE_SCHEMA_VERSION,
 } from "../config/versions.js";
+import type { InsightLayer, InsightSnapshot } from "../core/types.js";
+import type { AthenaDb } from "../db/sqlite.js";
 import {
   countValidDays,
   listVisibleSnapshots,
@@ -11,7 +13,16 @@ import {
   upsertSnapshot,
 } from "../repositories/insight.repository.js";
 
-const LAYERS = [
+type LayerConfig = {
+  layer: InsightLayer;
+  days: number;
+  minValidDays: number;
+  retainDays: number;
+};
+
+type PublicInsightSnapshot = InsightSnapshot;
+
+const LAYERS: LayerConfig[] = [
   {
     layer: "day",
     days: 1,
@@ -32,9 +43,12 @@ const LAYERS = [
   },
 ];
 
-export async function getCurrentInsightSnapshots(db, { today }) {
+export async function getCurrentInsightSnapshots(
+  db: AthenaDb,
+  { today }: { today?: string },
+): Promise<PublicInsightSnapshot[]> {
   const safeToday = isDateOnly(today) ? today : formatDateOnly(new Date());
-  const snapshots = [];
+  const snapshots: PublicInsightSnapshot[] = [];
 
   for (const config of LAYERS) {
     const periodEnd =
@@ -74,21 +88,36 @@ export async function getCurrentInsightSnapshots(db, { today }) {
   return snapshots;
 }
 
-export async function listInsightSnapshots(db) {
+export async function listInsightSnapshots(
+  db: AthenaDb,
+): Promise<PublicInsightSnapshot[]> {
   const snapshots = await listVisibleSnapshots(db);
   return snapshots.map(toPublicSnapshot);
 }
 
-export async function deleteInsightSnapshot(db, id) {
+export async function deleteInsightSnapshot(
+  db: AthenaDb,
+  id: number | string,
+): Promise<boolean> {
   if (!Number.isInteger(Number(id))) return false;
 
   return softDeleteSnapshot(db, Number(id));
 }
 
 async function createOrRefreshSnapshot(
-  db,
-  { layer, periodStart, periodEnd, retainDays, today },
-) {
+  db: AthenaDb,
+  {
+    layer,
+    periodStart,
+    periodEnd,
+    retainDays,
+    today,
+  }: LayerConfig & {
+    periodStart: string;
+    periodEnd: string;
+    today: string;
+  },
+): Promise<InsightSnapshot | null | undefined> {
   const topTopic = await getTopTopic(db, {
     from: periodStart,
     to: periodEnd,
@@ -112,7 +141,13 @@ async function createOrRefreshSnapshot(
   });
 }
 
-function composeInsightText({ layer, topTopic }) {
+function composeInsightText({
+  layer,
+  topTopic,
+}: {
+  layer: InsightLayer;
+  topTopic: string | null;
+}): string | null {
   if (!topTopic) return null;
 
   const subject = topicSubject(topTopic);
@@ -129,7 +164,7 @@ function composeInsightText({ layer, topTopic }) {
   return `За месяц тема ${subject} появлялась чаще других. ${advice}`;
 }
 
-function toPublicSnapshot(snapshot) {
+function toPublicSnapshot(snapshot: InsightSnapshot): PublicInsightSnapshot {
   return {
     id: snapshot.id,
     layer: snapshot.layer,
@@ -142,9 +177,9 @@ function toPublicSnapshot(snapshot) {
   };
 }
 
-function topicSubject(topic) {
+function topicSubject(topic: string): string {
   const normalized = normalizeTopic(topic);
-  const knownSubjects = {
+  const knownSubjects: Record<string, string> = {
     health: "самочувствия",
     здоровье: "самочувствия",
     самочувствие: "самочувствия",
@@ -183,7 +218,7 @@ function topicSubject(topic) {
   return knownSubjects[normalized] ?? `«${topic.trim()}»`;
 }
 
-function topicAdvice(topic) {
+function topicAdvice(topic: string): string {
   const normalized = normalizeTopic(topic);
 
   if (
@@ -220,15 +255,15 @@ function topicAdvice(topic) {
   return "Выбери один маленький шаг, который сделает эту тему понятнее или легче.";
 }
 
-function normalizeTopic(topic) {
+function normalizeTopic(topic: string): string {
   return String(topic).trim().toLowerCase();
 }
 
-function isDateOnly(value) {
+function isDateOnly(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function addDays(dateOnly, days) {
+function addDays(dateOnly: string, days: number): string {
   const [year, month, day] = dateOnly.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   date.setUTCDate(date.getUTCDate() + days);
@@ -236,6 +271,6 @@ function addDays(dateOnly, days) {
   return formatDateOnly(date);
 }
 
-function formatDateOnly(date) {
+function formatDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
 }

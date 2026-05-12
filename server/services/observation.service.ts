@@ -1,5 +1,38 @@
 import { markerLabel } from "../core/markers.js";
 
+type CountItem = {
+  name: string;
+  count: number;
+};
+
+type RecurrenceItem = CountItem & {
+  days: number;
+};
+
+type ObservationInput = {
+  metrics?: {
+    finalized_entries: number;
+    valid_entries: number;
+    density: number;
+  };
+  flags: {
+    mixed_version: boolean;
+    elevated_load: boolean;
+    elevated_fatigue: boolean;
+    low_focus: boolean;
+    low_density: boolean;
+  };
+  gaps: {
+    total_missing_days: number;
+  };
+  top_topics?: CountItem[];
+  top_markers?: CountItem[];
+  recurrence?: {
+    topics?: RecurrenceItem[];
+    markers?: RecurrenceItem[];
+  };
+};
+
 export const OBSERVATION_PROMPT_CONTRACT = [
   "Use only aggregate analytics input.",
   "Do not read raw diary text.",
@@ -8,7 +41,7 @@ export const OBSERVATION_PROMPT_CONTRACT = [
   "If density is low, say that the observation is unstable.",
 ].join("\n");
 
-export function generateObservation(input) {
+export function generateObservation(input: ObservationInput): string {
   const {
     metrics,
     flags,
@@ -34,7 +67,7 @@ export function generateObservation(input) {
     return "Плотность валидных сигналов низкая; устойчивых паттернов не видно.";
   }
 
-  const parts = [];
+  const parts: string[] = [];
 
   if (flags.mixed_version) {
     parts.push("Окно пересекает границу версий.");
@@ -79,7 +112,12 @@ export function generateObservation(input) {
   return parts.join(" ");
 }
 
-function describeMarkerObservation({ topMarkers, recurrence }) {
+function describeMarkerObservation({
+  topMarkers,
+  recurrence,
+}: Pick<ObservationInput, "top_markers" | "recurrence"> & {
+  topMarkers?: CountItem[];
+}): string | null {
   const recurringMarker = recurrence?.markers?.[0];
 
   if (recurringMarker) {

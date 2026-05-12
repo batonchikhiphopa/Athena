@@ -133,6 +133,93 @@ test("entry update keeps the same server entry id", async () => {
   }
 });
 
+test("duplicate client entry create is idempotent for same source hash", async () => {
+  const db = await createTestDb();
+
+  try {
+    const payload = {
+      client_entry_id: "client-entry-idempotent",
+      entry_date: "2026-04-24",
+      tags: ["queue"],
+      source_text_hash: "9".repeat(64),
+      signal: validSignal(),
+    };
+
+    const firstId = await createEntry(db, payload);
+    const secondId = await createEntry(db, payload);
+    const entries = await listEntries(db);
+    const signalCount = await db.get(
+      "SELECT COUNT(*) AS count FROM signals WHERE entry_id = ?",
+      [firstId],
+    );
+
+    assert.equal(secondId, firstId);
+    assert.equal(entries.length, 1);
+    assert.equal(signalCount.count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test("duplicate client entry create rejects source hash mismatch", async () => {
+  const db = await createTestDb();
+
+  try {
+    await createEntry(db, {
+      client_entry_id: "client-entry-hash-conflict",
+      entry_date: "2026-04-24",
+      tags: ["queue"],
+      source_text_hash: "2".repeat(64),
+      signal: validSignal(),
+    });
+
+    await assert.rejects(
+      () =>
+        createEntry(db, {
+          client_entry_id: "client-entry-hash-conflict",
+          entry_date: "2026-04-24",
+          tags: ["queue"],
+          source_text_hash: "3".repeat(64),
+          signal: validSignal(),
+        }),
+      /source_text_hash mismatch/,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("concurrent duplicate create does not throw nested transaction or unique errors", async () => {
+  const db = await createTestDb();
+
+  try {
+    const payload = {
+      client_entry_id: "client-entry-concurrent",
+      entry_date: "2026-04-24",
+      tags: ["queue"],
+      source_text_hash: "4".repeat(64),
+      signal: validSignal(),
+    };
+
+    const ids = await Promise.all([
+      createEntry(db, payload),
+      createEntry(db, payload),
+      createEntry(db, payload),
+    ]);
+    const entries = await listEntries(db);
+    const signalCount = await db.get(
+      "SELECT COUNT(*) AS count FROM signals WHERE entry_id = ?",
+      [ids[0]],
+    );
+
+    assert.deepEqual(ids, [ids[0], ids[0], ids[0]]);
+    assert.equal(entries.length, 1);
+    assert.equal(signalCount.count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
 test("entry delete removes metadata and signals", async () => {
   const db = await createTestDb();
 

@@ -1,12 +1,11 @@
-const SHELL_CACHE_NAME = "athena-shell-v2";
-const STATIC_CACHE_NAME = "athena-static-v2";
+const SHELL_CACHE_NAME = "athena-shell-v3";
+const STATIC_CACHE_NAME = "athena-static-v3";
 
 const APP_SHELL_ASSETS = [
   "/",
   "/index.html",
   "/favicon.svg",
   "/icons.svg",
-  "/logo.png",
 ];
 
 self.addEventListener("install", (event) => {

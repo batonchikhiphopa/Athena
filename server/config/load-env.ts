@@ -2,17 +2,22 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+type AthenaGlobal = typeof globalThis & {
+  __ATHENA_ENV_LOADED__?: boolean;
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..", "..");
 const envPath = path.join(projectRoot, ".env");
+const athenaGlobal = globalThis as AthenaGlobal;
 
-if (!globalThis.__ATHENA_ENV_LOADED__) {
-  globalThis.__ATHENA_ENV_LOADED__ = true;
+if (!athenaGlobal.__ATHENA_ENV_LOADED__) {
+  athenaGlobal.__ATHENA_ENV_LOADED__ = true;
   loadEnvFile();
 }
 
-function loadEnvFile() {
+function loadEnvFile(): void {
   if (!fs.existsSync(envPath)) return;
 
   const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
@@ -34,7 +39,7 @@ function loadEnvFile() {
   }
 }
 
-function unquote(value) {
+function unquote(value: string): string {
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
     (value.startsWith("'") && value.endsWith("'"))

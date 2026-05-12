@@ -49,7 +49,7 @@ export function EntriesPage({
   onToggleTag,
 }: EntriesPageProps) {
   return (
-    <section className="-mx-4 grid min-h-screen w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
+    <section className="-mx-4 grid h-full min-h-0 w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)] overflow-hidden">
       <div className="grid h-screen min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
         <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div>

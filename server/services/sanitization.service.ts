@@ -1,9 +1,25 @@
+import { type z } from "zod";
 import {
   extractedSignalCandidateSchema,
   fallbackSignalSchema,
 } from "../core/signal.schema.js";
+import type { Signal } from "../core/types.js";
 
-export function sanitizeSignalCandidate(candidate) {
+type ExtractedSignalCandidate = z.infer<typeof extractedSignalCandidateSchema>;
+
+type SanitizedSignalResult =
+  | {
+      ok: true;
+      data: Signal;
+    }
+  | {
+      ok: false;
+      error: Error;
+    };
+
+export function sanitizeSignalCandidate(
+  candidate: unknown,
+): SanitizedSignalResult {
   const result = extractedSignalCandidateSchema.safeParse(candidate);
 
   if (!result.success) {
@@ -28,7 +44,7 @@ export function sanitizeSignalCandidate(candidate) {
   };
 }
 
-function classifySanitizedCandidate(candidate) {
+function classifySanitizedCandidate(candidate: ExtractedSignalCandidate): Signal {
   const hasTextSignal =
     candidate.topics.length > 0 ||
     candidate.activities.length > 0 ||
@@ -59,7 +75,7 @@ function classifySanitizedCandidate(candidate) {
   };
 }
 
-export function createFallbackSignal() {
+export function createFallbackSignal(): Signal {
   const fallback = {
     topics: [],
     activities: [],
@@ -68,7 +84,7 @@ export function createFallbackSignal() {
     fatigue: null,
     focus: null,
     signal_quality: "fallback",
-  };
+  } satisfies Signal;
 
   const result = fallbackSignalSchema.safeParse({
     ...fallback,

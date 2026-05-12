@@ -5,8 +5,8 @@ import type {
   ExtractionSettings,
   ExtractionStatus,
 } from "../../types";
-import { appendEntrySignal, loadExtractionConfig, loadExtractionStatus } from "../../lib/api";
-import { extractSignalForText } from "../../lib/extraction";
+import { loadExtractionConfig, loadExtractionStatus } from "../../lib/api";
+import { enqueueQueueJob } from "../../lib/queue";
 import {
   GEMINI_DAILY_EXTRACTION_LIMIT,
   getDebugMode,
@@ -127,60 +127,30 @@ export function useSettingsState() {
         : `В очереди: ${candidates.length}`,
     );
 
-    let processed = 0;
-    let recovered = 0;
+    let queued = 0;
     let failed = 0;
-    let skippedFallback = 0;
 
     for (const entry of processableCandidates) {
       try {
-        const extraction = await extractSignalForText(
-          entry.text,
-          extractionSettings,
-        );
+        await updateLocalEntry(entry.id, {
+          sync_status: "pending_reextract",
+        });
 
-        if (extraction.signal.signal_quality === "fallback") {
-          skippedFallback += 1;
-
-          if (
-            ["gemini_daily_limit", "quota_error"].includes(
-              extraction.metadata.error_code ?? "",
-            )
-          ) {
-            break;
-          }
-
-          setReprocessMessage(
-            `Готово: ${processed + skippedFallback}/${processableCandidates.length}`,
-          );
-          continue;
-        }
-
-        if (entry.serverId) {
-          const serverEntry = await appendEntrySignal(entry.serverId, {
+        await enqueueQueueJob({
+          type: "entry.reprocess_signal",
+          payload: {
+            entry_id: entry.id,
+            server_id: entry.serverId ?? null,
             source_text_hash: entry.sourceTextHash,
-            signal: extraction.signal,
-            metadata: extraction.metadata,
-          });
+          },
+          priority: 10,
+          entity_kind: "entry",
+          entity_id: entry.id,
+          idempotency_key: createReprocessJobIdempotencyKey(entry),
+        });
 
-          await updateLocalEntry(entry.id, {
-            serverId: serverEntry.id,
-            signals: serverEntry.signal ?? extraction.signal,
-            metadata: serverEntry.metadata ?? extraction.metadata,
-            sync_status: "synced",
-            updatedAt: serverEntry.updated_at,
-          });
-        } else {
-          await updateLocalEntry(entry.id, {
-            signals: extraction.signal,
-            metadata: extraction.metadata,
-            sync_status: "local_only",
-          });
-        }
-
-        processed += 1;
-        recovered += 1;
-        setReprocessMessage(`Готово: ${processed}/${processableCandidates.length}`);
+        queued += 1;
+        setReprocessMessage(`В очереди: ${queued}/${processableCandidates.length}`);
       } catch (error) {
         failed += 1;
         console.error("[fallback:reprocess]", error);
@@ -194,9 +164,7 @@ export function useSettingsState() {
     setReprocessStatus(failed > 0 ? "error" : "done");
     setReprocessMessage(
       [
-        `Обработано: ${processed}`,
-        `восстановлено: ${recovered}`,
-        `fallback пропущено: ${skippedFallback}`,
+        `поставлено в очередь: ${queued}`,
         skippedByGeminiLimit > 0
           ? `отложено из-за Gemini лимита: ${skippedByGeminiLimit}`
           : null,
@@ -230,4 +198,8 @@ export function useSettingsState() {
     toggleDebugMode,
     togglePersonaText,
   };
+}
+
+function createReprocessJobIdempotencyKey(entry: EntryView) {
+  return `entry.reprocess_signal:entry:${entry.id}:${entry.sourceTextHash}`;
 }

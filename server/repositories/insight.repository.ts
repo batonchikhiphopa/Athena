@@ -1,12 +1,61 @@
-export async function countValidDays(db, { from, to }) {
-  const row = await db.get(
+import type { InsightLayer, InsightSnapshot } from "../core/types.js";
+import type { AthenaDb } from "../db/sqlite.js";
+
+type DateRange = {
+  from: string;
+  to: string;
+};
+
+type SnapshotLookup = {
+  layer: InsightLayer;
+  periodStart: string;
+  periodEnd: string;
+};
+
+type LatestSnapshotLookup = {
+  layer: InsightLayer;
+  today: string;
+};
+
+type InsightSnapshotRow = InsightSnapshot & {
+  deleted_at?: string | null;
+};
+
+type UpsertSnapshotParams = SnapshotLookup & {
+  text: string;
+  topic: string | null;
+  generatedAt: string;
+  expiresAt: string;
+  schemaVersion: string;
+  promptVersion: string;
+};
+
+type CountRow = {
+  count: number;
+};
+
+type TopicRow = {
+  topics: string | null;
+};
+
+export async function countValidDays(
+  db: AthenaDb,
+  { from, to }: DateRange,
+): Promise<number> {
+  const row = await db.get<CountRow>(
     `
     SELECT COUNT(DISTINCT e.entry_date) AS count
     FROM entries e
-    JOIN effective_signals es
-      ON es.entry_id = e.id
+    JOIN signals s
+      ON s.id = (
+        SELECT latest.id
+        FROM signals latest
+        WHERE latest.entry_id = e.id
+        ORDER BY latest.created_at DESC, latest.id DESC
+        LIMIT 1
+      )
     WHERE e.entry_date BETWEEN ? AND ?
-      AND es.signal_quality = 'valid'
+      AND s.signal_quality = 'valid'
     `,
     [from, to],
   );
@@ -14,23 +63,32 @@ export async function countValidDays(db, { from, to }) {
   return row?.count ?? 0;
 }
 
-export async function getTopTopic(db, { from, to }) {
-  const rows = await db.all(
+export async function getTopTopic(
+  db: AthenaDb,
+  { from, to }: DateRange,
+): Promise<string | null> {
+  const rows = await db.all<TopicRow[]>(
     `
-    SELECT es.topics
+    SELECT s.topics
     FROM entries e
-    JOIN effective_signals es
-      ON es.entry_id = e.id
+    JOIN signals s
+      ON s.id = (
+        SELECT latest.id
+        FROM signals latest
+        WHERE latest.entry_id = e.id
+        ORDER BY latest.created_at DESC, latest.id DESC
+        LIMIT 1
+      )
     WHERE e.entry_date BETWEEN ? AND ?
-      AND es.signal_quality = 'valid'
+      AND s.signal_quality = 'valid'
     `,
     [from, to],
   );
 
-  const counts = new Map();
+  const counts = new Map<string, number>();
 
   for (const row of rows) {
-    const topics = JSON.parse(row.topics || "[]");
+    const topics = parseStringArray(row.topics);
     const uniqueTopics = new Set(topics);
 
     for (const topic of uniqueTopics) {
@@ -45,8 +103,11 @@ export async function getTopTopic(db, { from, to }) {
     .at(0)?.[0] ?? null;
 }
 
-export async function getSnapshot(db, { layer, periodStart, periodEnd }) {
-  return db.get(
+export async function getSnapshot(
+  db: AthenaDb,
+  { layer, periodStart, periodEnd }: SnapshotLookup,
+): Promise<InsightSnapshotRow | undefined> {
+  return db.get<InsightSnapshotRow>(
     `
     SELECT
       id,
@@ -68,8 +129,11 @@ export async function getSnapshot(db, { layer, periodStart, periodEnd }) {
   );
 }
 
-export async function getLatestVisibleSnapshot(db, { layer, today }) {
-  return db.get(
+export async function getLatestVisibleSnapshot(
+  db: AthenaDb,
+  { layer, today }: LatestSnapshotLookup,
+): Promise<InsightSnapshot | undefined> {
+  return db.get<InsightSnapshot>(
     `
     SELECT
       id,
@@ -80,7 +144,7 @@ export async function getLatestVisibleSnapshot(db, { layer, today }) {
       text,
       generated_at,
       expires_at
-    FROM insight_snapshots
+    FROM insight_snapshots INDEXED BY idx_insight_snapshots_visible_latest
     WHERE layer = ?
       AND expires_at >= ?
       AND deleted_at IS NULL
@@ -91,8 +155,10 @@ export async function getLatestVisibleSnapshot(db, { layer, today }) {
   );
 }
 
-export async function listVisibleSnapshots(db) {
-  return db.all(
+export async function listVisibleSnapshots(
+  db: AthenaDb,
+): Promise<InsightSnapshot[]> {
+  return db.all<InsightSnapshot[]>(
     `
     SELECT
       id,
@@ -118,7 +184,10 @@ export async function listVisibleSnapshots(db) {
   );
 }
 
-export async function softDeleteSnapshot(db, id) {
+export async function softDeleteSnapshot(
+  db: AthenaDb,
+  id: number,
+): Promise<boolean> {
   const result = await db.run(
     `
     UPDATE insight_snapshots
@@ -129,11 +198,11 @@ export async function softDeleteSnapshot(db, id) {
     [new Date().toISOString(), id],
   );
 
-  return result.changes > 0;
+  return (result.changes ?? 0) > 0;
 }
 
 export async function upsertSnapshot(
-  db,
+  db: AthenaDb,
   {
     layer,
     periodStart,
@@ -144,8 +213,8 @@ export async function upsertSnapshot(
     expiresAt,
     schemaVersion,
     promptVersion,
-  },
-) {
+  }: UpsertSnapshotParams,
+): Promise<InsightSnapshotRow | null | undefined> {
   const existing = await getSnapshot(db, { layer, periodStart, periodEnd });
 
   if (existing?.deleted_at) {
@@ -205,4 +274,9 @@ export async function upsertSnapshot(
   }
 
   return getSnapshot(db, { layer, periodStart, periodEnd });
+}
+
+function parseStringArray(value: string | null): string[] {
+  const parsed: unknown = JSON.parse(value || "[]");
+  return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
 }
