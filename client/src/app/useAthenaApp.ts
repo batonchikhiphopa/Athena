@@ -6,21 +6,30 @@ import { useEntries } from "../features/entries/useEntries";
 import { useInsights } from "../features/insights/useInsights";
 import { processPendingReextractEntries } from "../features/settings/pendingReextract";
 import { useSettingsState } from "../features/settings/useSettingsState";
+import { useSyncQueue } from "../features/sync/useSyncQueue";
 import { useOnlineStatus } from "../lib/offline";
 
 export function useAthenaApp() {
   const [page, setPage] = useState<Page>("editor");
+
   const entries = useEntries();
+
   const editor = useEditorDraft({
     clearSelectedEntry: () => entries.selectEntry(null),
     refreshEntries: entries.refreshEntries,
     selectEntry: entries.selectEntry,
   });
+
   const settings = useSettingsState();
+
   const insights = useInsights({
     draftLoaded: editor.draftLoaded,
     draftText: editor.draftText,
     personaTextEnabled: settings.personaTextEnabled,
+  });
+
+  const syncQueue = useSyncQueue({
+    extractionSettings: settings.extractionSettings,
   });
   const initializeDraft = editor.initializeDraft;
   const refreshEntries = entries.refreshEntries;
@@ -44,7 +53,12 @@ export function useAthenaApp() {
       await initializeDraft();
       setPage("editor");
 
+      // Sprint 3a.1 note:
+      // Existing direct pending re-extraction flow is intentionally preserved.
+      // The durable queue is initialized separately by useSyncQueue().
+      // Actual extraction/reprocess queue integration comes later.
       await processPendingReextractEntries(nextExtractionSettings);
+
       await refreshEntries();
       await refreshInsights();
       await refreshObservationHistory();
@@ -129,6 +143,9 @@ export function useAthenaApp() {
   return {
     isOnline,
     activeEntry,
+
+    queueSnapshot: syncQueue.snapshot,
+
     debugMode: settings.debugMode,
     draftAnalysisEnabled: editor.draftAnalysisEnabled,
     draftStatus: editor.draftStatus,
@@ -156,6 +173,7 @@ export function useAthenaApp() {
     selectedEntry: entries.selectedEntry,
     selectedEntryId: entries.selectedEntryId,
     visibleEntries: entries.visibleEntries,
+
     handlers: {
       changeEntrySortDirection: entries.changeEntrySortDirection,
       clearEntryFilters: entries.clearEntryFilters,
@@ -179,6 +197,12 @@ export function useAthenaApp() {
       toggleIncludedEntryTag: entries.toggleIncludedEntryTag,
       toggleDebugMode: settings.toggleDebugMode,
       togglePersonaText: settings.togglePersonaText,
+
+      retryQueueJob: syncQueue.retry,
+      cancelQueueJob: syncQueue.cancel,
+      pauseQueue: syncQueue.pause,
+      startQueue: syncQueue.start,
+      retryRecoverableQueueJobs: syncQueue.retryRecoverable,
     },
   };
 }

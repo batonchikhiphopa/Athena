@@ -1,5 +1,38 @@
-export async function hasSignalForEntryHash(db, entryId, sourceTextHash) {
-  const row = await db.get(
+import type { EntryStatus, ExtractionProvider, Signal } from "../core/types.js";
+import type { AthenaDb } from "../db/sqlite.js";
+
+type SignalStatus = "fallback" | "extracted";
+
+type SignalStatusRow = {
+  signal_quality: string;
+};
+
+type SignalIdentityRow = {
+  id: number;
+};
+
+type InsertSignalParams = {
+  entryId: number;
+  sourceTextHash: string;
+  signal: Signal;
+  schemaVersion: string;
+  promptVersion: string;
+  provider?: ExtractionProvider;
+  model: string;
+  errorCode?: string | null;
+  createdAt: string;
+};
+
+type InsertSignalAndFinalizeEntryParams = InsertSignalParams & {
+  finalStatus: EntryStatus;
+};
+
+export async function hasSignalForEntryHash(
+  db: AthenaDb,
+  entryId: number,
+  sourceTextHash: string,
+): Promise<boolean> {
+  const row = await db.get<SignalIdentityRow>(
     `
     SELECT id
     FROM signals
@@ -7,14 +40,18 @@ export async function hasSignalForEntryHash(db, entryId, sourceTextHash) {
       AND source_text_hash = ?
     LIMIT 1
     `,
-    [entryId, sourceTextHash]
+    [entryId, sourceTextHash],
   );
 
   return Boolean(row);
 }
 
-export async function getSignalStatusForEntryHash(db, entryId, sourceTextHash) {
-  const row = await db.get(
+export async function getSignalStatusForEntryHash(
+  db: AthenaDb,
+  entryId: number,
+  sourceTextHash: string,
+): Promise<SignalStatus | null> {
+  const row = await db.get<SignalStatusRow>(
     `
     SELECT signal_quality
     FROM signals
@@ -23,7 +60,7 @@ export async function getSignalStatusForEntryHash(db, entryId, sourceTextHash) {
     ORDER BY created_at DESC, id DESC
     LIMIT 1
     `,
-    [entryId, sourceTextHash]
+    [entryId, sourceTextHash],
   );
 
   if (!row) return null;
@@ -32,7 +69,7 @@ export async function getSignalStatusForEntryHash(db, entryId, sourceTextHash) {
 }
 
 export async function insertSignalAndFinalizeEntry(
-  db,
+  db: AthenaDb,
   {
     entryId,
     sourceTextHash,
@@ -44,8 +81,8 @@ export async function insertSignalAndFinalizeEntry(
     model,
     errorCode = null,
     createdAt,
-  }
-) {
+  }: InsertSignalAndFinalizeEntryParams,
+): Promise<void> {
   await db.exec("BEGIN");
 
   try {
@@ -68,7 +105,7 @@ export async function insertSignalAndFinalizeEntry(
           updated_at = ?
       WHERE id = ?
       `,
-      [finalStatus, createdAt, entryId]
+      [finalStatus, createdAt, entryId],
     );
 
     await db.exec("COMMIT");
@@ -79,7 +116,7 @@ export async function insertSignalAndFinalizeEntry(
 }
 
 export async function insertSignalRow(
-  db,
+  db: AthenaDb,
   {
     entryId,
     sourceTextHash,
@@ -90,8 +127,8 @@ export async function insertSignalRow(
     model,
     errorCode = null,
     createdAt,
-  }
-) {
+  }: InsertSignalParams,
+): Promise<void> {
   await db.run(
     `
     INSERT INTO signals (
@@ -128,6 +165,6 @@ export async function insertSignalRow(
       model,
       errorCode,
       createdAt,
-    ]
+    ],
   );
 }

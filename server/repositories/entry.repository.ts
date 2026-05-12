@@ -1,4 +1,58 @@
-export async function createEntry(db, entry) {
+import type { EntryStatus, ExtractionProvider, Signal, SignalMetadata } from "../core/types.js";
+import type { AthenaDb } from "../db/sqlite.js";
+
+type EntryWrite = {
+  client_entry_id?: string;
+  entry_date: string;
+  created_at?: string;
+  updated_at: string;
+  status: EntryStatus;
+  tags: string[];
+  source_text_hash: string;
+};
+
+type EntryJoinedRow = {
+  id: number;
+  client_entry_id: string;
+  entry_date: string;
+  created_at: string;
+  updated_at: string;
+  status: EntryStatus;
+  tags: string | null;
+  source_text_hash: string;
+  signal_id: number | null;
+  topics: string | null;
+  activities: string | null;
+  markers: string | null;
+  load: number | null;
+  fatigue: number | null;
+  focus: number | null;
+  signal_quality: Signal["signal_quality"] | null;
+  schema_version: string | null;
+  prompt_version: string | null;
+  provider: ExtractionProvider | null;
+  model: string | null;
+  error_code: string | null;
+  signal_created_at: string | null;
+};
+
+type EntryView = {
+  id: number;
+  client_entry_id: string;
+  entry_date: string;
+  created_at: string;
+  updated_at: string;
+  status: EntryStatus;
+  tags: string[];
+  source_text_hash: string;
+  signal: Signal | null;
+  metadata: SignalMetadata | null;
+};
+
+export async function createEntry(
+  db: AthenaDb,
+  entry: EntryWrite & Required<Pick<EntryWrite, "client_entry_id" | "created_at">>,
+): Promise<number | undefined> {
   const query = `
     INSERT INTO entries (
       client_entry_id,
@@ -26,8 +80,8 @@ export async function createEntry(db, entry) {
   return result.lastID;
 }
 
-export async function listEntries(db) {
-  const rows = await db.all(`
+export async function listEntries(db: AthenaDb): Promise<EntryView[]> {
+  const rows = await db.all<EntryJoinedRow[]>(`
     SELECT
       e.id,
       e.client_entry_id,
@@ -66,8 +120,11 @@ export async function listEntries(db) {
   return rows.map(mapEntryRow);
 }
 
-export async function getEntryById(db, id) {
-  const row = await db.get(
+export async function getEntryById(
+  db: AthenaDb,
+  id: number | string,
+): Promise<EntryView | null> {
+  const row = await db.get<EntryJoinedRow>(
     `
     SELECT
       e.id,
@@ -103,7 +160,7 @@ export async function getEntryById(db, id) {
       )
     WHERE e.id = ? OR e.client_entry_id = ?
     `,
-    [id, id]
+    [id, id],
   );
 
   if (!row) return null;
@@ -111,7 +168,11 @@ export async function getEntryById(db, id) {
   return mapEntryRow(row);
 }
 
-export async function updateEntry(db, entryId, entry) {
+export async function updateEntry(
+  db: AthenaDb,
+  entryId: number,
+  entry: EntryWrite,
+): Promise<boolean> {
   const result = await db.run(
     `
     UPDATE entries
@@ -132,19 +193,26 @@ export async function updateEntry(db, entryId, entry) {
     ],
   );
 
-  return result.changes > 0;
+  return (result.changes ?? 0) > 0;
 }
 
-export async function deleteEntry(db, entryId) {
+export async function deleteEntry(
+  db: AthenaDb,
+  entryId: number,
+): Promise<boolean> {
   await db.run("DELETE FROM signal_overrides WHERE entry_id = ?", [entryId]);
   await db.run("DELETE FROM signals WHERE entry_id = ?", [entryId]);
 
   const result = await db.run("DELETE FROM entries WHERE id = ?", [entryId]);
 
-  return result.changes > 0;
+  return (result.changes ?? 0) > 0;
 }
 
-export async function updateEntryStatus(db, entryId, status) {
+export async function updateEntryStatus(
+  db: AthenaDb,
+  entryId: number,
+  status: EntryStatus,
+): Promise<void> {
   await db.run(
     `
     UPDATE entries
@@ -152,35 +220,38 @@ export async function updateEntryStatus(db, entryId, status) {
         updated_at = ?
     WHERE id = ?
     `,
-    [status, new Date().toISOString(), entryId]
+    [status, new Date().toISOString(), entryId],
   );
 }
 
-export async function markEntryFailed(db, entryId) {
+export async function markEntryFailed(
+  db: AthenaDb,
+  entryId: number,
+): Promise<void> {
   await updateEntryStatus(db, entryId, "failed");
 }
 
-function mapEntryRow(row) {
-  const signal = row.signal_id
+function mapEntryRow(row: EntryJoinedRow): EntryView {
+  const signal: Signal | null = row.signal_id
     ? {
-        topics: JSON.parse(row.topics || "[]"),
-        activities: JSON.parse(row.activities || "[]"),
-        markers: JSON.parse(row.markers || "[]"),
+        topics: parseStringArray(row.topics),
+        activities: parseStringArray(row.activities),
+        markers: parseStringArray(row.markers),
         load: row.load,
         fatigue: row.fatigue,
         focus: row.focus,
-        signal_quality: row.signal_quality,
+        signal_quality: row.signal_quality ?? "fallback",
       }
     : null;
 
-  const metadata = row.signal_id
+  const metadata: SignalMetadata | null = row.signal_id
     ? {
-        schema_version: row.schema_version,
-        prompt_version: row.prompt_version,
+        schema_version: row.schema_version ?? "",
+        prompt_version: row.prompt_version ?? "",
         provider: row.provider ?? "ollama",
-        model: row.model,
+        model: row.model ?? "",
         error_code: row.error_code ?? null,
-        created_at: row.signal_created_at,
+        created_at: row.signal_created_at ?? undefined,
       }
     : null;
 
@@ -191,9 +262,14 @@ function mapEntryRow(row) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     status: row.status,
-    tags: JSON.parse(row.tags || "[]"),
+    tags: parseStringArray(row.tags),
     source_text_hash: row.source_text_hash,
     signal,
     metadata,
   };
+}
+
+function parseStringArray(value: string | null): string[] {
+  const parsed: unknown = JSON.parse(value || "[]");
+  return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
 }

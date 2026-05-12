@@ -11,9 +11,13 @@ import {
   updateEntry,
 } from "../services/entry.service.js";
 
+type CodedError = Error & {
+  code?: string;
+};
+
 const router = express.Router();
 
-router.get("/entries", async (req, res) => {
+router.get("/entries", async (_req, res) => {
   try {
     const db = await getDb();
     const entries = await listEntries(db);
@@ -62,16 +66,22 @@ router.post("/entries", async (req, res) => {
   try {
     const db = await getDb();
     const entryId = await createEntry(db, parsed.data);
-    const entry = await getEntryById(db, entryId);
+    const entry = await getEntryById(db, entryId ?? "");
 
     return res.status(201).json({ entry });
-    } catch (error) {
+  } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-        error: "Failed to create entry",
-    });
+    if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
+      return res.status(409).json({
+        error: "Source text hash mismatch",
+      });
     }
+
+    return res.status(500).json({
+      error: "Failed to create entry",
+    });
+  }
 });
 
 router.patch("/entries/:id", async (req, res) => {
@@ -149,7 +159,7 @@ router.post("/entries/:id/signals", async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    if (error.code === "SOURCE_HASH_MISMATCH") {
+    if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
       return res.status(409).json({
         error: "Source text hash mismatch",
       });
@@ -162,3 +172,7 @@ router.post("/entries/:id/signals", async (req, res) => {
 });
 
 export default router;
+
+function isCodedError(error: unknown): error is CodedError {
+  return error instanceof Error && "code" in error;
+}

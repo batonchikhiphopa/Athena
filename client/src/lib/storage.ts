@@ -1,9 +1,12 @@
 import type { EntrySortDirection, ExtractionSettings, LocalEntry } from "../types";
 
 const ATHENA_LOCAL_DB_NAME = "athena-private-v1";
-const ATHENA_LOCAL_DB_VERSION = 1;
+const ATHENA_LOCAL_DB_VERSION = 2;
+
 const ENTRY_STORE = "entries";
 const DRAFT_STORE = "drafts";
+export const QUEUE_JOBS_STORE = "queue_jobs";
+
 const CURRENT_DRAFT_ID = "current";
 const DEBUG_MODE_KEY = "athena_debug_mode";
 const EXTRACTION_SETTINGS_KEY = "athena_extraction_settings";
@@ -11,6 +14,7 @@ const ENTRY_SORT_DIRECTION_KEY = "athena_entry_sort_direction";
 const GEMINI_DAILY_EXTRACTION_USAGE_KEY = "athena_gemini_daily_extraction_usage";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
+
 export const GEMINI_DAILY_EXTRACTION_LIMIT = 20;
 
 type DraftRecord = {
@@ -249,6 +253,8 @@ export async function deleteAthenaLocalData() {
     request.onblocked = () =>
       reject(new Error("Local database deletion was blocked"));
   });
+
+  athenaDbPromise = null;
 }
 
 export function createClientEntryId() {
@@ -265,7 +271,7 @@ export async function createTextHash(text: string) {
     .join("");
 }
 
-function openAthenaLocalDb() {
+export function openAthenaLocalDb(): Promise<IDBDatabase> {
   if (athenaDbPromise) return athenaDbPromise;
 
   athenaDbPromise = new Promise((resolve, reject) => {
@@ -282,6 +288,21 @@ function openAthenaLocalDb() {
 
       if (!db.objectStoreNames.contains(DRAFT_STORE)) {
         db.createObjectStore(DRAFT_STORE, { keyPath: "id" });
+      }
+
+      if (!db.objectStoreNames.contains(QUEUE_JOBS_STORE)) {
+        const queueJobs = db.createObjectStore(QUEUE_JOBS_STORE, {
+          keyPath: "id",
+        });
+
+        queueJobs.createIndex("status", "status");
+        queueJobs.createIndex("type", "type");
+        queueJobs.createIndex("run_after", "run_after");
+        queueJobs.createIndex("created_at", "created_at");
+        queueJobs.createIndex("entity", ["entity_kind", "entity_id"]);
+        queueJobs.createIndex("idempotency_key", "idempotency_key", {
+          unique: false,
+        });
       }
     };
 

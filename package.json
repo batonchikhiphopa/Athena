@@ -1,14 +1,15 @@
 {
   "name": "athena",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "author": "batonchikhiphopa",
   "scripts": {
     "client:build": "npm --prefix client run build",
     "client:dev": "npm --prefix client run dev",
-    "dev": "node server/server.js",
-    "migrate": "node server/db/migrate.js",
-    "test": "node --test"
+    "dev": "tsx server/server.ts",
+    "migrate": "tsx server/db/migrate.ts",
+    "server:check": "tsc -p tsconfig.server.json --noEmit",
+    "test": "tsx --test"
   },
   "dependencies": {
     "@types/react": "^19.2.14",
@@ -17,5 +18,11 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
   }
 }

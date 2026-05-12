@@ -33,7 +33,7 @@ test("entry API payload rejects raw text", () => {
 });
 
 test("server boot does not start the extraction worker", async () => {
-  const serverSource = await fs.readFile("./server/server.js", "utf8");
+  const serverSource = await fs.readFile("./server/server.ts", "utf8");
 
   assert.equal(serverSource.includes("startExtractionWorker"), false);
 });

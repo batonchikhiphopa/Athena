@@ -17,9 +17,11 @@ export const MARKERS = [
   "recovery",
   "recovery_need",
   "travel",
-];
+] as const;
 
-export const MARKER_LABELS = {
+export type Marker = (typeof MARKERS)[number];
+
+export const MARKER_LABELS: Record<Marker, string> = {
   deadline_pressure: "давление сроков",
   context_switching: "переключение контекста",
   deep_work: "глубокая работа",
@@ -40,7 +42,7 @@ export const MARKER_LABELS = {
   travel: "поездки",
 };
 
-const MARKER_PRIORITIES = {
+const MARKER_PRIORITIES: Partial<Record<Marker, number>> = {
   sleep_issue: 100,
   health_issue: 95,
   recovery_need: 80,
@@ -51,10 +53,10 @@ const MARKER_PRIORITIES = {
   late_night_ideas: 50,
 };
 
-export function markerLabel(marker) {
-  return MARKER_LABELS[marker] ?? marker;
+export function markerLabel(marker: string): string {
+  return MARKER_LABELS[marker as Marker] ?? marker;
 }
 
-export function markerPriority(marker) {
-  return MARKER_PRIORITIES[marker] ?? 0;
+export function markerPriority(marker: string): number {
+  return MARKER_PRIORITIES[marker as Marker] ?? 0;
 }

@@ -5,12 +5,40 @@ import {
   DEFAULT_OLLAMA_MODEL,
 } from "../config/versions.js";
 import { MARKERS } from "../core/markers.js";
+import type { ExtractionProvider, ExtractionResult, SignalMetadata } from "../core/types.js";
 import {
   createFallbackSignal,
   sanitizeSignalCandidate,
 } from "./sanitization.service.js";
 
-export const EXTRACTION_PROVIDERS = {
+type ExtractionOptionsRequest = {
+  provider?: unknown;
+  model?: unknown;
+};
+
+type RequestJsonOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: unknown;
+  timeoutMs: number;
+};
+
+type ProviderStatus = {
+  provider: ExtractionProvider;
+  model: string;
+  available: boolean;
+  reason: string | null;
+};
+
+type ExtractionProviderMap = {
+  OLLAMA: "ollama";
+  GEMINI: "gemini";
+  OFF: "off";
+};
+
+type JsonRecord = Record<string, unknown>;
+
+export const EXTRACTION_PROVIDERS: ExtractionProviderMap = {
   OLLAMA: "ollama",
   GEMINI: "gemini",
   OFF: "off",
@@ -92,7 +120,9 @@ export function getExtractionOptions() {
   };
 }
 
-export async function getExtractionStatus({ provider, model } = {}) {
+export async function getExtractionStatus(
+  { provider, model }: ExtractionOptionsRequest = {},
+): Promise<ProviderStatus> {
   const selectedProvider = normalizeProvider(provider);
   const selectedModel = normalizeModel(selectedProvider, model);
 
@@ -115,7 +145,9 @@ export async function getExtractionStatus({ provider, model } = {}) {
       timeoutMs: 3_000,
     });
     const models = Array.isArray(tags.models) ? tags.models : [];
-    const names = models.map((item) => item?.name).filter(Boolean);
+    const names = models
+      .map((item) => getRecordValue(item, "name"))
+      .filter((name): name is string => typeof name === "string");
 
     if (names.length > 0 && !names.includes(selectedModel)) {
       return unavailableStatus(selectedProvider, selectedModel, "model_missing");
@@ -127,7 +159,15 @@ export async function getExtractionStatus({ provider, model } = {}) {
   }
 }
 
-export async function extractSignal({ text, provider, model }) {
+export async function extractSignal({
+  text,
+  provider,
+  model,
+}: {
+  text: string;
+  provider?: unknown;
+  model?: unknown;
+}): Promise<ExtractionResult> {
   const selectedProvider = normalizeProvider(provider);
   const selectedModel = normalizeModel(selectedProvider, model);
 
@@ -158,27 +198,30 @@ export async function extractSignal({ text, provider, model }) {
   }
 }
 
-function normalizeProvider(provider) {
-  if (Object.values(EXTRACTION_PROVIDERS).includes(provider)) return provider;
-  if (Object.values(EXTRACTION_PROVIDERS).includes(process.env.ATHENA_AI_PROVIDER)) {
+function normalizeProvider(provider: unknown): ExtractionProvider {
+  if (isExtractionProvider(provider)) return provider;
+  if (isExtractionProvider(process.env.ATHENA_AI_PROVIDER)) {
     return process.env.ATHENA_AI_PROVIDER;
   }
 
   return EXTRACTION_PROVIDERS.OLLAMA;
 }
 
-function normalizeModel(provider, model) {
+function normalizeModel(provider: ExtractionProvider, model: unknown): string {
   if (typeof model === "string" && model.trim()) return model.trim();
   return defaultModelForProvider(provider);
 }
 
-function defaultModelForProvider(provider) {
+function defaultModelForProvider(provider: ExtractionProvider): string {
   if (provider === EXTRACTION_PROVIDERS.GEMINI) return DEFAULT_GEMINI_MODEL;
   if (provider === EXTRACTION_PROVIDERS.OFF) return "fallback";
   return DEFAULT_OLLAMA_MODEL;
 }
 
-async function requestOllamaExtraction(rawText, model) {
+async function requestOllamaExtraction(
+  rawText: string,
+  model: string,
+): Promise<unknown> {
   const baseUrl = getOllamaBaseUrl();
 
   if (!isLocalOllamaUrl(baseUrl)) {
@@ -194,16 +237,19 @@ async function requestOllamaExtraction(rawText, model) {
       messages: buildExtractionMessages(rawText),
     },
   });
-  const content = data.message?.content;
+  const message = getRecordValue(data.message, "content");
 
-  if (typeof content !== "string") {
+  if (typeof message !== "string") {
     throw new Error("empty_response");
   }
 
-  return JSON.parse(extractJson(content));
+  return JSON.parse(extractJson(message));
 }
 
-async function requestGeminiExtraction(rawText, model) {
+async function requestGeminiExtraction(
+  rawText: string,
+  model: string,
+): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -238,10 +284,7 @@ async function requestGeminiExtraction(rawText, model) {
       },
     },
   );
-  const text = data.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text)
-    .filter(Boolean)
-    .join("");
+  const text = readGeminiText(data);
 
   if (!text) {
     throw new Error("empty_response");
@@ -250,7 +293,10 @@ async function requestGeminiExtraction(rawText, model) {
   return JSON.parse(extractJson(text));
 }
 
-async function requestJson(url, { method = "GET", headers = {}, body, timeoutMs }) {
+async function requestJson(
+  url: string,
+  { method = "GET", headers = {}, body, timeoutMs }: RequestJsonOptions,
+): Promise<JsonRecord> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -270,13 +316,13 @@ async function requestJson(url, { method = "GET", headers = {}, body, timeoutMs 
       throw new Error(`http_${response.status}:${text.slice(0, 200)}`);
     }
 
-    return response.json();
+    return response.json() as Promise<JsonRecord>;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function buildExtractionMessages(rawText) {
+function buildExtractionMessages(rawText: string) {
   return [
     {
       role: "system",
@@ -289,7 +335,7 @@ function buildExtractionMessages(rawText) {
   ];
 }
 
-function buildSystemInstruction() {
+function buildSystemInstruction(): string {
   return [
     "You are the extraction layer of Athena.",
     "You see only the current raw entry.",
@@ -300,14 +346,15 @@ function buildSystemInstruction() {
     "Do not translate.",
     "Markers are first-class context and event flags, not weak numeric scores.",
     "Use concrete markers when the entry directly names a context, symptom, rhythm, or event.",
-    "If there is not enough evidence for load, fatigue, or focus, use null.",
-    "Do not invent load, fatigue, or focus from a marker alone.",
+    "Use null for load, fatigue, or focus only if the entry contains no relevant signal for that metric at all.",
+    "Prefer a cautious estimate over null when the entry gives any directional evidence.",
+    "Do not invent load, fatigue, or focus from a marker alone; markers may support a score only when the entry also gives contextual evidence.",
     "Allowed signal_quality values: valid, sparse.",
     "Do not output fallback. Fallback is created only by the app.",
   ].join("\n");
 }
 
-function buildUserExtractionPrompt(rawText) {
+function buildUserExtractionPrompt(rawText: string): string {
   return [
     "Extract a signal candidate from this entry.",
     "",
@@ -327,6 +374,33 @@ function buildUserExtractionPrompt(rawText) {
     "- activities: string[], 0-5",
     "- markers: enum[], 0-8",
     "- load/fatigue/focus: integer 0-10 or null",
+    "",
+    "Metric scales:",
+    "",
+    "load: cognitive and task pressure felt during the day",
+    "  null  - entry contains no relevant signal at all",
+    "  1-3   - light day, low demand, author feels comfortable",
+    "  4-6   - normal workload, some effort required",
+    "  7-8   - high pressure, many tasks, mentions strain or rush",
+    "  9-10  - overwhelming, crisis, collapse of plans",
+    "",
+    "fatigue: physical or mental depletion",
+    "  null  - entry contains no relevant signal at all",
+    "  1-3   - fresh or mildly tired",
+    "  4-6   - noticeable tiredness by end of day",
+    "  7-8   - significant exhaustion mentioned",
+    "  9-10  - unable to function, complete depletion",
+    "",
+    "focus: ability to concentrate and complete work",
+    "  null  - entry contains no relevant signal at all",
+    "  1-3   - scattered, distracted, unable to work",
+    "  4-6   - moderate focus with interruptions",
+    "  7-8   - good productive concentration",
+    "  9-10  - deep uninterrupted flow state",
+    "",
+    "Metric rule:",
+    "- Use null only if the entry contains no relevant signal at all.",
+    "- Prefer a cautious estimate over null when the entry gives any directional evidence.",
     "- no extra fields",
     "",
     "Marker guidance:",
@@ -335,7 +409,7 @@ function buildUserExtractionPrompt(rawText) {
     "- explicitly needing rest, pause, recovery -> recovery_need",
     "- illness, pain, feeling physically unwell -> health_issue",
     "- normal sleep context without a problem can use sleep",
-    "- keep state scores null unless the entry gives enough direct evidence",
+    "- keep state scores null only when the entry gives no relevant directional evidence",
     "",
     "Allowed markers:",
     ALLOWED_MARKERS.join(", "),
@@ -345,7 +419,11 @@ function buildUserExtractionPrompt(rawText) {
   ].join("\n");
 }
 
-function createSignalMetadata(provider, model, errorCode = null) {
+function createSignalMetadata(
+  provider: ExtractionProvider,
+  model: string,
+  errorCode: string | null = null,
+): SignalMetadata {
   return {
     schema_version: ACTIVE_SCHEMA_VERSION,
     prompt_version: ACTIVE_PROMPT_VERSION,
@@ -356,15 +434,21 @@ function createSignalMetadata(provider, model, errorCode = null) {
   };
 }
 
-function createFallbackResult(provider, model, errorCode) {
+function createFallbackResult(
+  provider: ExtractionProvider,
+  model: string,
+  errorCode: string,
+): ExtractionResult {
   return {
     signal: createFallbackSignal(),
     metadata: createSignalMetadata(provider, model, errorCode),
   };
 }
 
-function classifyProviderError(error, provider) {
-  const message = String(error?.message ?? error ?? "");
+function classifyProviderError(error: unknown, provider: ExtractionProvider): string {
+  const message = String(
+    error instanceof Error ? error.message : error ?? "",
+  );
 
   if (message.includes("gemini_key_missing")) return "gemini_key_missing";
   if (message.includes("ollama_non_local_url")) return "ollama_non_local_url";
@@ -383,7 +467,10 @@ function classifyProviderError(error, provider) {
     : "provider_error";
 }
 
-function availableStatus(provider, model) {
+function availableStatus(
+  provider: ExtractionProvider,
+  model: string,
+): ProviderStatus {
   return {
     provider,
     model,
@@ -392,7 +479,11 @@ function availableStatus(provider, model) {
   };
 }
 
-function unavailableStatus(provider, model, reason) {
+function unavailableStatus(
+  provider: ExtractionProvider,
+  model: string,
+  reason: string,
+): ProviderStatus {
   return {
     provider,
     model,
@@ -401,7 +492,7 @@ function unavailableStatus(provider, model, reason) {
   };
 }
 
-function extractJson(text) {
+function extractJson(text: string): string {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
 
@@ -412,15 +503,15 @@ function extractJson(text) {
   return text.slice(start, end + 1);
 }
 
-function getOllamaBaseUrl() {
+function getOllamaBaseUrl(): string {
   return process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
 }
 
-function trimTrailingSlash(value) {
+function trimTrailingSlash(value: unknown): string {
   return String(value || "").replace(/\/+$/, "");
 }
 
-function isLocalOllamaUrl(value) {
+function isLocalOllamaUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname);
@@ -429,6 +520,33 @@ function isLocalOllamaUrl(value) {
   }
 }
 
-function unique(values) {
+function unique(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
+}
+
+function isExtractionProvider(value: unknown): value is ExtractionProvider {
+  return Object.values(EXTRACTION_PROVIDERS).includes(value as ExtractionProvider);
+}
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function getRecordValue(value: unknown, key: string): unknown {
+  return isRecord(value) ? value[key] : undefined;
+}
+
+function readGeminiText(data: JsonRecord): string {
+  const candidates = getRecordValue(data, "candidates");
+  if (!Array.isArray(candidates)) return "";
+
+  const firstCandidate = candidates[0];
+  const content = getRecordValue(firstCandidate, "content");
+  const parts = getRecordValue(content, "parts");
+  if (!Array.isArray(parts)) return "";
+
+  return parts
+    .map((part) => getRecordValue(part, "text"))
+    .filter((text): text is string => typeof text === "string")
+    .join("");
 }

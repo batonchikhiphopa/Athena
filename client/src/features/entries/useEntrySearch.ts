@@ -2,12 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntrySortDirection, EntryView } from "../../types";
 import { sortEntries } from "./entryState";
 import {
-  filterEntriesByTags,
   getAvailableTags,
   normalizeTag,
   pruneUnavailableTags,
 } from "./entryFilters";
-import { searchEntries } from "./entrySearch";
+import {
+  createEntrySearchIndex,
+  searchIndexedEntries,
+  type IndexedEntrySearchData,
+} from "./entrySearch";
 
 type UseEntrySearchInput = {
   entries: EntryView[];
@@ -44,6 +47,14 @@ export function useEntrySearch({
   const [isSearching, setIsSearching] = useState(false);
   const searchRunIdRef = useRef(0);
 
+  const sortedEntries = useMemo(
+    () => sortEntries(entries, sortDirection),
+    [entries, sortDirection],
+  );
+  const indexedEntries = useMemo(
+    () => createEntrySearchIndex(sortedEntries),
+    [sortedEntries],
+  );
   const availableTags = useMemo(() => getAvailableTags(entries), [entries]);
 
   useEffect(() => {
@@ -82,18 +93,17 @@ export function useEntrySearch({
     setIsSearching(true);
 
     const timeoutId = window.setTimeout(() => {
-      const sortedEntries = sortEntries(entries, sortDirection);
-      const tagFilteredEntries = filterEntriesByTags(
-        sortedEntries,
+      const tagFilteredEntries = filterIndexedEntriesByTags(
+        indexedEntries,
         includedTags,
         excludedTags,
       );
 
       const nextVisibleEntries = debouncedQuery.trim()
-        ? searchEntries(tagFilteredEntries, debouncedQuery).map(
+        ? searchIndexedEntries(tagFilteredEntries, debouncedQuery).map(
             (result) => result.entry,
           )
-        : tagFilteredEntries;
+        : tagFilteredEntries.map((item) => item.entry);
 
       if (searchRunIdRef.current === searchRunId) {
         setVisibleEntries(nextVisibleEntries);
@@ -104,7 +114,7 @@ export function useEntrySearch({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [debouncedQuery, entries, excludedTags, includedTags, sortDirection]);
+  }, [debouncedQuery, excludedTags, includedTags, indexedEntries]);
 
   function toggleIncludedTag(tag: string) {
     const normalizedTag = normalizeTag(tag);
@@ -166,4 +176,26 @@ export function useEntrySearch({
     toggleExcludedTag,
     clearFilters,
   };
+}
+
+function filterIndexedEntriesByTags(
+  indexedEntries: IndexedEntrySearchData[],
+  includedTags: string[],
+  excludedTags: string[],
+) {
+  const normalizedIncludedTags = includedTags.map(normalizeTag).filter(Boolean);
+  const normalizedExcludedTags = excludedTags.map(normalizeTag).filter(Boolean);
+
+  if (
+    normalizedIncludedTags.length === 0 &&
+    normalizedExcludedTags.length === 0
+  ) {
+    return indexedEntries;
+  }
+
+  return indexedEntries.filter(
+    ({ normalizedTagSet }) =>
+      normalizedIncludedTags.every((tag) => normalizedTagSet.has(tag)) &&
+      normalizedExcludedTags.every((tag) => !normalizedTagSet.has(tag)),
+  );
 }

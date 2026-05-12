@@ -3,6 +3,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getDb } from "./sqlite.js";
 
+type MigrationRow = {
+  id: string;
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,9 +27,9 @@ const migrationFiles = (await fs.readdir(migrationsDir))
 
 for (const filename of migrationFiles) {
   const id = path.basename(filename, ".sql");
-  const applied = await db.get(
+  const applied = await db.get<MigrationRow>(
     "SELECT id FROM schema_migrations WHERE id = ?",
-    id
+    id,
   );
 
   if (applied) {
@@ -44,7 +48,7 @@ for (const filename of migrationFiles) {
         INSERT INTO schema_migrations (id, filename, applied_at)
         VALUES (?, ?, ?)
       `,
-      [id, filename, new Date().toISOString()]
+      [id, filename, new Date().toISOString()],
     );
     await db.exec("COMMIT");
 

@@ -14,7 +14,7 @@ Athena currently has five main screens:
 - Entries: a list/detail view of local entries merged with backend metadata.
 - Graph: a visual mock only. It is not real graph analytics yet.
 - Observations: history of generated day/week/month insight snapshots.
-- Settings: extraction provider/model, status check, network status, fallback reprocessing, debug mode, persona text toggle, local data clearing.
+- Settings: extraction provider/model, status check, network status, durable queue status/controls, fallback reprocessing, debug mode, persona text toggle, local data clearing.
 
 The current client also has an offline-first app shell. After the first successful online load, the app shell and static assets can be served from the service worker cache. Local writing remains available without network/backend access, while server-backed reads degrade quietly until connectivity returns.
 
@@ -279,7 +279,24 @@ Athena has a small offline-first shell:
 - Settings shows the current network status.
 - Entry and insight list reads return empty arrays on API failure instead of breaking the writing surface.
 
-This is not a full sync engine yet. The app does not currently include a background sync queue, offline API analytics cache, push notifications, or multi-device conflict handling.
+This is not a full background sync engine yet. The app now includes a durable IndexedDB operation queue for reliability work, but does not include background sync, offline API analytics cache, push notifications, or multi-device conflict handling.
+
+## Operation Queue
+
+Sprint 3a adds the first durable operation queue layer.
+
+Current queue behavior:
+
+- jobs persist in browser IndexedDB under `queue_jobs`;
+- job payloads store local source references, not duplicate raw diary text;
+- processing is sequential;
+- stale `running` jobs recover on startup;
+- retry/backoff handles retryable backend, network, and provider failures;
+- failed and blocked jobs can be retried from Settings;
+- fallback reprocessing is queue-backed through `entry.reprocess_signal`;
+- queue health is visible in Settings without becoming a primary product surface.
+
+Server reliability was tightened with serialized SQLite write transactions and idempotent `POST /entries` by `client_entry_id`.
 
 ## Signals
 
@@ -439,7 +456,8 @@ Settings currently include:
 - model select;
 - extraction status check;
 - network status;
-- fallback reprocessing for entries that still have local text;
+- operation queue status and retry/pause/start controls;
+- queue-backed fallback reprocessing for entries that still have local text;
 - Gemini daily extraction limit protection for fallback reprocessing;
 - debug mode toggle;
 - persona text toggle;
