@@ -9,6 +9,7 @@ import { insertSignalRow } from "../repositories/signal.repository.js";
 import {
   sanitizeSignalCandidate,
   createFallbackSignal,
+  isClientFallbackSignal,
 } from "./sanitization.service.js";
 import {
   ACTIVE_MODEL,
@@ -231,7 +232,7 @@ export async function deleteEntry(
 }
 
 function normalizeClientSignal(signal: unknown): Signal {
-  if (isFallbackSignal(signal)) {
+  if (isClientFallbackSignal(signal)) {
     return createFallbackSignal();
   }
 
@@ -256,13 +257,4 @@ function normalizeSignalMetadata(metadata?: Partial<SignalMetadata>): SignalMeta
 
 function getFinalStatus(signal: Signal): EntryStatus {
   return signal.signal_quality === "fallback" ? "fallback" : "extracted";
-}
-
-function isFallbackSignal(value: unknown): boolean {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "signal_quality" in value &&
-    value.signal_quality === "fallback"
-  );
 }

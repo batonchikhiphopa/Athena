@@ -137,6 +137,10 @@ export async function insertSignalRow(
       topics,
       activities,
       markers,
+      state_inference,
+      emotion_signals,
+      metric_confidence,
+      quality_reason,
       load,
       fatigue,
       focus,
@@ -147,7 +151,7 @@ export async function insertSignalRow(
       model,
       error_code,
       created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       entryId,
@@ -155,6 +159,10 @@ export async function insertSignalRow(
       JSON.stringify(signal.topics),
       JSON.stringify(signal.activities),
       JSON.stringify(signal.markers),
+      JSON.stringify(signal.state_inference),
+      JSON.stringify(signal.emotion_signals),
+      JSON.stringify(signal.metric_confidence),
+      signal.quality_reason,
       signal.load,
       signal.fatigue,
       signal.focus,

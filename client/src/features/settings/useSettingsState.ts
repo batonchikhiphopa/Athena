@@ -6,18 +6,28 @@ import type {
   ExtractionStatus,
 } from "../../types";
 import { loadExtractionConfig, loadExtractionStatus } from "../../lib/api";
-import { enqueueQueueJob } from "../../lib/queue";
 import {
   GEMINI_DAILY_EXTRACTION_LIMIT,
   getDebugMode,
   getExtractionSettings,
+  getLocalEmotionSpikeEnabled,
   getRemainingGeminiDailyExtractions,
   getPersonaTextEnabled,
   setDebugMode as persistDebugMode,
   setExtractionSettings as persistExtractionSettings,
+  setLocalEmotionSpikeEnabled as persistLocalEmotionSpikeEnabled,
   setPersonaTextEnabled as persistPersonaTextEnabled,
   updateLocalEntry,
 } from "../../lib/storage";
+import {
+  extractLocalEmotionSignals,
+  type LocalEmotionResult,
+} from "../emotion/localEmotion";
+import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
+import {
+  getSignalReprocessReason,
+  isSignalReprocessCandidate,
+} from "../sync/reprocessPolicy";
 import {
   DEFAULT_EXTRACTION_SETTINGS,
   normalizeExtractionSettings,
@@ -33,6 +43,13 @@ type ReprocessCallbacks = {
 
 export function useSettingsState() {
   const [debugMode, setDebugMode] = useState(() => getDebugMode());
+  const [localEmotionSpikeEnabled, setLocalEmotionSpikeEnabled] = useState(() =>
+    getLocalEmotionSpikeEnabled(),
+  );
+  const [localEmotionSpikeStatus, setLocalEmotionSpikeStatus] =
+    useState<"idle" | "running" | "done" | "error">("idle");
+  const [localEmotionSpikeResult, setLocalEmotionSpikeResult] =
+    useState<LocalEmotionResult | null>(null);
   const [personaTextEnabled, setPersonaTextEnabled] = useState(() =>
     getPersonaTextEnabled(),
   );
@@ -98,9 +115,25 @@ export function useSettingsState() {
     persistDebugMode(nextValue);
   }
 
+  function toggleLocalEmotionSpike(nextValue: boolean) {
+    setLocalEmotionSpikeEnabled(nextValue);
+    persistLocalEmotionSpikeEnabled(nextValue);
+  }
+
   function togglePersonaText(nextValue: boolean) {
     setPersonaTextEnabled(nextValue);
     persistPersonaTextEnabled(nextValue);
+  }
+
+  async function runLocalEmotionSpikeDemo() {
+    setLocalEmotionSpikeStatus("running");
+
+    const result = await extractLocalEmotionSignals(
+      "Сегодня тревожно, но я всё равно рад, что удалось спокойно закончить важную работу.",
+    );
+
+    setLocalEmotionSpikeResult(result);
+    setLocalEmotionSpikeStatus(result.ok ? "done" : "error");
   }
 
   async function reprocessFallbackEntries(
@@ -110,7 +143,7 @@ export function useSettingsState() {
     const candidates = entries.filter(
       (entry) =>
         entry.analysisEnabled &&
-        entry.signals.signal_quality === "fallback" &&
+        isSignalReprocessCandidate(entry.signals, entry.metadata) &&
         entry.text,
     );
     const remainingGeminiExtractions =
@@ -123,8 +156,8 @@ export function useSettingsState() {
     setReprocessStatus("running");
     setReprocessMessage(
       extractionSettings.provider === "gemini"
-        ? `В очереди: ${processableCandidates.length}/${candidates.length}, Gemini осталось: ${remainingGeminiExtractions}/${GEMINI_DAILY_EXTRACTION_LIMIT}`
-        : `В очереди: ${candidates.length}`,
+        ? `Подготовлено к повторному анализу: ${processableCandidates.length}/${candidates.length}. Осталось попыток Gemini сегодня: ${remainingGeminiExtractions}/${GEMINI_DAILY_EXTRACTION_LIMIT}`
+        : `Подготовлено к повторному анализу: ${candidates.length}`,
     );
 
     let queued = 0;
@@ -136,21 +169,17 @@ export function useSettingsState() {
           sync_status: "pending_reextract",
         });
 
-        await enqueueQueueJob({
-          type: "entry.reprocess_signal",
-          payload: {
-            entry_id: entry.id,
-            server_id: entry.serverId ?? null,
-            source_text_hash: entry.sourceTextHash,
-          },
-          priority: 10,
-          entity_kind: "entry",
-          entity_id: entry.id,
-          idempotency_key: createReprocessJobIdempotencyKey(entry),
+        await enqueueEntrySignalReprocessJob({
+          entryId: entry.id,
+          serverId: entry.serverId,
+          sourceTextHash: entry.sourceTextHash,
+          reason: getSignalReprocessReason(entry.signals, entry.metadata),
         });
 
         queued += 1;
-        setReprocessMessage(`В очереди: ${queued}/${processableCandidates.length}`);
+        setReprocessMessage(
+          `Подготовлено: ${queued} из ${processableCandidates.length}`,
+        );
       } catch (error) {
         failed += 1;
         console.error("[fallback:reprocess]", error);
@@ -164,11 +193,11 @@ export function useSettingsState() {
     setReprocessStatus(failed > 0 ? "error" : "done");
     setReprocessMessage(
       [
-        `поставлено в очередь: ${queued}`,
+        `Подготовлено к обработке: ${queued}`,
         skippedByGeminiLimit > 0
-          ? `отложено из-за Gemini лимита: ${skippedByGeminiLimit}`
+          ? `Отложено до следующего лимита Gemini: ${skippedByGeminiLimit}`
           : null,
-        `ошибок: ${failed}`,
+        `Не удалось подготовить: ${failed}`,
       ]
         .filter(Boolean)
         .join(", "),
@@ -177,6 +206,9 @@ export function useSettingsState() {
 
   function resetAfterLocalDataClear() {
     setDebugMode(false);
+    setLocalEmotionSpikeEnabled(false);
+    setLocalEmotionSpikeResult(null);
+    setLocalEmotionSpikeStatus("idle");
     setPersonaTextEnabled(true);
     setReprocessStatus("idle");
     setReprocessMessage("");
@@ -188,6 +220,9 @@ export function useSettingsState() {
     extractionConfig,
     extractionSettings,
     extractionStatus,
+    localEmotionSpikeEnabled,
+    localEmotionSpikeResult,
+    localEmotionSpikeStatus,
     reprocessMessage,
     reprocessStatus,
     changeExtractionSettings,
@@ -195,11 +230,9 @@ export function useSettingsState() {
     refreshExtractionStatus,
     reprocessFallbackEntries,
     resetAfterLocalDataClear,
+    runLocalEmotionSpikeDemo,
     toggleDebugMode,
+    toggleLocalEmotionSpike,
     togglePersonaText,
   };
-}
-
-function createReprocessJobIdempotencyKey(entry: EntryView) {
-  return `entry.reprocess_signal:entry:${entry.id}:${entry.sourceTextHash}`;
 }

@@ -5,6 +5,7 @@ import type {
   ServerEntry,
   SignalMetadata,
 } from "../../types";
+import { normalizeSignal } from "../../lib/signals";
 
 export function mergeEntryState(
   localEntry: LocalEntry,
@@ -16,7 +17,7 @@ export function mergeEntryState(
     localEntry.sync_status === "local_only";
   const signal = preferLocal
     ? localEntry.signals
-    : serverEntry?.signal ?? localEntry.signals;
+    : normalizeSignal(serverEntry?.signal ?? localEntry.signals);
   const metadata = normalizeMetadata(
     preferLocal
       ? localEntry.metadata
@@ -45,6 +46,24 @@ export function mergeEntryState(
     updatedAt: preferLocal
       ? localEntry.updatedAt
       : serverEntry?.updated_at ?? localEntry.updatedAt,
+  };
+}
+
+export function mergeServerEntryIntoView(
+  entry: EntryView,
+  serverEntry: ServerEntry,
+): EntryView {
+  return {
+    ...entry,
+    serverId: serverEntry.id,
+    entryDate: serverEntry.entry_date,
+    tags: serverEntry.tags,
+    sourceTextHash: serverEntry.source_text_hash,
+    signals: normalizeSignal(serverEntry.signal ?? entry.signals),
+    metadata: serverEntry.metadata
+      ? normalizeMetadata(serverEntry.metadata)
+      : entry.metadata,
+    updatedAt: serverEntry.updated_at,
   };
 }
 

@@ -1,26 +1,39 @@
 import type { ExtractionSettings, LocalEntry } from "../../types";
 import { createEntry, updateServerEntry } from "../../lib/api";
-import { enqueueQueueJob } from "../../lib/queue";
 import { extractSignalForText } from "../../lib/extraction";
 import {
   getAllLocalEntries,
   getRemainingGeminiDailyExtractions,
   updateLocalEntry,
 } from "../../lib/storage";
-
-const RETRYABLE_PROVIDER_LIMIT_CODES = ["gemini_daily_limit", "quota_error"];
+import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
+import {
+  getSignalReprocessReason,
+  isRetryableProviderErrorCode,
+} from "../sync/reprocessPolicy";
 
 export async function reprocessLocalEntry(
   entry: LocalEntry,
   settings: ExtractionSettings,
-): Promise<"processed" | "provider_limit"> {
+): Promise<
+  | {
+      status: "processed";
+    }
+  | {
+      status: "retryable_provider_failure";
+      errorCode: string;
+    }
+> {
   const extraction = await extractSignalForText(entry.text, settings);
 
   if (
     extraction.signal.signal_quality === "fallback" &&
-    RETRYABLE_PROVIDER_LIMIT_CODES.includes(extraction.metadata.error_code ?? "")
+    isRetryableProviderErrorCode(extraction.metadata.error_code)
   ) {
-    return "provider_limit";
+    return {
+      status: "retryable_provider_failure",
+      errorCode: extraction.metadata.error_code ?? "provider_error",
+    };
   }
 
   const payload = {
@@ -46,7 +59,9 @@ export async function reprocessLocalEntry(
     updatedAt: serverEntry.updated_at,
   });
 
-  return "processed";
+  return {
+    status: "processed",
+  };
 }
 
 export async function processPendingReextractEntries(
@@ -65,24 +80,14 @@ export async function processPendingReextractEntries(
 
   for (const entry of processableEntries) {
     try {
-      await enqueueQueueJob({
-        type: "entry.reprocess_signal",
-        payload: {
-          entry_id: entry.id,
-          server_id: entry.serverId ?? null,
-          source_text_hash: entry.source_text_hash,
-        },
-        priority: 10,
-        entity_kind: "entry",
-        entity_id: entry.id,
-        idempotency_key: createReprocessJobIdempotencyKey(entry),
+      await enqueueEntrySignalReprocessJob({
+        entryId: entry.id,
+        serverId: entry.serverId,
+        sourceTextHash: entry.source_text_hash,
+        reason: getSignalReprocessReason(entry.signals, entry.metadata),
       });
     } catch (error) {
       console.warn("[entry:enqueue-reprocess]", error);
     }
   }
-}
-
-function createReprocessJobIdempotencyKey(entry: LocalEntry) {
-  return `entry.reprocess_signal:entry:${entry.id}:${entry.source_text_hash}`;
 }

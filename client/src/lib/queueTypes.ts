@@ -16,6 +16,22 @@ export type QueueJobType =
   | "semantic.index_entry"
   | "semantic.reindex_all";
 
+export type EntryReprocessReason =
+  | "fallback"
+  | "sparse_no_metrics"
+  | "provider_failure"
+  | "manual_reprocess";
+
+export type QueueJobSummary = {
+  id: string;
+  type: QueueJobType;
+  status: QueueJobStatus;
+  reason: string | null;
+  entity_id: string | null;
+  updated_at: string;
+  last_error: string | null;
+};
+
 export type QueueJob<TPayload = unknown> = {
   id: string;
   type: QueueJobType;
@@ -45,6 +61,7 @@ export type QueueSnapshot = {
   cancelled: number;
   succeeded: number;
   lastError: string | null;
+  latestJob: QueueJobSummary | null;
   isProcessing: boolean;
 };
 
@@ -56,8 +73,12 @@ export type QueueHandler<TPayload = unknown> = (
 export type QueueListener = (snapshot: QueueSnapshot) => void;
 
 export type EntryQueuePayload = {
-  entry_id: string;
+  entry_id?: string;
   local_revision?: string;
   server_id?: number | null;
   source_text_hash?: string;
+  reason?: EntryReprocessReason;
+  requested_schema_version?: string;
+  requested_prompt_version?: string;
+  queued_at?: string;
 };

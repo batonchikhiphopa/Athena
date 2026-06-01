@@ -10,6 +10,7 @@ import {
   recoverStaleRunningJobs,
   updateQueueJob,
   getQueueJobsByStatuses,
+  getLatestQueueJobSummary,
 } from "./queueStorage";
 import type {
   QueueHandler,
@@ -41,6 +42,7 @@ let snapshot: QueueSnapshot = {
   cancelled: 0,
   succeeded: 0,
   lastError: null,
+  latestJob: null,
   isProcessing: false,
 };
 
@@ -79,10 +81,12 @@ function emitQueueSnapshot() {
 async function refreshQueueSnapshot() {
   const counts = await countQueueJobsByStatus();
   const lastError = await getLastQueueError();
+  const latestJob = await getLatestQueueJobSummary();
 
   snapshot = {
     ...counts,
     lastError,
+    latestJob,
     isProcessing: snapshot.isProcessing,
   };
 
@@ -154,6 +158,11 @@ function isRetryableQueueError(error: unknown) {
   if (message.includes("409")) return false;
 
   if (message.includes("429")) return true;
+  if (message.includes("retryable_provider_failure")) return true;
+  if (message.includes("quota_error")) return true;
+  if (message.includes("gemini_daily_limit")) return true;
+  if (message.includes("ollama_unavailable")) return true;
+  if (message.includes("provider_error")) return true;
   if (message.includes("timeout")) return true;
   if (message.includes("network")) return true;
   if (message.includes("failed to fetch")) return true;

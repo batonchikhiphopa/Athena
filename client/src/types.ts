@@ -3,11 +3,46 @@ export type ExtractionProvider = "ollama" | "gemini" | "off";
 export type EntrySortDirection = "desc" | "asc";
 
 export type SignalQuality = "valid" | "sparse" | "fallback";
+export type SignalLevel = "low" | "medium" | "high";
+export type ConfidenceLevel = "low" | "medium" | "high";
+export type SignalAxis =
+  | "load"
+  | "fatigue"
+  | "focus"
+  | "distress"
+  | "anxiety"
+  | "mood"
+  | "energy"
+  | "sleep_quality"
+  | "self_attack"
+  | "shame_guilt"
+  | "rumination"
+  | "avoidance"
+  | "agency"
+  | "conflict"
+  | "social_connection"
+  | "recovery_need"
+  | "confidence";
+export type MetricName = "load" | "fatigue" | "focus";
+
+export type StateInferenceValue = {
+  level: SignalLevel;
+  confidence: ConfidenceLevel;
+  basis: string[];
+};
+
+export type StateInference = Partial<Record<SignalAxis, StateInferenceValue>>;
+
+export type MetricConfidence = Record<MetricName, ConfidenceLevel>;
 
 export type Signal = {
   topics: string[];
   activities: string[];
   markers: string[];
+  state_inference: StateInference;
+  emotion_signals: Record<string, unknown>;
+  metric_confidence: MetricConfidence;
+  quality_reason: string;
   load: number | null;
   fatigue: number | null;
   focus: number | null;

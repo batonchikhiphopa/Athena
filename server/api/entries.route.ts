@@ -27,7 +27,7 @@ router.get("/entries", async (_req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to list entries",
+      error: "Не удалось загрузить записи",
     });
   }
 });
@@ -39,7 +39,7 @@ router.get("/entries/:id", async (req, res) => {
 
     if (!entry) {
       return res.status(404).json({
-        error: "Entry not found",
+        error: "Запись не найдена",
       });
     }
 
@@ -48,7 +48,7 @@ router.get("/entries/:id", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to get entry",
+      error: "Не удалось загрузить запись",
     });
   }
 });
@@ -58,7 +58,7 @@ router.post("/entries", async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: "Invalid entry payload",
+      error: "Не удалось обработать данные записи",
       details: parsed.error.flatten(),
     });
   }
@@ -74,12 +74,12 @@ router.post("/entries", async (req, res) => {
 
     if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
       return res.status(409).json({
-        error: "Source text hash mismatch",
+        error: "Запись изменилась, попробуйте сохранить её ещё раз",
       });
     }
 
     return res.status(500).json({
-      error: "Failed to create entry",
+      error: "Не удалось сохранить запись",
     });
   }
 });
@@ -89,7 +89,7 @@ router.patch("/entries/:id", async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: "Invalid entry payload",
+      error: "Не удалось обработать данные записи",
       details: parsed.error.flatten(),
     });
   }
@@ -100,7 +100,7 @@ router.patch("/entries/:id", async (req, res) => {
 
     if (!entry) {
       return res.status(404).json({
-        error: "Entry not found",
+        error: "Запись не найдена",
       });
     }
 
@@ -109,7 +109,7 @@ router.patch("/entries/:id", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to update entry",
+      error: "Не удалось обновить запись",
     });
   }
 });
@@ -121,7 +121,7 @@ router.delete("/entries/:id", async (req, res) => {
 
     if (!deleted) {
       return res.status(404).json({
-        error: "Entry not found",
+        error: "Запись не найдена",
       });
     }
 
@@ -130,7 +130,7 @@ router.delete("/entries/:id", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to delete entry",
+      error: "Не удалось удалить запись",
     });
   }
 });
@@ -140,7 +140,7 @@ router.post("/entries/:id/signals", async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: "Invalid signal payload",
+      error: "Не удалось обработать данные анализа",
       details: parsed.error.flatten(),
     });
   }
@@ -151,7 +151,7 @@ router.post("/entries/:id/signals", async (req, res) => {
 
     if (!entry) {
       return res.status(404).json({
-        error: "Entry not found",
+        error: "Запись не найдена",
       });
     }
 
@@ -161,12 +161,12 @@ router.post("/entries/:id/signals", async (req, res) => {
 
     if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
       return res.status(409).json({
-        error: "Source text hash mismatch",
+        error: "Запись изменилась, попробуйте сохранить её ещё раз",
       });
     }
 
     return res.status(500).json({
-      error: "Failed to append signal",
+      error: "Не удалось обновить результаты анализа",
     });
   }
 });

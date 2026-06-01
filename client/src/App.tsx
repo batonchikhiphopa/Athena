@@ -1,12 +1,30 @@
+import { lazy, Suspense } from "react";
 import { useAthenaApp } from "./app/useAthenaApp";
 import { Editor } from "./components/Editor";
-import { EntriesPage } from "./components/EntriesPage";
-import { GraphMock } from "./components/GraphMock";
 import { Nav } from "./components/Nav";
-import { Observations } from "./components/Observations";
-import { Settings } from "./components/Settings";
 import { todayDateOnly } from "./lib/dates";
 import logoImg from "./assets/logo-bg.jpg";
+
+const EntriesPage = lazy(() =>
+  import("./components/EntriesPage").then((module) => ({
+    default: module.EntriesPage,
+  })),
+);
+const GraphMock = lazy(() =>
+  import("./components/GraphMock").then((module) => ({
+    default: module.GraphMock,
+  })),
+);
+const Observations = lazy(() =>
+  import("./components/Observations").then((module) => ({
+    default: module.Observations,
+  })),
+);
+const Settings = lazy(() =>
+  import("./components/Settings").then((module) => ({
+    default: module.Settings,
+  })),
+);
 
 export default function App() {
   const app = useAthenaApp();
@@ -36,89 +54,98 @@ export default function App() {
         />
         <main className="flex h-full min-w-0 flex-1 justify-center overflow-hidden px-4">
           {app.page === "editor" && (
-        <Editor
-          analysisEnabled={app.draftAnalysisEnabled}
-          availableTags={app.availableEntryTags}
-          entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
-          editorInsight={app.editorInsight}
-          personaTextEnabled={app.personaTextEnabled}
-          tags={app.draftTags}
-          text={app.draftText}
-          onChangeTags={handlers.editorTagsChange}
-          onChangeText={handlers.editorTextChange}
-          onNewBlankPage={() => void handlers.newBlankPage()}
-          onToggleAnalysisEnabled={handlers.toggleDraftAnalysisEnabled}
-        />
-          )}
-
-          {app.page === "entries" && (
-            <EntriesPage
-              debugMode={app.debugMode}
-              entries={app.visibleEntries}
-              selectedEntry={app.selectedEntry}
-              selectedEntryId={app.selectedEntryId}
-              sortDirection={app.entrySortDirection}
-              searchQuery={app.entrySearchQuery}
-              includedTags={app.includedEntryTags}
+            <Editor
+              analysisEnabled={app.draftAnalysisEnabled}
               availableTags={app.availableEntryTags}
-              hasActiveFilters={app.hasActiveEntryFilters}
-              isSearching={app.isSearchingEntries}
-              onChangeSortDirection={handlers.changeEntrySortDirection}
-              onClearFilters={handlers.clearEntryFilters}
-              onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
-              onEditEntry={(entry) => void handlers.editEntry(entry)}
-              onRefresh={() => void handlers.refreshEntries()}
-              onSearchQueryChange={handlers.setEntrySearchQuery}
-              onSelectEntry={handlers.selectEntry}
-              onToggleEntryAnalysis={(entry) =>
-                void handlers.toggleEntryAnalysisEnabled(entry)
-              }
-              onToggleTag={handlers.toggleIncludedEntryTag}
-            />
-          )}
-
-          {app.page === "observations" && (
-            <Observations
-              insights={app.observationHistory}
+              entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
+              editorInsight={app.editorInsight}
               personaTextEnabled={app.personaTextEnabled}
-              onDeleteInsight={(insight) => void handlers.deleteInsight(insight)}
-              onRefresh={() => void handlers.refreshObservationHistory()}
+              tags={app.draftTags}
+              text={app.draftText}
+              onChangeTags={handlers.editorTagsChange}
+              onChangeText={handlers.editorTextChange}
+              onNewBlankPage={() => void handlers.newBlankPage()}
+              onToggleAnalysisEnabled={handlers.toggleDraftAnalysisEnabled}
             />
           )}
 
-          {app.page === "graph" && <GraphMock />}
+          <Suspense fallback={null}>
+            {app.page === "entries" && (
+              <EntriesPage
+                debugMode={app.debugMode}
+                entries={app.visibleEntries}
+                selectedEntry={app.selectedEntry}
+                selectedEntryId={app.selectedEntryId}
+                sortDirection={app.entrySortDirection}
+                searchQuery={app.entrySearchQuery}
+                includedTags={app.includedEntryTags}
+                availableTags={app.availableEntryTags}
+                hasActiveFilters={app.hasActiveEntryFilters}
+                isSearching={app.isSearchingEntries}
+                onChangeSortDirection={handlers.changeEntrySortDirection}
+                onClearFilters={handlers.clearEntryFilters}
+                onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
+                onEditEntry={(entry) => void handlers.editEntry(entry)}
+                onRefresh={() => void handlers.refreshEntries()}
+                onSearchQueryChange={handlers.setEntrySearchQuery}
+                onSelectEntry={handlers.selectEntry}
+                onToggleEntryAnalysis={(entry) =>
+                  void handlers.toggleEntryAnalysisEnabled(entry)
+                }
+                onToggleTag={handlers.toggleIncludedEntryTag}
+              />
+            )}
 
-          {app.page === "settings" && (
-            <Settings
-              debugMode={app.debugMode}
-              isOnline={app.isOnline}
-              entries={app.entries}
-              extractionConfig={app.extractionConfig}
-              extractionSettings={app.extractionSettings}
-              extractionStatus={app.extractionStatus}
-              personaTextEnabled={app.personaTextEnabled}
-              reprocessMessage={app.reprocessMessage}
-              reprocessStatus={app.reprocessStatus}
-              queueSnapshot={app.queueSnapshot}
-              onChangeExtractionSettings={(settings) =>
-                void handlers.changeExtractionSettings(settings)
-              }
-              onClearLocalData={() => void handlers.clearLocalData()}
-              onRefreshExtractionStatus={() =>
-                void handlers.refreshExtractionStatus(app.extractionSettings)
-              }
-              onReprocessFallbackEntries={() =>
-                void handlers.reprocessFallbackEntries()
-              }
-              onRetryRecoverableQueueJobs={() =>
-                void handlers.retryRecoverableQueueJobs()
-              }
-              onPauseQueue={handlers.pauseQueue}
-              onStartQueue={handlers.startQueue}
-              onToggleDebugMode={handlers.toggleDebugMode}
-              onTogglePersonaText={handlers.togglePersonaText}
-            />
-          )}
+            {app.page === "observations" && (
+              <Observations
+                insights={app.observationHistory}
+                personaTextEnabled={app.personaTextEnabled}
+                onDeleteInsight={(insight) => void handlers.deleteInsight(insight)}
+                onRefresh={() => void handlers.refreshObservationHistory()}
+              />
+            )}
+
+            {app.page === "graph" && <GraphMock />}
+
+            {app.page === "settings" && (
+              <Settings
+                debugMode={app.debugMode}
+                isOnline={app.isOnline}
+                entries={app.entries}
+                extractionConfig={app.extractionConfig}
+                extractionSettings={app.extractionSettings}
+                extractionStatus={app.extractionStatus}
+                localEmotionSpikeEnabled={app.localEmotionSpikeEnabled}
+                localEmotionSpikeResult={app.localEmotionSpikeResult}
+                localEmotionSpikeStatus={app.localEmotionSpikeStatus}
+                personaTextEnabled={app.personaTextEnabled}
+                reprocessMessage={app.reprocessMessage}
+                reprocessStatus={app.reprocessStatus}
+                queueSnapshot={app.queueSnapshot}
+                onChangeExtractionSettings={(settings) =>
+                  void handlers.changeExtractionSettings(settings)
+                }
+                onClearLocalData={() => void handlers.clearLocalData()}
+                onRefreshExtractionStatus={() =>
+                  void handlers.refreshExtractionStatus(app.extractionSettings)
+                }
+                onReprocessFallbackEntries={() =>
+                  void handlers.reprocessFallbackEntries()
+                }
+                onRetryRecoverableQueueJobs={() =>
+                  void handlers.retryRecoverableQueueJobs()
+                }
+                onRunLocalEmotionSpikeDemo={() =>
+                  void handlers.runLocalEmotionSpikeDemo()
+                }
+                onPauseQueue={handlers.pauseQueue}
+                onStartQueue={handlers.startQueue}
+                onToggleDebugMode={handlers.toggleDebugMode}
+                onToggleLocalEmotionSpike={handlers.toggleLocalEmotionSpike}
+                onTogglePersonaText={handlers.togglePersonaText}
+              />
+            )}
+          </Suspense>
         </main>
       </div>
     </div>

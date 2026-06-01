@@ -14,7 +14,7 @@ Athena currently has five main screens:
 - Entries: a list/detail view of local entries merged with backend metadata.
 - Graph: a visual mock only. It is not real graph analytics yet.
 - Observations: history of generated day/week/month insight snapshots.
-- Settings: extraction provider/model, status check, network status, durable queue status/controls, fallback reprocessing, debug mode, persona text toggle, local data clearing.
+- Settings: extraction provider/model, status check, network status, durable queue status/controls, Signal v3 reprocessing, debug mode, local emotion spike demo, persona text toggle, local data clearing.
 
 The current client also has an offline-first app shell. After the first successful online load, the app shell and static assets can be served from the service worker cache. Local writing remains available without network/backend access, while server-backed reads degrade quietly until connectivity returns.
 
@@ -37,23 +37,12 @@ Athena is currently:
 - an offline-capable browser app shell after first load;
 - a privacy-oriented prototype where the app backend stores no raw diary text.
 
-Athena is currently not:
-
-- a chat product;
-- a therapist;
-- a coach;
-- a task manager;
-- a quantified-self dashboard;
-- a real graph explorer;
-- a mobile app.
-- a multi-device sync product.
-
 ## How To Run
 
 ### Requirements
 
 - Node.js with npm.
-- Windows is the most directly supported path right now because the repo includes `.bat` launchers.
+- Windows is the most directly supported path right now because the repo includes the `run-dev.bat` launcher.
 - Optional: local Ollama if you want local AI extraction.
 - Optional: Gemini API key if you explicitly want cloud extraction.
 
@@ -75,24 +64,6 @@ This script:
 - opens the frontend URL.
 
 Use this mode while editing the frontend. Vite serves the app and proxies API calls to the backend through relative paths.
-
-### Quick Built App Start On Windows
-
-From the project root:
-
-```bat
-run-mvp.bat
-```
-
-This script:
-
-- installs dependencies if missing;
-- applies migrations;
-- builds the React frontend;
-- starts the backend at `http://127.0.0.1:3000`;
-- serves the built frontend from `client/dist` through Express.
-
-Use this when you want the app closer to the packaged MVP flow.
 
 ### Manual Dev Start
 
@@ -192,7 +163,7 @@ These options are exposed in Settings under `AI extraction`.
 
 Important privacy detail: the backend does not persist raw diary text, but the current extraction endpoint does receive the current entry text transiently in order to call the selected provider. With `ollama`, that provider is intended to be local. With `gemini`, the current entry text is sent to the Gemini API.
 
-The client keeps a browser-local Gemini extraction counter and limits Gemini extraction to 20 requests per local calendar day. Pending extraction and fallback reprocessing respect the remaining daily quota.
+The client keeps a browser-local Gemini extraction counter and limits Gemini extraction to 20 requests per local calendar day. Pending extraction and queued Signal v3 reprocessing respect the remaining daily quota.
 
 ## Data And Privacy Model
 
@@ -293,8 +264,11 @@ Current queue behavior:
 - stale `running` jobs recover on startup;
 - retry/backoff handles retryable backend, network, and provider failures;
 - failed and blocked jobs can be retried from Settings;
-- fallback reprocessing is queue-backed through `entry.reprocess_signal`;
-- queue health is visible in Settings without becoming a primary product surface.
+- saved local entries enqueue Signal v3 extraction/reprocess through `entry.reprocess_signal`;
+- queued reprocess jobs read the latest local source entry at execution time;
+- fallback, metric-empty sparse, retryable provider failure, and legacy signal rows can be explicitly reprocessed;
+- retryable provider failures remain queue/provider state and do not append fallback signals over usable entries;
+- queue health and the latest job reason are visible in Settings without becoming a primary product surface.
 
 Server reliability was tightened with serialized SQLite write transactions and idempotent `POST /entries` by `client_entry_id`.
 
@@ -305,10 +279,16 @@ Signals currently contain:
 - `topics`: up to 5 strings;
 - `activities`: up to 5 strings;
 - `markers`: enum values;
+- `state_inference`: structured single-entry state axes with `level`, `confidence`, and `basis`;
+- `emotion_signals`: optional local emotion evidence object, empty unless the debug-only local emotion path is enabled;
+- `metric_confidence`: confidence for `load`, `fatigue`, and `focus`;
+- `quality_reason`: short deterministic reason for the final projection or abstention;
 - `load`: integer `0-10` or `null`;
 - `fatigue`: integer `0-10` or `null`;
 - `focus`: integer `0-10` or `null`;
 - `signal_quality`: `valid`, `sparse`, or app-created `fallback`.
+
+Sprint 3d adds an opt-in local emotion spike behind debug Settings. It loads a browser-side ONNX classifier through `@huggingface/transformers`, keeps raw diary text out of queue/backend payloads, and merges output as optional `emotion_signals` evidence. Sprint 3e lets that evidence weakly nudge existing state-derived `load`, `fatigue`, and `focus`; emotion output never creates metrics by itself. The preferred CEDR model remains the documented candidate, while the runnable spike currently uses the ONNX-compatible `onnx-community/tanaos-emotion-detection-v1-ONNX` model.
 
 Allowed markers currently include:
 
@@ -335,7 +315,9 @@ travel
 
 Fallback means the system did not get a usable signal. Fallback values do not pretend to be real measurements.
 
-The active signal schema is currently `signal.v2`, and the active extraction prompt contract is `extraction.v2`.
+The active signal schema is currently `signal.v3`, and the active extraction prompt contract is `extraction.v4`.
+
+Extraction still sees only the current entry. History-aware comparisons, trends, and baseline deviation remain analytics-layer work, not extraction output.
 
 ## Analytics
 
@@ -457,13 +439,14 @@ Settings currently include:
 - extraction status check;
 - network status;
 - operation queue status and retry/pause/start controls;
-- queue-backed fallback reprocessing for entries that still have local text;
-- Gemini daily extraction limit protection for fallback reprocessing;
+- queue-backed Signal v3 reprocessing for fallback, metric-empty sparse, provider-failure, and legacy rows that still have local text;
+- Gemini daily extraction limit protection for queued reprocessing;
 - debug mode toggle;
+- debug-only local emotion spike toggle and local demo runner;
 - persona text toggle;
 - local data clearing.
 
-Debug mode is off by default. When enabled, entry details show internal signal and metadata fields.
+Debug mode is off by default. When enabled, entry details show internal signal and metadata fields, and Settings exposes the local emotion spike controls.
 
 ## API Surface
 
@@ -533,9 +516,6 @@ shared/
 migrations/
   SQLite schema migrations.
 
-docs/
-  Product notes, invariants, MVP notes, vision.
-
 data/
   Local runtime data. Default SQLite database location.
 
@@ -594,6 +574,7 @@ These are current facts, not future promises:
 
 ### Editor
 <img src="client/assets/editor.png" width="700" />
+
 ### Entries
 <img src="client/assets/entries.png" width="700" />
 

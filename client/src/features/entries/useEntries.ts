@@ -1,6 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EntrySortDirection, EntryView, ServerEntry } from "../../types";
-import { deleteServerEntry, loadServerEntries } from "../../lib/api";
+import {
+  deleteServerEntry,
+  loadServerEntries,
+  loadServerEntry,
+} from "../../lib/api";
 import {
   deleteLocalEntry,
   getAllLocalEntries,
@@ -8,12 +12,13 @@ import {
   setEntrySortDirection as persistEntrySortDirection,
   updateLocalEntry,
 } from "../../lib/storage";
-import { mergeEntryState } from "./entryState";
+import { mergeEntryState, mergeServerEntryIntoView } from "./entryState";
 import { useEntrySearch } from "./useEntrySearch";
 
 export function useEntries() {
   const [entries, setEntries] = useState<EntryView[]>([]);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const selectedEntryIdRef = useRef<string | null>(null);
   const [entrySortDirection, setEntrySortDirection] =
     useState<EntrySortDirection>(() => getEntrySortDirection());
 
@@ -25,6 +30,29 @@ export function useEntries() {
   const selectedEntry = useMemo(
     () => entries.find((entry) => entry.id === selectedEntryId) ?? null,
     [entries, selectedEntryId],
+  );
+
+  useEffect(() => {
+    selectedEntryIdRef.current = selectedEntryId;
+  }, [selectedEntryId]);
+
+  const refreshServerEntryDetails = useCallback(
+    async (entryId: string, sourceEntries: EntryView[]) => {
+      const entry = sourceEntries.find((candidate) => candidate.id === entryId);
+      if (!entry?.serverId) return;
+
+      const serverEntry = await loadServerEntry(entry.serverId);
+      if (!serverEntry) return;
+
+      setEntries((currentEntries) =>
+        currentEntries.map((currentEntry) =>
+          currentEntry.id === entryId
+            ? mergeServerEntryIntoView(currentEntry, serverEntry)
+            : currentEntry,
+        ),
+      );
+    },
+    [],
   );
 
   const refreshEntries = useCallback(async () => {
@@ -65,14 +93,21 @@ export function useEntries() {
       ),
     );
 
+    const currentSelectedId = selectedEntryIdRef.current;
+    const nextSelectedId =
+      currentSelectedId && merged.some((entry) => entry.id === currentSelectedId)
+        ? currentSelectedId
+        : merged[0]?.id ?? null;
+
     setEntries(merged);
-    setSelectedEntryId((current) => {
-      if (current && merged.some((entry) => entry.id === current)) return current;
-      return merged[0]?.id ?? null;
-    });
+    setSelectedEntryId(nextSelectedId);
+    selectedEntryIdRef.current = nextSelectedId;
+    if (nextSelectedId) {
+      void refreshServerEntryDetails(nextSelectedId, merged);
+    }
 
     return merged;
-  }, []);
+  }, [refreshServerEntryDetails]);
 
   const deleteEntry = useCallback(
     async (entry: EntryView) => {
@@ -85,6 +120,7 @@ export function useEntries() {
       }
 
       setSelectedEntryId(null);
+      selectedEntryIdRef.current = null;
       await refreshEntries();
     },
     [refreshEntries],
@@ -122,7 +158,16 @@ export function useEntries() {
   function resetEntries() {
     setEntries([]);
     setSelectedEntryId(null);
+    selectedEntryIdRef.current = null;
     entrySearch.clearFilters();
+  }
+
+  function selectEntry(entryId: string | null) {
+    setSelectedEntryId(entryId);
+    selectedEntryIdRef.current = entryId;
+    if (!entryId) return;
+
+    void refreshServerEntryDetails(entryId, entries);
   }
 
   return {
@@ -143,7 +188,7 @@ export function useEntries() {
     deleteEntry,
     refreshEntries,
     resetEntries,
-    selectEntry: setSelectedEntryId,
+    selectEntry,
     setEntrySearchQuery: entrySearch.setQuery,
     toggleEntryAnalysisEnabled,
     toggleIncludedEntryTag: entrySearch.toggleIncludedTag,

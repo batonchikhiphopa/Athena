@@ -1,4 +1,5 @@
 import type { EntrySortDirection, ExtractionSettings, LocalEntry } from "../types";
+import { normalizeSignal } from "./signals";
 
 const ATHENA_LOCAL_DB_NAME = "athena-private-v1";
 const ATHENA_LOCAL_DB_VERSION = 2;
@@ -12,6 +13,7 @@ const DEBUG_MODE_KEY = "athena_debug_mode";
 const EXTRACTION_SETTINGS_KEY = "athena_extraction_settings";
 const ENTRY_SORT_DIRECTION_KEY = "athena_entry_sort_direction";
 const GEMINI_DAILY_EXTRACTION_USAGE_KEY = "athena_gemini_daily_extraction_usage";
+const LOCAL_EMOTION_SPIKE_ENABLED_KEY = "athena_local_emotion_spike_enabled";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
 
@@ -77,6 +79,14 @@ export function getEntrySortDirection(): EntrySortDirection {
 
 export function setEntrySortDirection(value: EntrySortDirection) {
   localStorage.setItem(ENTRY_SORT_DIRECTION_KEY, value);
+}
+
+export function getLocalEmotionSpikeEnabled() {
+  return localStorage.getItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY) === "true";
+}
+
+export function setLocalEmotionSpikeEnabled(value: boolean) {
+  localStorage.setItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY, String(value));
 }
 
 export function getGeminiDailyExtractionUsage(): GeminiDailyExtractionUsage {
@@ -164,16 +174,18 @@ export async function getAllLocalEntries() {
     transaction.objectStore(ENTRY_STORE).getAll(),
   );
 
-  return entries.sort(compareLocalEntries);
+  return entries.map(normalizeLocalEntry).sort(compareLocalEntries);
 }
 
 export async function getLocalEntry(id: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
 
-  return idbRequest<LocalEntry | undefined>(
+  const entry = await idbRequest<LocalEntry | undefined>(
     transaction.objectStore(ENTRY_STORE).get(id),
   );
+
+  return entry ? normalizeLocalEntry(entry) : undefined;
 }
 
 export async function saveLocalEntry(entry: LocalEntry) {
@@ -242,6 +254,7 @@ export async function deleteAthenaLocalData() {
   localStorage.removeItem(EXTRACTION_SETTINGS_KEY);
   localStorage.removeItem(ENTRY_SORT_DIRECTION_KEY);
   localStorage.removeItem(GEMINI_DAILY_EXTRACTION_USAGE_KEY);
+  localStorage.removeItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY);
   localStorage.removeItem(PERSONA_TEXT_ENABLED_KEY);
   localStorage.removeItem(SEEN_EDITOR_INSIGHT_IDS_KEY);
 
@@ -325,6 +338,13 @@ function compareLocalEntries(left: LocalEntry, right: LocalEntry) {
   if (dateOrder !== 0) return dateOrder;
 
   return right.createdAt.localeCompare(left.createdAt);
+}
+
+function normalizeLocalEntry(entry: LocalEntry): LocalEntry {
+  return {
+    ...entry,
+    signals: normalizeSignal(entry.signals),
+  };
 }
 
 function localDateKey() {

@@ -16,7 +16,7 @@ export function EditorActionButtons({
   return (
     <>
       <button
-        aria-label="Начать ввод тега"
+        aria-label="Добавить тег"
         onClick={onInsertTag}
         type="button"
         className="
@@ -38,7 +38,9 @@ export function EditorActionButtons({
 
       <button
         aria-label={
-          analysisEnabled ? "Запретить анализ текста" : "Разрешить анализ текста"
+          analysisEnabled
+            ? "Исключить запись из анализа"
+            : "Включить запись в анализ"
         }
         aria-pressed={analysisEnabled}
         onClick={onToggleAnalysisEnabled}
@@ -60,7 +62,7 @@ export function EditorActionButtons({
       </button>
 
       <button
-        aria-label="Открыть чистый лист"
+        aria-label="Создать новую запись"
         onClick={onNewBlankPage}
         type="button"
         className="

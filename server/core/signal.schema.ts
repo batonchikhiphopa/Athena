@@ -1,14 +1,67 @@
 import { z } from "zod";
 import { MARKERS } from "./markers.js";
 
+export const SIGNAL_AXES = [
+  "load",
+  "fatigue",
+  "focus",
+  "distress",
+  "anxiety",
+  "mood",
+  "energy",
+  "sleep_quality",
+  "self_attack",
+  "shame_guilt",
+  "rumination",
+  "avoidance",
+  "agency",
+  "conflict",
+  "social_connection",
+  "recovery_need",
+  "confidence",
+] as const;
+
 export const markerSchema = z.enum(MARKERS);
+export const signalAxisSchema = z.enum(SIGNAL_AXES);
+export const signalLevelSchema = z.enum(["low", "medium", "high"]);
+export const confidenceLevelSchema = z.enum(["low", "medium", "high"]);
 
 const scoreSchema = z.number().int().min(0).max(10).nullable();
+const metricConfidenceSchema = z.object({
+  load: confidenceLevelSchema,
+  fatigue: confidenceLevelSchema,
+  focus: confidenceLevelSchema,
+}).strict();
+const fallbackMetricConfidenceSchema = z.object({
+  load: z.literal("low"),
+  fatigue: z.literal("low"),
+  focus: z.literal("low"),
+}).strict();
+
+const stateInferenceValueSchema = z.object({
+  level: signalLevelSchema,
+  confidence: confidenceLevelSchema,
+  basis: z.array(z.string().min(1).max(160)).max(6),
+}).strict();
+
+const stateInferenceShape = Object.fromEntries(
+  SIGNAL_AXES.map((axis) => [axis, stateInferenceValueSchema.optional()]),
+) as Record<(typeof SIGNAL_AXES)[number], z.ZodOptional<typeof stateInferenceValueSchema>>;
+
+export const stateInferenceSchema = z.object(stateInferenceShape).strict();
+const emptyStateInferenceSchema = z.object({}).strict();
+
+export const emotionSignalsSchema = z.record(z.unknown());
+const emptyEmotionSignalsSchema = z.object({}).strict();
 
 export const extractedSignalCandidateSchema = z.object({
   topics: z.array(z.string().min(1)).max(5),
   activities: z.array(z.string().min(1)).max(5),
   markers: z.array(markerSchema).max(8),
+  state_inference: stateInferenceSchema,
+  emotion_signals: emotionSignalsSchema,
+  metric_confidence: metricConfidenceSchema,
+  quality_reason: z.string().min(1).max(128),
 
   load: scoreSchema,
   fatigue: scoreSchema,
@@ -32,6 +85,10 @@ export const fallbackSignalSchema = z.object({
   topics: z.array(z.string()).length(0),
   activities: z.array(z.string()).length(0),
   markers: z.array(markerSchema).length(0),
+  state_inference: emptyStateInferenceSchema,
+  emotion_signals: emptyEmotionSignalsSchema,
+  metric_confidence: fallbackMetricConfidenceSchema,
+  quality_reason: z.literal("fallback"),
 
   load: z.null(),
   fatigue: z.null(),
@@ -53,6 +110,10 @@ export const clientFallbackSignalSchema = z.object({
   topics: z.array(z.string()).length(0),
   activities: z.array(z.string()).length(0),
   markers: z.array(markerSchema).length(0),
+  state_inference: emptyStateInferenceSchema,
+  emotion_signals: emptyEmotionSignalsSchema,
+  metric_confidence: fallbackMetricConfidenceSchema,
+  quality_reason: z.literal("fallback"),
 
   load: z.null(),
   fatigue: z.null(),

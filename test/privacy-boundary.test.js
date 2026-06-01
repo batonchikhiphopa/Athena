@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import test from "node:test";
 import { createEntrySchema } from "../server/core/entry.schema.js";
+import { validSignal } from "./signal-fixtures.js";
 
 function validPayload(overrides = {}) {
   return {
@@ -9,15 +10,7 @@ function validPayload(overrides = {}) {
     entry_date: "2026-04-24",
     tags: ["athena"],
     source_text_hash: "c".repeat(64),
-    signal: {
-      topics: ["работа"],
-      activities: ["кодинг"],
-      markers: ["deep_work"],
-      load: 4,
-      fatigue: null,
-      focus: 7,
-      signal_quality: "valid",
-    },
+    signal: validSignal(),
     ...overrides,
   };
 }
@@ -27,6 +20,24 @@ test("entry API payload rejects raw text", () => {
     validPayload({
       text: "raw text must not reach the server",
     })
+  );
+
+  assert.equal(parsed.success, false);
+});
+
+test("entry API rejects legacy Signal v2 payloads", () => {
+  const parsed = createEntrySchema.safeParse(
+    validPayload({
+      signal: {
+        topics: ["работа"],
+        activities: ["кодинг"],
+        markers: ["deep_work"],
+        load: 4,
+        fatigue: null,
+        focus: 7,
+        signal_quality: "valid",
+      },
+    }),
   );
 
   assert.equal(parsed.success, false);

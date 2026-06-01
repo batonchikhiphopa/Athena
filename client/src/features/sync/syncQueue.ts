@@ -3,6 +3,7 @@ import { registerQueueHandler } from "../../lib/queue";
 import type { EntryQueuePayload, QueueJob } from "../../lib/queueTypes";
 import { getLocalEntry } from "../../lib/storage";
 import { reprocessLocalEntry } from "../settings/pendingReextract";
+import { planEntryReprocessJob } from "./reprocessPolicy";
 
 let handlersRegistered = false;
 let currentSettings: ExtractionSettings | null = null;
@@ -31,28 +32,20 @@ async function handleEntryReprocessSignalJob(
     throw new Error("Job was cancelled.");
   }
 
-  const entryId = job.payload.entry_id;
+  const entryId = getEntryId(job);
 
   if (!entryId) {
     throw new Error("validation: entry.reprocess_signal missing entry_id");
   }
 
   const entry = await getLocalEntry(entryId);
+  const plan = planEntryReprocessJob(job, entry ?? null);
+
+  if (plan.action === "skip") {
+    return;
+  }
 
   if (!entry) {
-    // Local source disappeared. For local-first flow this job has nothing left
-    // to do. Treat as successful no-op.
-    return;
-  }
-
-  if (entry.analysis_enabled === false) {
-    // User disabled analysis after the job was created.
-    // Do not run extraction.
-    return;
-  }
-
-  if (entry.sync_status !== "pending_reextract") {
-    // Stale job. Current local state no longer needs reprocessing.
     return;
   }
 
@@ -62,11 +55,27 @@ async function handleEntryReprocessSignalJob(
 
   const result = await reprocessLocalEntry(entry, settings);
 
-  if (result === "provider_limit") {
-    throw new Error("429 quota_error: provider limit reached");
+  if (result.status === "retryable_provider_failure") {
+    throw new Error(`retryable_provider_failure:${result.errorCode}`);
   }
 
   if (signal.aborted) {
     throw new Error("Job was cancelled.");
   }
+}
+
+function getEntryId(job: QueueJob<EntryQueuePayload>): string | null {
+  const payload =
+    typeof job.payload === "object" &&
+    job.payload !== null &&
+    !Array.isArray(job.payload)
+      ? (job.payload as Record<string, unknown>)
+      : {};
+  const payloadEntryId = payload.entry_id;
+
+  if (typeof payloadEntryId === "string" && payloadEntryId.trim()) {
+    return payloadEntryId;
+  }
+
+  return job.entity_id;
 }

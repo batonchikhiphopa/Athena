@@ -1,5 +1,5 @@
 import { openAthenaLocalDb, QUEUE_JOBS_STORE } from "./storage";
-import type { QueueJob, QueueJobStatus } from "./queueTypes";
+import type { QueueJob, QueueJobStatus, QueueJobSummary } from "./queueTypes";
 
 const STALE_RUNNING_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -171,6 +171,23 @@ export async function getLastQueueError(): Promise<string | null> {
   return jobsWithErrors[0]?.last_error ?? null;
 }
 
+export async function getLatestQueueJobSummary(): Promise<QueueJobSummary | null> {
+  const jobs = await getQueueJobs();
+  const latestJob = jobs.sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
+
+  if (!latestJob) return null;
+
+  return {
+    id: latestJob.id,
+    type: latestJob.type,
+    status: latestJob.status,
+    reason: readQueueJobReason(latestJob.payload),
+    entity_id: latestJob.entity_id,
+    updated_at: latestJob.updated_at,
+    last_error: latestJob.last_error,
+  };
+}
+
 export async function replaceQueueJob(job: QueueJob): Promise<QueueJob> {
   return updateQueueJob(job);
 }
@@ -278,4 +295,14 @@ export async function getQueueJobsByStatuses(
   const jobs = await getQueueJobs();
 
   return jobs.filter((job) => allowed.has(job.status));
+}
+
+function readQueueJobReason(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    return null;
+  }
+
+  const reason = (payload as Record<string, unknown>).reason;
+
+  return typeof reason === "string" && reason.trim() ? reason : null;
 }

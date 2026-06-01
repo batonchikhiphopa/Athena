@@ -20,7 +20,7 @@ router.get("/insights/current", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to load current insights",
+      error: "Не удалось загрузить текущие наблюдения",
     });
   }
 });
@@ -35,7 +35,7 @@ router.get("/insights", async (_req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to load insight history",
+      error: "Не удалось загрузить историю наблюдений",
     });
   }
 });
@@ -47,7 +47,7 @@ router.delete("/insights/:id", async (req, res) => {
 
     if (!deleted) {
       return res.status(404).json({
-        error: "Insight not found",
+        error: "Наблюдение уже удалено",
       });
     }
 
@@ -56,7 +56,7 @@ router.delete("/insights/:id", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to delete insight",
+      error: "Не удалось удалить наблюдение",
     });
   }
 });

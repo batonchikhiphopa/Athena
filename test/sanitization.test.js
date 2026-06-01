@@ -1,33 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { mapSignalCandidate } from "../server/core/signal.mapper.js";
 import { sanitizeSignalCandidate } from "../server/services/sanitization.service.js";
+import { metricConfidence, sparseSignal, state, validSignal } from "./signal-fixtures.js";
 
-function validCandidate(overrides = {}) {
-  return {
-    topics: ["работа"],
-    activities: ["кодинг"],
-    markers: ["deep_work"],
-    load: 5,
-    fatigue: null,
-    focus: 7,
-    signal_quality: "valid",
-    ...overrides,
-  };
-}
-
-test("accepts valid candidate", () => {
-  const result = sanitizeSignalCandidate(validCandidate());
+test("accepts valid Signal v3 candidate", () => {
+  const result = sanitizeSignalCandidate(validSignal());
 
   assert.equal(result.ok, true);
   assert.equal(result.data.signal_quality, "valid");
+  assert.equal(result.data.load, 5);
+  assert.equal(result.data.metric_confidence.load, "medium");
 });
 
 test("rejects number as string", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
+    validSignal({
       load: "5",
-    })
+    }),
   );
 
   assert.equal(result.ok, false);
@@ -35,9 +26,9 @@ test("rejects number as string", () => {
 
 test("rejects invalid marker enum", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
+    validSignal({
       markers: ["random_marker"],
-    })
+    }),
   );
 
   assert.equal(result.ok, false);
@@ -45,16 +36,16 @@ test("rejects invalid marker enum", () => {
 
 test("rejects out-of-range score", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
+    validSignal({
       fatigue: 99,
-    })
+    }),
   );
 
   assert.equal(result.ok, false);
 });
 
 test("rejects missing required field", () => {
-  const candidate = validCandidate();
+  const candidate = validSignal();
   delete candidate.focus;
 
   const result = sanitizeSignalCandidate(candidate);
@@ -69,55 +60,67 @@ test("rejects empty object", () => {
 });
 
 test("rejects structurally empty signal", () => {
-  const result = sanitizeSignalCandidate({
-    topics: [],
-    activities: [],
-    markers: [],
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "sparse",
-  });
+  const result = sanitizeSignalCandidate(
+    sparseSignal({
+      topics: [],
+      activities: [],
+      markers: [],
+      quality_reason: "no_relevant_signal",
+    }),
+  );
 
   assert.equal(result.ok, false);
 });
 
 test("rejects empty-string topic and activity values", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
+    validSignal({
       topics: [""],
       activities: [""],
-    })
+    }),
   );
 
   assert.equal(result.ok, false);
 });
 
-test("backend overrides AI signal_quality to sparse when no scores exist", () => {
+test("rejects unknown top-level fields", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
-      load: null,
-      fatigue: null,
-      focus: null,
-      signal_quality: "valid",
-    })
+    validSignal({
+      baseline_deviation: 3,
+    }),
   );
 
-  assert.equal(result.ok, true);
-  assert.equal(result.data.signal_quality, "sparse");
+  assert.equal(result.ok, false);
 });
 
-test("accepts first-class context markers without numeric state", () => {
+test("rejects unknown state axes and invalid confidence levels", () => {
+  const unknownAxis = sanitizeSignalCandidate(
+    validSignal({
+      state_inference: {
+        distress: state("high"),
+        unknown_axis: state("medium"),
+      },
+    }),
+  );
+  const invalidConfidence = sanitizeSignalCandidate(
+    validSignal({
+      state_inference: {
+        distress: state("high", "certain"),
+      },
+    }),
+  );
+
+  assert.equal(unknownAxis.ok, false);
+  assert.equal(invalidConfidence.ok, false);
+});
+
+test("backend maps text-only context to sparse", () => {
   const result = sanitizeSignalCandidate(
-    validCandidate({
+    sparseSignal({
       topics: ["сон"],
-      activities: [],
       markers: ["sleep_issue", "late_night_ideas"],
-      load: null,
-      fatigue: null,
-      focus: null,
-      signal_quality: "sparse",
-    })
+      signal_quality: "valid",
+    }),
   );
 
   assert.equal(result.ok, true);
@@ -125,19 +128,103 @@ test("accepts first-class context markers without numeric state", () => {
   assert.equal(result.data.signal_quality, "sparse");
 });
 
-test("backend overrides AI signal_quality to valid when score exists", () => {
-  const result = sanitizeSignalCandidate(
-    validCandidate({
+test("mapper produces metrics for distress, self-attack, and avoidance evidence", () => {
+  const mapped = mapSignalCandidate(
+    validSignal({
       topics: [],
       activities: [],
       markers: [],
-      load: 4,
+      state_inference: {
+        distress: state("high"),
+        self_attack: state("high", "high"),
+        avoidance: state("medium"),
+      },
+      metric_confidence: metricConfidence("low"),
+      quality_reason: "model_supplied_reason",
+      load: 0,
       fatigue: null,
-      focus: null,
+      focus: 10,
       signal_quality: "sparse",
-    })
+    }),
   );
 
-  assert.equal(result.ok, true);
-  assert.equal(result.data.signal_quality, "valid");
+  assert.equal(mapped.signal_quality, "valid");
+  assert.equal(mapped.load >= 7, true);
+  assert.equal(mapped.focus <= 4, true);
+  assert.equal(mapped.metric_confidence.load, "high");
+  assert.equal(mapped.quality_reason, "state_self_attack_high");
+});
+
+test("mapper uses emotion as bounded secondary evidence", () => {
+  const mapped = mapSignalCandidate(
+    validSignal({
+      state_inference: {
+        load: state("medium", "low"),
+        fatigue: state("medium", "low"),
+        focus: state("medium", "low"),
+      },
+      emotion_signals: {
+        labels: {
+          sadness: 0.82,
+          joy: 0.04,
+        },
+        top_label: "sadness",
+        top_score: 0.82,
+      },
+      metric_confidence: metricConfidence("low"),
+      quality_reason: "model_supplied_reason",
+      load: 0,
+      fatigue: 0,
+      focus: 10,
+      signal_quality: "sparse",
+    }),
+  );
+
+  assert.equal(mapped.load, 6);
+  assert.equal(mapped.fatigue, 6);
+  assert.equal(mapped.focus, 4);
+  assert.equal(mapped.metric_confidence.load, "medium");
+  assert.equal(
+    mapped.quality_reason,
+    "state_fatigue_medium_emotion_sadness_load_fatigue_focus",
+  );
+});
+
+test("mapper never creates metrics from emotion alone", () => {
+  const mapped = mapSignalCandidate(
+    sparseSignal({
+      topics: [],
+      emotion_signals: {
+        labels: {
+          fear: 0.91,
+        },
+        top_label: "fear",
+        top_score: 0.91,
+      },
+      quality_reason: "model_supplied_reason",
+    }),
+  );
+
+  assert.equal(mapped.load, null);
+  assert.equal(mapped.fatigue, null);
+  assert.equal(mapped.focus, null);
+  assert.equal(mapped.signal_quality, "sparse");
+  assert.equal(mapped.quality_reason, "emotion_context_only");
+});
+
+test("mapper abstains on dry entries with no relevant signal", () => {
+  const mapped = mapSignalCandidate(
+    sparseSignal({
+      topics: [],
+      activities: [],
+      markers: [],
+      quality_reason: "model_supplied_reason",
+    }),
+  );
+
+  assert.equal(mapped.load, null);
+  assert.equal(mapped.fatigue, null);
+  assert.equal(mapped.focus, null);
+  assert.equal(mapped.signal_quality, "fallback");
+  assert.equal(mapped.quality_reason, "no_relevant_signal");
 });

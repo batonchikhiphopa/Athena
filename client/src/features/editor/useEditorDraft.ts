@@ -13,6 +13,7 @@ import {
   saveLocalEntry,
   updateLocalEntry,
 } from "../../lib/storage";
+import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 
 export type DraftStatus = "loading" | "saved" | "saving";
 export type SaveStatus =
@@ -173,6 +174,12 @@ export function useEditorDraft({
         };
 
         await saveLocalEntry(entry);
+        await enqueuePendingSignalJob({
+          entryId: id,
+          serverId: null,
+          sourceTextHash,
+          analysisEnabled,
+        });
         if (runId !== autosaveRunRef.current) return;
 
         activeEntryIdRef.current = id;
@@ -193,6 +200,13 @@ export function useEditorDraft({
           source_text_hash: sourceTextHash,
           sync_status: analysisEnabled ? "pending_reextract" : "local_only",
           updatedAt: now,
+        });
+
+        await enqueuePendingSignalJob({
+          entryId: targetEntryId,
+          serverId: analysisEnabled ? existingEntry?.serverId ?? null : null,
+          sourceTextHash,
+          analysisEnabled,
         });
       }
 
@@ -380,4 +394,27 @@ export function useEditorDraft({
     resetAfterLocalDataClear,
     toggleAnalysisEnabled,
   };
+}
+
+async function enqueuePendingSignalJob({
+  analysisEnabled,
+  entryId,
+  serverId,
+  sourceTextHash,
+}: {
+  analysisEnabled: boolean;
+  entryId: string;
+  serverId: number | null;
+  sourceTextHash: string;
+}) {
+  if (!analysisEnabled) return;
+
+  await enqueueEntrySignalReprocessJob({
+    entryId,
+    serverId,
+    sourceTextHash,
+    reason: "manual_reprocess",
+  }).catch((error) => {
+    console.warn("[entry:enqueue-save-reprocess]", error);
+  });
 }

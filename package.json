@@ -1,28 +1,29 @@
 {
   "name": "athena",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "author": "batonchikhiphopa",
   "scripts": {
+    "audit": "npm audit && npm --prefix client audit",
     "client:build": "npm --prefix client run build",
     "client:dev": "npm --prefix client run dev",
     "dev": "tsx server/server.ts",
+    "lint": "npm --prefix client run lint",
     "migrate": "tsx server/db/migrate.ts",
+    "release:check": "npm test && npm run server:check && npm run lint && npm run client:build && npm run audit",
     "server:check": "tsc -p tsconfig.server.json --noEmit",
     "test": "tsx --test"
   },
   "dependencies": {
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "express": "^4.18.2",
+    "express": "^4.22.2",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "zod": "^3.22.4"
+    "sqlite3": "^6.0.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^25.6.2",
-    "tsx": "^4.21.0",
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
 }

@@ -103,7 +103,7 @@ export function EntriesPage({
                 focus:border-zinc-400
               "
               onChange={(event) => onSearchQueryChange(event.target.value)}
-              placeholder="Поиск по тексту, дате или тегу"
+              placeholder="Поиск по записям, дате или тегам"
               type="search"
               value={searchQuery}
             />
@@ -114,7 +114,7 @@ export function EntriesPage({
                 onClick={onClearFilters}
                 type="button"
               >
-                Сбросить
+                Сбросить фильтры
               </button>
             )}
           </div>
@@ -148,7 +148,7 @@ export function EntriesPage({
           )}
 
           {isSearching && (
-            <div className="text-xs text-zinc-400">Ищу…</div>
+            <div className="text-xs text-zinc-400">Идёт поиск…</div>
           )}
         </div>
 
@@ -197,8 +197,8 @@ export function EntriesPage({
                 <button
                   aria-label={
                     entry.analysisEnabled
-                      ? "Запретить анализ записи"
-                      : "Разрешить анализ записи"
+                      ? "Исключить запись из анализа"
+                      : "Включить запись в анализ"
                   }
                   aria-pressed={entry.analysisEnabled}
                   className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
@@ -238,7 +238,9 @@ export function EntriesPage({
 
           {entries.length === 0 && (
             <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400">
-              {hasActiveFilters ? "Ничего не найдено." : "Пока пусто."}
+              {hasActiveFilters
+                ? "По этим фильтрам записей нет."
+                : "Записей пока нет."}
             </div>
           )}
         </div>

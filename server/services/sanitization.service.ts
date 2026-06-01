@@ -1,11 +1,10 @@
-import { type z } from "zod";
 import {
+  clientFallbackSignalSchema,
   extractedSignalCandidateSchema,
   fallbackSignalSchema,
 } from "../core/signal.schema.js";
+import { createEmptyMetricConfidence, mapSignalCandidate } from "../core/signal.mapper.js";
 import type { Signal } from "../core/types.js";
-
-type ExtractedSignalCandidate = z.infer<typeof extractedSignalCandidateSchema>;
 
 type SanitizedSignalResult =
   | {
@@ -29,7 +28,7 @@ export function sanitizeSignalCandidate(
     };
   }
 
-  const classified = classifySanitizedCandidate(result.data);
+  const classified = mapSignalCandidate(result.data);
 
   if (classified.signal_quality === "fallback") {
     return {
@@ -44,42 +43,15 @@ export function sanitizeSignalCandidate(
   };
 }
 
-function classifySanitizedCandidate(candidate: ExtractedSignalCandidate): Signal {
-  const hasTextSignal =
-    candidate.topics.length > 0 ||
-    candidate.activities.length > 0 ||
-    candidate.markers.length > 0;
-
-  const hasScoreSignal =
-    candidate.load !== null ||
-    candidate.fatigue !== null ||
-    candidate.focus !== null;
-
-  if (!hasTextSignal && !hasScoreSignal) {
-    return {
-      ...candidate,
-      signal_quality: "fallback",
-    };
-  }
-
-  if (!hasScoreSignal) {
-    return {
-      ...candidate,
-      signal_quality: "sparse",
-    };
-  }
-
-  return {
-    ...candidate,
-    signal_quality: "valid",
-  };
-}
-
 export function createFallbackSignal(): Signal {
   const fallback = {
     topics: [],
     activities: [],
     markers: [],
+    state_inference: {},
+    emotion_signals: {},
+    metric_confidence: createEmptyMetricConfidence(),
+    quality_reason: "fallback",
     load: null,
     fatigue: null,
     focus: null,
@@ -101,4 +73,8 @@ export function createFallbackSignal(): Signal {
   }
 
   return fallback;
+}
+
+export function isClientFallbackSignal(value: unknown): boolean {
+  return clientFallbackSignalSchema.safeParse(value).success;
 }

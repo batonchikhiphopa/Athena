@@ -1,4 +1,12 @@
-import type { EntryStatus, ExtractionProvider, Signal, SignalMetadata } from "../core/types.js";
+import { createEmptyMetricConfidence } from "../core/signal.mapper.js";
+import type {
+  EntryStatus,
+  ExtractionProvider,
+  MetricConfidence,
+  Signal,
+  SignalMetadata,
+  StateInference,
+} from "../core/types.js";
 import type { AthenaDb } from "../db/sqlite.js";
 
 type EntryWrite = {
@@ -24,6 +32,10 @@ type EntryJoinedRow = {
   topics: string | null;
   activities: string | null;
   markers: string | null;
+  state_inference: string | null;
+  emotion_signals: string | null;
+  metric_confidence: string | null;
+  quality_reason: string | null;
   load: number | null;
   fatigue: number | null;
   focus: number | null;
@@ -95,6 +107,8 @@ export async function listEntries(db: AthenaDb): Promise<EntryView[]> {
       s.topics,
       s.activities,
       s.markers,
+      s.metric_confidence,
+      s.quality_reason,
       s.load,
       s.fatigue,
       s.focus,
@@ -139,6 +153,10 @@ export async function getEntryById(
       s.topics,
       s.activities,
       s.markers,
+      s.state_inference,
+      s.emotion_signals,
+      s.metric_confidence,
+      s.quality_reason,
       s.load,
       s.fatigue,
       s.focus,
@@ -237,6 +255,16 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
         topics: parseStringArray(row.topics),
         activities: parseStringArray(row.activities),
         markers: parseStringArray(row.markers),
+        state_inference: parseRecord<StateInference>(row.state_inference, {}),
+        emotion_signals: parseRecord<Record<string, unknown>>(
+          row.emotion_signals,
+          {},
+        ),
+        metric_confidence: parseRecord<MetricConfidence>(
+          row.metric_confidence,
+          createEmptyMetricConfidence(),
+        ),
+        quality_reason: row.quality_reason || "legacy_signal_v2",
         load: row.load,
         fatigue: row.fatigue,
         focus: row.focus,
@@ -272,4 +300,18 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
 function parseStringArray(value: string | null): string[] {
   const parsed: unknown = JSON.parse(value || "[]");
   return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+}
+
+function parseRecord<T extends Record<string, unknown>>(
+  value: string | null,
+  fallback: T,
+): T {
+  try {
+    const parsed: unknown = JSON.parse(value || "{}");
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as T)
+      : fallback;
+  } catch {
+    return fallback;
+  }
 }

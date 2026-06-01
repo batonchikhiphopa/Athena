@@ -21,12 +21,57 @@ export function DebugPanel({ entry }: DebugPanelProps) {
             value={entry.signals.activities.join(", ")}
           />
           <DebugRow label="markers" value={entry.signals.markers.join(", ")} />
+          <DebugRow label="reason" value={entry.signals.quality_reason} />
           <DebugRow label="load" value={formatNullable(entry.signals.load)} />
           <DebugRow
             label="fatigue"
             value={formatNullable(entry.signals.fatigue)}
           />
           <DebugRow label="focus" value={formatNullable(entry.signals.focus)} />
+        </DebugBlock>
+
+        <DebugBlock title="state inference">
+          {Object.entries(entry.signals.state_inference).length > 0 ? (
+            Object.entries(entry.signals.state_inference).map(([axis, value]) => (
+              <DebugRow
+                key={axis}
+                label={axis}
+                value={`${value.level}/${value.confidence}${formatBasis(
+                  value.basis,
+                )}`}
+              />
+            ))
+          ) : (
+            <DebugRow label="state" value="-" />
+          )}
+        </DebugBlock>
+
+        <DebugBlock title="metric confidence">
+          <DebugRow label="load" value={entry.signals.metric_confidence.load} />
+          <DebugRow
+            label="fatigue"
+            value={entry.signals.metric_confidence.fatigue}
+          />
+          <DebugRow
+            label="focus"
+            value={entry.signals.metric_confidence.focus}
+          />
+          <DebugRow label="nulls" value={formatNullReasons(entry.signals)} />
+        </DebugBlock>
+
+        <DebugBlock title="emotion signals">
+          {Object.keys(entry.signals.emotion_signals).length > 0 ? (
+            <>
+              <DebugRow label="mapper" value={entry.signals.quality_reason} />
+              {formatEmotionSignals(entry.signals.emotion_signals).map(
+                ([label, value]) => (
+                  <DebugRow key={label} label={label} value={value} />
+                ),
+              )}
+            </>
+          ) : (
+            <DebugRow label="emotion" value="-" />
+          )}
         </DebugBlock>
 
         <DebugBlock title="metadata">
@@ -63,8 +108,8 @@ function DebugBlock({
 
 function DebugRow({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 text-xs">
-      <div className="text-zinc-400">{label}</div>
+    <div className="grid grid-cols-[minmax(88px,128px)_minmax(0,1fr)] gap-3 text-xs">
+      <div className="break-words text-zinc-400">{label}</div>
       <div className="break-words font-mono text-zinc-800">
         {String(value || "-")}
       </div>
@@ -74,4 +119,47 @@ function DebugRow({ label, value }: { label: string; value: number | string }) {
 
 function formatNullable(value: number | null) {
   return value === null ? "null" : value;
+}
+
+function formatBasis(basis: string[]) {
+  return basis.length > 0 ? `: ${basis.join("; ")}` : "";
+}
+
+function formatNullReasons(signals: EntryView["signals"]) {
+  const nullMetrics = (["load", "fatigue", "focus"] as const).filter(
+    (metric) => signals[metric] === null,
+  );
+
+  if (nullMetrics.length === 0) return "-";
+
+  return nullMetrics
+    .map((metric) => `${metric}: no relevant state evidence`)
+    .join("; ");
+}
+
+function formatEmotionSignals(signals: Record<string, unknown>) {
+  const labels = getRecord(signals.labels);
+  const rows: Array<[string, string]> = [];
+
+  if (typeof signals.model === "string") rows.push(["model", signals.model]);
+  if (typeof signals.status === "string") rows.push(["status", signals.status]);
+  if (typeof signals.top_label === "string") {
+    rows.push(["top", `${signals.top_label} ${signals.top_score ?? ""}`]);
+  }
+
+  for (const [label, value] of Object.entries(labels).slice(0, 8)) {
+    rows.push([label, String(value)]);
+  }
+
+  if (rows.length === 0) {
+    rows.push(["raw", JSON.stringify(signals).slice(0, 240)]);
+  }
+
+  return rows;
+}
+
+function getRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }

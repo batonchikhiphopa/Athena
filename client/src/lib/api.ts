@@ -34,6 +34,10 @@ type CreateEntryResponse = {
   entry: ServerEntry;
 };
 
+type EntryResponse = {
+  entry: ServerEntry;
+};
+
 type CurrentInsightsResponse = {
   insights: InsightSnapshot[];
 };
@@ -53,7 +57,7 @@ export async function loadServerEntries() {
     const response = await fetch("/entries");
 
     if (!response.ok) {
-      throw new Error("Failed to load entries");
+      throw new Error("Не удалось загрузить записи");
     }
 
     const data = (await response.json()) as EntriesResponse;
@@ -61,6 +65,22 @@ export async function loadServerEntries() {
   } catch (error) {
     console.warn("[api:entries:list]", error);
     return [];
+  }
+}
+
+export async function loadServerEntry(entryId: number | string) {
+  try {
+    const response = await fetch(`/entries/${encodeURIComponent(entryId)}`);
+
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить запись");
+    }
+
+    const data = (await response.json()) as EntryResponse;
+    return data.entry ?? null;
+  } catch (error) {
+    console.warn("[api:entries:get]", error);
+    return null;
   }
 }
 
@@ -75,7 +95,7 @@ export async function createEntry(payload: CreateEntryPayload) {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Create entry failed: ${text}`);
+    throw new Error(`Не удалось сохранить запись: ${text}`);
   }
 
   const data = (await response.json()) as CreateEntryResponse;
@@ -96,7 +116,7 @@ export async function updateServerEntry(
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Update entry failed: ${text}`);
+    throw new Error(`Не удалось обновить запись: ${text}`);
   }
 
   const data = (await response.json()) as CreateEntryResponse;
@@ -110,7 +130,7 @@ export async function deleteServerEntry(entryId: number | string) {
 
   if (!response.ok && response.status !== 404) {
     const text = await response.text();
-    throw new Error(`Delete entry failed: ${text}`);
+    throw new Error(`Не удалось удалить запись: ${text}`);
   }
 }
 
@@ -118,7 +138,7 @@ export async function loadExtractionConfig() {
   const response = await fetch("/extractions/config");
 
   if (!response.ok) {
-    throw new Error("Failed to load extraction config");
+    throw new Error("Не удалось загрузить настройки анализа");
   }
 
   return (await response.json()) as ExtractionConfig;
@@ -132,7 +152,7 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
   const response = await fetch(`/extractions/status?${params.toString()}`);
 
   if (!response.ok) {
-    throw new Error("Failed to load extraction status");
+    throw new Error("Не удалось проверить доступность анализа");
   }
 
   return (await response.json()) as ExtractionStatus;
@@ -156,7 +176,7 @@ export async function extractSignal(payload: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Extraction failed: ${text}`);
+    throw new Error(`Не удалось выполнить анализ текста: ${text}`);
   }
 
   return (await response.json()) as ExtractionResult;
@@ -176,7 +196,7 @@ export async function appendEntrySignal(
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Append signal failed: ${text}`);
+    throw new Error(`Не удалось обновить результаты анализа: ${text}`);
   }
 
   const data = (await response.json()) as CreateEntryResponse;
@@ -189,7 +209,7 @@ export async function loadCurrentInsights(today: string) {
     const response = await fetch(`/insights/current?${params.toString()}`);
 
     if (!response.ok) {
-      throw new Error("Failed to load current insights");
+      throw new Error("Не удалось загрузить текущие наблюдения");
     }
 
     const data = (await response.json()) as CurrentInsightsResponse;
@@ -205,7 +225,7 @@ export async function loadInsightHistory() {
     const response = await fetch("/insights");
 
     if (!response.ok) {
-      throw new Error("Failed to load insight history");
+      throw new Error("Не удалось загрузить историю наблюдений");
     }
 
     const data = (await response.json()) as InsightHistoryResponse;
@@ -223,6 +243,6 @@ export async function deleteInsightSnapshot(insightId: number | string) {
 
   if (!response.ok && response.status !== 404) {
     const text = await response.text();
-    throw new Error(`Delete insight failed: ${text}`);
+    throw new Error(`Не удалось удалить наблюдение: ${text}`);
   }
 }

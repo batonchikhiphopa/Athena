@@ -24,7 +24,7 @@ router.get("/extractions/status", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to check extraction status",
+      error: "Не удалось проверить доступность анализа",
     });
   }
 });
@@ -34,7 +34,7 @@ router.post("/extractions", async (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({
-      error: "Invalid extraction payload",
+      error: "Не удалось обработать текст для анализа",
       details: parsed.error.flatten(),
     });
   }
@@ -47,7 +47,7 @@ router.post("/extractions", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: "Failed to extract signal",
+      error: "Не удалось выполнить анализ текста",
     });
   }
 });

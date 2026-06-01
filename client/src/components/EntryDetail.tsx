@@ -34,7 +34,7 @@ export function EntryDetail({
           onClick={() => onEditEntry(entry)}
           type="button"
         >
-          {entry.isDraft ? "Открыть" : "Редактировать"}
+          {entry.isDraft ? "Продолжить черновик" : "Редактировать"}
         </button>
       </div>
 

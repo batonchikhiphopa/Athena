@@ -2,6 +2,46 @@
 
 All notable changes to Athena are documented here.
 
+## v0.5.0 - 2026-05-31
+
+### Added
+
+- Added Sprint 3f release hygiene with README cleanup, future migration filename renumbering, and release-check scripts.
+- Added Sprint 3b Signal Contract v3 with structured `state_inference`, `emotion_signals`, `metric_confidence`, and `quality_reason`.
+- Added a deterministic signal mapper that recomputes `load`, `fatigue`, `focus`, metric confidence, quality reason, and signal quality from structured state inference.
+- Added SQLite storage for Signal v3 JSON detail columns while preserving the existing metric columns for analytics.
+- Added DebugPanel visibility for state inference, metric confidence, quality reason, and null metric explanations.
+- Added Sprint 3c queue-backed Signal v3 extraction/reprocess jobs for saved local entries.
+- Added explicit reprocess reasons for `fallback`, `sparse_no_metrics`, `provider_failure`, and `manual_reprocess`.
+- Added queue visibility for latest job type, status, and reason.
+- Added Sprint 3c policy coverage for stale queued payloads, legacy v2 entries, provider failures, and sparse metric-empty signals.
+- Added Sprint 3d local ONNX Web emotion spike with an opt-in debug Settings demo.
+- Added `@huggingface/transformers` to the client for browser-side ONNX emotion inference.
+- Added a local emotion privacy guard that fails the spike if raw diary text appears in model artifact requests.
+- Added Sprint 3e emotion-aware deterministic mapping with bounded local emotion adjustments.
+- Added mapper coverage proving emotion evidence cannot create final metrics without state evidence.
+
+### Changed
+
+- Bumped the app package version to `0.5.0`.
+- Bumped active extraction contracts to `signal.v3` and `extraction.v4`.
+- Updated extraction prompts and provider JSON schema to request Signal v3 output from a single-entry attentive-reader framing.
+- Made new signal API payloads strict v3-only while preserving read compatibility for legacy stored rows.
+- Moved pending extraction/reprocess flow onto durable `entry.reprocess_signal` jobs that read latest local source at execution time.
+- Expanded Settings reprocess candidates beyond fallback to include metric-empty sparse signals, retryable provider failures, and legacy schema/prompt rows.
+- Kept retryable provider failures as queue/provider state instead of appending fallback signals over usable entries.
+- Local emotion output now remains secondary evidence: it can nudge existing state-derived `load`, `fatigue`, and `focus` by a bounded amount, but cannot directly create final metrics.
+- DebugPanel now shows the emotion-aware mapper decision next to emotion evidence in debug mode.
+- Lazy-loaded secondary tab surfaces so the editor path stays lighter.
+- Removed stale built-app launcher references from README and project structure notes.
+- Renumbered planned future migrations after the Signal v3 migration.
+
+### Notes
+
+- The preferred CEDR emotion model remains documented as the candidate, but the runnable 3d spike uses the ONNX-compatible `onnx-community/tanaos-emotion-detection-v1-ONNX` model because the CEDR candidate does not currently expose compatible ONNX files.
+- Semantic indexing, self-report queue handlers, and full background sync remain later work.
+- Extraction still does not emit baseline deviation, trend, or history-aware fields.
+
 ## v0.4.0 - 2026-05-12
 
 ### Added
@@ -23,7 +63,7 @@ All notable changes to Athena are documented here.
 
 ### Notes
 
-- Sprint 3a is reliability-only: Signal Contract v3, local emotion inference, and semantic indexing remain future work.
+- Sprint 3a is reliability-only: later Signal Contract v3, local emotion inference, and semantic indexing were not included in v0.4.0.
 - Queue payloads reference local source records and must not duplicate raw diary text.
 - Background sync and full autosave-backed remote sync are still out of scope for this release.
 

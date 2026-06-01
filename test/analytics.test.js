@@ -13,6 +13,12 @@ import {
   normalizeRows,
 } from "../server/services/analytics.service.js";
 import { generateObservation } from "../server/services/observation.service.js";
+import {
+  fallbackSignal,
+  sparseSignal as baseSparseSignal,
+  state,
+  validSignal as baseValidSignal,
+} from "./signal-fixtures.js";
 
 async function createTestDb() {
   const db = await open({
@@ -33,42 +39,22 @@ async function createTestDb() {
   return db;
 }
 
-function validSignal(overrides = {}) {
-  return {
-    topics: ["работа"],
-    activities: ["кодинг"],
-    markers: ["deep_work"],
-    load: 8,
-    fatigue: 7,
-    focus: 2,
-    signal_quality: "valid",
-    ...overrides,
-  };
-}
-
 function sparseSignal(overrides = {}) {
-  return {
+  return baseSparseSignal({
     topics: ["работа", "дом"],
-    activities: [],
-    markers: [],
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "sparse",
     ...overrides,
-  };
+  });
 }
 
-function fallbackSignal() {
-  return {
-    topics: [],
-    activities: [],
-    markers: [],
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "fallback",
-  };
+function validSignal(overrides = {}) {
+  return baseValidSignal({
+    state_inference: {
+      load: state("high"),
+      fatigue: state("high"),
+      focus: state("low"),
+    },
+    ...overrides,
+  });
 }
 
 async function addEntry(db, id, date, signal) {
@@ -128,9 +114,11 @@ test("buildSummary derives deterministic aggregates without fallback averages", 
       validSignal({
         topics: ["сон"],
         markers: ["sleep"],
-        load: 4,
-        fatigue: 5,
-        focus: 6,
+        state_inference: {
+          load: state("medium"),
+          fatigue: state("medium"),
+          focus: state("medium"),
+        },
       })
     );
 
@@ -145,9 +133,9 @@ test("buildSummary derives deterministic aggregates without fallback averages", 
     assert.equal(summary.metrics.sparse_entries, 1);
     assert.equal(summary.metrics.fallback_entries, 1);
     assert.equal(summary.metrics.density, 0.5);
-    assert.equal(summary.metrics.avg_load, 6);
-    assert.equal(summary.metrics.avg_fatigue, 6);
-    assert.equal(summary.metrics.avg_focus, 4);
+    assert.equal(summary.metrics.avg_load, 6.5);
+    assert.equal(summary.metrics.avg_fatigue, 6.5);
+    assert.equal(summary.metrics.avg_focus, 3.5);
     assert.deepEqual(summary.metrics.metric_samples, {
       load: 2,
       fatigue: 2,
@@ -189,7 +177,7 @@ test("analytics reads latest overrides through effective signals", async () => {
     });
 
     assert.equal(summary.metrics.avg_load, 2);
-    assert.equal(summary.metrics.avg_fatigue, 7);
+    assert.equal(summary.metrics.avg_fatigue, 8);
     assert.equal(summary.metrics.avg_focus, 2);
   } finally {
     await db.close();

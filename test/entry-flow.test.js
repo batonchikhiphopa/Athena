@@ -11,6 +11,7 @@ import {
   updateEntry,
 } from "../server/services/entry.service.js";
 import { ACTIVE_SCHEMA_VERSION } from "../server/config/versions.js";
+import { state, validSignal } from "./signal-fixtures.js";
 
 async function createTestDb() {
   const db = await open({
@@ -28,19 +29,6 @@ async function createTestDb() {
   }
 
   return db;
-}
-
-function validSignal(overrides = {}) {
-  return {
-    topics: ["работа"],
-    activities: ["кодинг"],
-    markers: ["deep_work"],
-    load: 4,
-    fatigue: null,
-    focus: 7,
-    signal_quality: "valid",
-    ...overrides,
-  };
 }
 
 test("entry create/read flow stores only textless metadata and signals", async () => {
@@ -63,7 +51,7 @@ test("entry create/read flow stores only textless metadata and signals", async (
     assert.equal(entry.status, "extracted");
     assert.equal(entry.source_text_hash, "a".repeat(64));
     assert.deepEqual(entry.signal.topics, ["работа"]);
-    assert.equal(entry.signal.load, 4);
+    assert.equal(entry.signal.load, 5);
     assert.equal(entry.metadata.schema_version, ACTIVE_SCHEMA_VERSION);
     assert.equal(entry.metadata.provider, "ollama");
     assert.equal(entry.metadata.error_code, null);
@@ -106,7 +94,12 @@ test("entry update keeps the same server entry id", async () => {
       entry_date: "2026-04-24",
       tags: ["after"],
       source_text_hash: "f".repeat(64),
-      signal: validSignal({ topics: ["дизайн"], focus: 8 }),
+      signal: validSignal({
+        topics: ["дизайн"],
+        state_inference: {
+          focus: state("high"),
+        },
+      }),
       metadata: {
         schema_version: "signal.v1",
         prompt_version: "extraction.v1",
@@ -125,6 +118,7 @@ test("entry update keeps the same server entry id", async () => {
     assert.equal(updated.source_text_hash, "f".repeat(64));
     assert.deepEqual(updated.tags, ["after"]);
     assert.deepEqual(updated.signal.topics, ["дизайн"]);
+    assert.equal(updated.signal.focus, 8);
     assert.equal(updated.metadata.provider, "gemini");
     assert.equal(entries.length, 1);
     assert.equal(signalCount.count, 2);

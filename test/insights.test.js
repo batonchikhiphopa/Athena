@@ -11,6 +11,10 @@ import {
   getCurrentInsightSnapshots,
   listInsightSnapshots,
 } from "../server/services/insight.service.js";
+import {
+  sparseSignal as baseSparseSignal,
+  validSignal as baseValidSignal,
+} from "./signal-fixtures.js";
 
 async function createTestDb() {
   const db = await open({
@@ -32,27 +36,19 @@ async function createTestDb() {
 }
 
 function validSignal(topic = "работа") {
-  return {
+  return baseValidSignal({
     topics: [topic],
     activities: [],
     markers: [],
-    load: 5,
-    fatigue: null,
-    focus: 6,
-    signal_quality: "valid",
-  };
+  });
 }
 
 function sparseSignal() {
-  return {
+  return baseSparseSignal({
     topics: ["идея"],
     activities: [],
     markers: [],
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "sparse",
-  };
+  });
 }
 
 async function addEntry(db, id, date, signal) {

@@ -27,7 +27,7 @@ export function Observations({
     <section className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-y-auto px-8 py-8">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className="text-xs uppercase text-zinc-400">Observations</div>
+          <div className="text-xs uppercase text-zinc-400">Наблюдения</div>
           <h1 className="mt-2 text-2xl font-medium text-zinc-950">
             История наблюдений
           </h1>
@@ -44,7 +44,7 @@ export function Observations({
 
       {groups.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400">
-          Пока пусто.
+          Наблюдений пока нет. Они появятся, когда накопится достаточно записей.
         </div>
       ) : (
         <div className="space-y-6">
@@ -77,7 +77,7 @@ export function Observations({
                       </div>
 
                       <button
-                        aria-label="Удалить наблюдение"
+                        aria-label="Удалить из истории"
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 opacity-70 transition hover:bg-red-50 hover:text-red-700 group-hover:opacity-100"
                         onClick={() => onDeleteInsight(insight)}
                         type="button"

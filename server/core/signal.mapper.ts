@@ -1,41 +1,18 @@
 import type {
   ConfidenceLevel,
-  ExtractionProvider,
   MetricConfidence,
   MetricName,
   Signal,
   SignalAxis,
   SignalLevel,
   StateInference,
-  StateInferenceValue,
-} from "../types";
-import {
-  CLIENT_ACTIVE_PROMPT_VERSION,
-  CLIENT_ACTIVE_SCHEMA_VERSION,
-} from "./signalVersions";
+} from "./types.js";
 
-export const SIGNAL_AXES: SignalAxis[] = [
-  "load",
-  "fatigue",
-  "focus",
-  "distress",
-  "anxiety",
-  "mood",
-  "energy",
-  "sleep_quality",
-  "self_attack",
-  "shame_guilt",
-  "rumination",
-  "avoidance",
-  "agency",
-  "conflict",
-  "social_connection",
-  "recovery_need",
-  "confidence",
-];
-
-const SIGNAL_AXIS_SET = new Set<string>(SIGNAL_AXES);
-const LEVELS = new Set<string>(["low", "medium", "high"]);
+type SignalCandidate = Omit<
+  Signal,
+  "load" | "fatigue" | "focus" | "metric_confidence" | "quality_reason" | "signal_quality"
+> &
+  Pick<Signal, "load" | "fatigue" | "focus" | "metric_confidence" | "quality_reason" | "signal_quality">;
 
 type WeightedAxis = {
   axis: SignalAxis;
@@ -55,6 +32,14 @@ type EmotionMetricAdjustment = {
   score: number;
   direction: 1 | -1;
 };
+
+const DEFAULT_METRIC_CONFIDENCE: MetricConfidence = {
+  load: "low",
+  fatigue: "low",
+  focus: "low",
+};
+
+const EMOTION_ADJUSTMENT_THRESHOLD = 0.55;
 
 const METRIC_AXES: Record<MetricName, WeightedAxis[]> = {
   load: [
@@ -96,83 +81,16 @@ const CONFIDENCE_RANK: Record<ConfidenceLevel, number> = {
   high: 3,
 };
 
-const EMOTION_ADJUSTMENT_THRESHOLD = 0.55;
-
-export function createFallbackSignal(): Signal {
-  return {
-    topics: [],
-    activities: [],
-    markers: [],
-    state_inference: {},
-    emotion_signals: {},
-    metric_confidence: createEmptyMetricConfidence(),
-    quality_reason: "fallback",
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "fallback",
-  };
-}
-
-export function createFallbackMetadata(
-  provider: ExtractionProvider = "off",
-  model = "fallback",
-  errorCode = "client_fallback",
-) {
-  return {
-    schema_version: CLIENT_ACTIVE_SCHEMA_VERSION,
-    prompt_version: CLIENT_ACTIVE_PROMPT_VERSION,
-    provider,
-    model,
-    error_code: errorCode,
-    created_at: new Date().toISOString(),
-  };
-}
-
-export function createEmptyMetricConfidence(): MetricConfidence {
-  return {
-    load: "low",
-    fatigue: "low",
-    focus: "low",
-  };
-}
-
-export function normalizeSignal(value: unknown): Signal {
-  if (!isRecord(value)) return createFallbackSignal();
-  if (isNormalizedSignal(value)) return value;
-
-  const signalQuality =
-    value.signal_quality === "valid" ||
-    value.signal_quality === "sparse" ||
-    value.signal_quality === "fallback"
-      ? value.signal_quality
-      : "fallback";
-
-  return {
-    topics: normalizeStringArray(value.topics).slice(0, 5),
-    activities: normalizeStringArray(value.activities).slice(0, 5),
-    markers: normalizeStringArray(value.markers).slice(0, 8),
-    state_inference: normalizeStateInference(value.state_inference),
-    emotion_signals: isRecord(value.emotion_signals) ? value.emotion_signals : {},
-    metric_confidence: normalizeMetricConfidence(value.metric_confidence),
-    quality_reason:
-      typeof value.quality_reason === "string" && value.quality_reason.trim()
-        ? value.quality_reason
-        : signalQuality === "fallback"
-          ? "fallback"
-          : "legacy_signal_v2",
-    load: normalizeScore(value.load),
-    fatigue: normalizeScore(value.fatigue),
-    focus: normalizeScore(value.focus),
-    signal_quality: signalQuality,
-  };
-}
-
-export function mapSignalCandidate(candidate: Signal): Signal {
+export function mapSignalCandidate(candidate: SignalCandidate): Signal {
   const emotionLabels = extractEmotionLabels(candidate.emotion_signals);
   const load = mapMetric("load", candidate.state_inference, emotionLabels);
   const fatigue = mapMetric("fatigue", candidate.state_inference, emotionLabels);
   const focus = mapMetric("focus", candidate.state_inference, emotionLabels);
+  const metric_confidence: MetricConfidence = {
+    load: load.confidence,
+    fatigue: fatigue.confidence,
+    focus: focus.confidence,
+  };
   const hasMetric = load.score !== null || fatigue.score !== null || focus.score !== null;
   const hasEmotionSignal = Object.keys(emotionLabels).length > 0;
   const hasTextSignal =
@@ -188,11 +106,7 @@ export function mapSignalCandidate(candidate: Signal): Signal {
     markers: candidate.markers,
     state_inference: candidate.state_inference,
     emotion_signals: candidate.emotion_signals,
-    metric_confidence: {
-      load: load.confidence,
-      fatigue: fatigue.confidence,
-      focus: focus.confidence,
-    },
+    metric_confidence,
     quality_reason: getQualityReason(
       candidate.state_inference,
       hasMetric,
@@ -205,6 +119,10 @@ export function mapSignalCandidate(candidate: Signal): Signal {
     focus: focus.score,
     signal_quality: hasMetric ? "valid" : hasTextSignal ? "sparse" : "fallback",
   };
+}
+
+export function createEmptyMetricConfidence(): MetricConfidence {
+  return { ...DEFAULT_METRIC_CONFIDENCE };
 }
 
 function mapMetric(
@@ -259,7 +177,8 @@ function mapMetric(
 }
 
 function scoreLevel(level: SignalLevel, direction: 1 | -1): number {
-  const forwardScore = level === "high" ? 8 : level === "medium" ? 5 : 2;
+  const forwardScore =
+    level === "high" ? 8 : level === "medium" ? 5 : 2;
 
   return direction === 1 ? forwardScore : 10 - forwardScore;
 }
@@ -271,11 +190,9 @@ function confidenceWeight(confidence: ConfidenceLevel): number {
 }
 
 function highestConfidence(confidences: ConfidenceLevel[]): ConfidenceLevel {
-  return confidences.reduce<ConfidenceLevel>(
-    (best, confidence) =>
-      CONFIDENCE_RANK[confidence] > CONFIDENCE_RANK[best] ? confidence : best,
-    "low",
-  );
+  return confidences.reduce<ConfidenceLevel>((best, confidence) =>
+    CONFIDENCE_RANK[confidence] > CONFIDENCE_RANK[best] ? confidence : best,
+  "low");
 }
 
 function adjustConfidence(
@@ -423,132 +340,6 @@ function normalizeEmotionLabel(label: string): string {
     .replace(/^label_/, "")
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-}
-
-function normalizeStateInference(value: unknown): StateInference {
-  if (!isRecord(value)) return {};
-
-  return Object.entries(value).reduce<StateInference>((result, [axis, raw]) => {
-    const inference = normalizeStateInferenceValue(raw);
-    if (!SIGNAL_AXIS_SET.has(axis) || !inference) return result;
-
-    result[axis as SignalAxis] = inference;
-    return result;
-  }, {});
-}
-
-function normalizeStateInferenceValue(
-  value: unknown,
-): StateInferenceValue | null {
-  if (!isRecord(value)) return null;
-  if (!LEVELS.has(String(value.level))) return null;
-  if (!LEVELS.has(String(value.confidence))) return null;
-
-  return {
-    level: value.level as SignalLevel,
-    confidence: value.confidence as ConfidenceLevel,
-    basis: normalizeStringArray(value.basis).slice(0, 6),
-  };
-}
-
-function normalizeMetricConfidence(value: unknown): MetricConfidence {
-  if (!isRecord(value)) return createEmptyMetricConfidence();
-
-  return {
-    load: normalizeConfidence(value.load),
-    fatigue: normalizeConfidence(value.fatigue),
-    focus: normalizeConfidence(value.focus),
-  };
-}
-
-function normalizeConfidence(value: unknown): ConfidenceLevel {
-  return LEVELS.has(String(value)) ? (value as ConfidenceLevel) : "low";
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter(
-        (item): item is string =>
-          typeof item === "string" && item.trim().length > 0,
-      )
-    : [];
-}
-
-function normalizeScore(value: unknown): number | null {
-  return typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 0 &&
-    value <= 10
-    ? value
-    : null;
-}
-
-function isNormalizedSignal(value: Record<string, unknown>): value is Signal {
-  return (
-    isBoundedStringArray(value.topics, 5) &&
-    isBoundedStringArray(value.activities, 5) &&
-    isBoundedStringArray(value.markers, 8) &&
-    isNormalizedStateInference(value.state_inference) &&
-    isRecord(value.emotion_signals) &&
-    isNormalizedMetricConfidence(value.metric_confidence) &&
-    typeof value.quality_reason === "string" &&
-    value.quality_reason.trim().length > 0 &&
-    isNormalizedScore(value.load) &&
-    isNormalizedScore(value.fatigue) &&
-    isNormalizedScore(value.focus) &&
-    (value.signal_quality === "valid" ||
-      value.signal_quality === "sparse" ||
-      value.signal_quality === "fallback")
-  );
-}
-
-function isBoundedStringArray(value: unknown, maxLength: number) {
-  return (
-    Array.isArray(value) &&
-    value.length <= maxLength &&
-    value.every((item) => typeof item === "string" && item.trim().length > 0)
-  );
-}
-
-function isNormalizedStateInference(value: unknown): value is StateInference {
-  if (!isRecord(value)) return false;
-
-  return Object.entries(value).every(
-    ([axis, inference]) =>
-      SIGNAL_AXIS_SET.has(axis) && isNormalizedStateInferenceValue(inference),
-  );
-}
-
-function isNormalizedStateInferenceValue(
-  value: unknown,
-): value is StateInferenceValue {
-  return (
-    isRecord(value) &&
-    LEVELS.has(String(value.level)) &&
-    LEVELS.has(String(value.confidence)) &&
-    isBoundedStringArray(value.basis, 6)
-  );
-}
-
-function isNormalizedMetricConfidence(
-  value: unknown,
-): value is MetricConfidence {
-  return (
-    isRecord(value) &&
-    LEVELS.has(String(value.load)) &&
-    LEVELS.has(String(value.fatigue)) &&
-    LEVELS.has(String(value.focus))
-  );
-}
-
-function isNormalizedScore(value: unknown): value is number | null {
-  return (
-    value === null ||
-    (typeof value === "number" &&
-      Number.isInteger(value) &&
-      value >= 0 &&
-      value <= 10)
-  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -5,6 +5,7 @@ import {
   DEFAULT_OLLAMA_MODEL,
 } from "../config/versions.js";
 import { MARKERS } from "../core/markers.js";
+import { SIGNAL_AXES } from "../core/signal.schema.js";
 import type { ExtractionProvider, ExtractionResult, SignalMetadata } from "../core/types.js";
 import {
   createFallbackSignal,
@@ -46,25 +47,82 @@ export const EXTRACTION_PROVIDERS: ExtractionProviderMap = {
 
 const GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
 const ALLOWED_MARKERS = MARKERS;
+const CONFIDENCE_LEVELS = ["low", "medium", "high"];
+const STATE_LEVELS = ["low", "medium", "high"];
+const METRIC_NAMES = ["load", "fatigue", "focus"];
+
+const STATE_INFERENCE_JSON_SCHEMA = {
+  type: "object",
+  properties: Object.fromEntries(
+    SIGNAL_AXES.map((axis) => [
+      axis,
+      {
+        type: "object",
+        properties: {
+          level: {
+            type: "string",
+            enum: STATE_LEVELS,
+          },
+          confidence: {
+            type: "string",
+            enum: CONFIDENCE_LEVELS,
+          },
+          basis: {
+            type: "array",
+            maxItems: 6,
+            items: { type: "string", maxLength: 160 },
+          },
+        },
+        required: ["level", "confidence", "basis"],
+        additionalProperties: false,
+      },
+    ]),
+  ),
+  additionalProperties: false,
+};
 
 const SIGNAL_JSON_SCHEMA = {
   type: "object",
   properties: {
     topics: {
       type: "array",
-      items: { type: "string" },
+      maxItems: 5,
+      items: { type: "string", maxLength: 80 },
     },
     activities: {
       type: "array",
-      items: { type: "string" },
+      maxItems: 5,
+      items: { type: "string", maxLength: 80 },
     },
     markers: {
       type: "array",
+      maxItems: 8,
       items: {
         type: "string",
         enum: ALLOWED_MARKERS,
       },
     },
+    state_inference: STATE_INFERENCE_JSON_SCHEMA,
+    emotion_signals: {
+      type: "object",
+      maxProperties: 16,
+      additionalProperties: true,
+    },
+    metric_confidence: {
+      type: "object",
+      properties: Object.fromEntries(
+        METRIC_NAMES.map((metric) => [
+          metric,
+          {
+            type: "string",
+            enum: CONFIDENCE_LEVELS,
+          },
+        ]),
+      ),
+      required: METRIC_NAMES,
+      additionalProperties: false,
+    },
+    quality_reason: { type: "string", maxLength: 128 },
     load: { type: ["integer", "null"] },
     fatigue: { type: ["integer", "null"] },
     focus: { type: ["integer", "null"] },
@@ -77,11 +135,16 @@ const SIGNAL_JSON_SCHEMA = {
     "topics",
     "activities",
     "markers",
+    "state_inference",
+    "emotion_signals",
+    "metric_confidence",
+    "quality_reason",
     "load",
     "fatigue",
     "focus",
     "signal_quality",
   ],
+  additionalProperties: false,
 };
 
 export function getExtractionOptions() {
@@ -338,14 +401,20 @@ function buildExtractionMessages(rawText: string) {
 function buildSystemInstruction(): string {
   return [
     "You are the extraction layer of Athena.",
+    "Read as a careful attentive reader of a diary entry.",
     "You see only the current raw entry.",
     "Do not use history, assumptions, external context, or prior trends.",
+    "Do not claim clinical authority.",
+    "Do not use diagnosis, therapy instructions, crisis counseling, medication guidance, or medical claims.",
+    "Do not reduce extraction to keyword search.",
     "Return only valid JSON.",
     "No markdown. No explanation. No text outside JSON.",
     "Use the same language as the entry for topics and activities.",
     "Do not translate.",
     "Markers are first-class context and event flags, not weak numeric scores.",
     "Use concrete markers when the entry directly names a context, symptom, rhythm, or event.",
+    "State inference separates observed context, inferred state, uncertainty, and final numeric projection.",
+    "The app recomputes final metrics deterministically from state_inference, but you must still provide the full v3 shape.",
     "Use null for load, fatigue, or focus only if the entry contains no relevant signal for that metric at all.",
     "Prefer a cautious estimate over null when the entry gives any directional evidence.",
     "Do not invent load, fatigue, or focus from a marker alone; markers may support a score only when the entry also gives contextual evidence.",
@@ -356,13 +425,23 @@ function buildSystemInstruction(): string {
 
 function buildUserExtractionPrompt(rawText: string): string {
   return [
-    "Extract a signal candidate from this entry.",
+    "Extract a Signal v3 candidate from this entry.",
     "",
     "Return exactly this JSON shape:",
     "{",
     '  "topics": [],',
     '  "activities": [],',
     '  "markers": [],',
+    '  "state_inference": {',
+    '    "distress": { "level": "low", "confidence": "low", "basis": [] }',
+    "  },",
+    '  "emotion_signals": {},',
+    '  "metric_confidence": {',
+    '    "load": "low",',
+    '    "fatigue": "low",',
+    '    "focus": "low"',
+    "  },",
+    '  "quality_reason": "no_relevant_signal",',
     '  "load": null,',
     '  "fatigue": null,',
     '  "focus": null,',
@@ -373,7 +452,16 @@ function buildUserExtractionPrompt(rawText: string): string {
     "- topics: string[], 0-5",
     "- activities: string[], 0-5",
     "- markers: enum[], 0-8",
+    "- state_inference: object keyed only by allowed state axes; omit axes with no evidence",
+    "- state_inference values: { level: low|medium|high, confidence: low|medium|high, basis: string[] }",
+    "- basis: short observed reasons from this entry, not quotes of the full entry",
+    "- emotion_signals: object, keep {} in this sprint unless explicit local emotion evidence is supplied",
+    "- metric_confidence: confidence for final load/fatigue/focus projection",
+    "- quality_reason: short snake_case reason for the projection or abstention",
     "- load/fatigue/focus: integer 0-10 or null",
+    "",
+    "Allowed state axes:",
+    SIGNAL_AXES.join(", "),
     "",
     "Metric scales:",
     "",

@@ -53,10 +53,8 @@ export function useAthenaApp() {
       await initializeDraft();
       setPage("editor");
 
-      // Sprint 3a.1 note:
-      // Existing direct pending re-extraction flow is intentionally preserved.
-      // The durable queue is initialized separately by useSyncQueue().
-      // Actual extraction/reprocess queue integration comes later.
+      // Startup only enqueues persisted pending work. The queue itself starts
+      // after first render through useSyncQueue(), so editor startup stays fast.
       await processPendingReextractEntries(nextExtractionSettings);
 
       await refreshEntries();
@@ -119,7 +117,7 @@ export function useAthenaApp() {
 
   async function handleClearLocalData() {
     const confirmed = window.confirm(
-      "Удалить локальные записи и черновик с этого устройства? Текст сервером не восстанавливается.",
+      "Удалить все записи и черновик с этого устройства? Это действие нельзя отменить.",
     );
 
     if (!confirmed) return;
@@ -163,6 +161,9 @@ export function useAthenaApp() {
     extractionConfig: settings.extractionConfig,
     extractionSettings: settings.extractionSettings,
     extractionStatus: settings.extractionStatus,
+    localEmotionSpikeEnabled: settings.localEmotionSpikeEnabled,
+    localEmotionSpikeResult: settings.localEmotionSpikeResult,
+    localEmotionSpikeStatus: settings.localEmotionSpikeStatus,
     insights: insights.insights,
     observationHistory: insights.observationHistory,
     page,
@@ -190,12 +191,14 @@ export function useAthenaApp() {
       refreshExtractionStatus: settings.refreshExtractionStatus,
       refreshObservationHistory: insights.refreshObservationHistory,
       reprocessFallbackEntries: handleReprocessFallbackEntries,
+      runLocalEmotionSpikeDemo: settings.runLocalEmotionSpikeDemo,
       selectEntry: entries.selectEntry,
       setEntrySearchQuery: entries.setEntrySearchQuery,
       toggleDraftAnalysisEnabled: editor.toggleAnalysisEnabled,
       toggleEntryAnalysisEnabled: entries.toggleEntryAnalysisEnabled,
       toggleIncludedEntryTag: entries.toggleIncludedEntryTag,
       toggleDebugMode: settings.toggleDebugMode,
+      toggleLocalEmotionSpike: settings.toggleLocalEmotionSpike,
       togglePersonaText: settings.togglePersonaText,
 
       retryQueueJob: syncQueue.retry,
