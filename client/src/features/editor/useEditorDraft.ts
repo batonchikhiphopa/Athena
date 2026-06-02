@@ -13,6 +13,7 @@ import {
   saveLocalEntry,
   updateLocalEntry,
 } from "../../lib/storage";
+import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 
 export type DraftStatus = "loading" | "saved" | "saving";
@@ -100,6 +101,9 @@ export function useEditorDraft({
           if (runId !== autosaveRunRef.current) return;
 
           await deleteLocalEntry(activeEntryId);
+          await deleteEntrySelfReportAndSync(activeEntryId).catch((error) =>
+            console.warn("[self-report:delete-empty-entry]", error),
+          );
 
           if (existing?.serverId) {
             await deleteServerEntry(existing.serverId).catch((error) =>

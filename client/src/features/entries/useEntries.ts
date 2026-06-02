@@ -12,6 +12,7 @@ import {
   setEntrySortDirection as persistEntrySortDirection,
   updateLocalEntry,
 } from "../../lib/storage";
+import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
 import { mergeEntryState, mergeServerEntryIntoView } from "./entryState";
 import { useEntrySearch } from "./useEntrySearch";
 
@@ -112,6 +113,9 @@ export function useEntries() {
   const deleteEntry = useCallback(
     async (entry: EntryView) => {
       await deleteLocalEntry(entry.id);
+      await deleteEntrySelfReportAndSync(entry.id).catch((error) =>
+        console.warn("[self-report:delete-entry]", error),
+      );
 
       if (entry.serverId) {
         await deleteServerEntry(entry.serverId).catch((error) =>

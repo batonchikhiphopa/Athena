@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "../i18n/useI18n";
 import { formatLongDate, todayDateOnly } from "../lib/dates";
 import type { InsightSnapshot } from "../types";
 import { buildAthenaPlaceholder } from "../features/editor/editorPlaceholder";
@@ -6,6 +7,12 @@ import {
   useEditorTagControls,
 } from "../features/editor/useEditorTagControls";
 import type { AvailableTag } from "../features/editor/editorTagUtils";
+import { saveEntrySelfReportAndSync } from "../features/selfReports/selfReportActions";
+import { getEntrySelfReport } from "../features/selfReports/selfReportStorage";
+import {
+  DEFAULT_SELF_REPORT_VALUES,
+  type SelfReportValues,
+} from "../features/selfReports/selfReportTypes";
 import { EditorActionButtons } from "./editor/EditorActionButtons";
 import { EditorTagChips } from "./editor/EditorTagChips";
 import { EditorTagMenu } from "./editor/EditorTagMenu";
@@ -13,6 +20,7 @@ import { EditorTagMenu } from "./editor/EditorTagMenu";
 type EditorProps = {
   analysisEnabled: boolean;
   availableTags: AvailableTag[];
+  editingEntryId: string | null;
   entryDate: string;
   editorInsight: InsightSnapshot | null;
   personaTextEnabled: boolean;
@@ -27,6 +35,7 @@ type EditorProps = {
 export function Editor({
   analysisEnabled,
   availableTags,
+  editingEntryId,
   entryDate,
   editorInsight,
   personaTextEnabled,
@@ -37,9 +46,16 @@ export function Editor({
   onNewBlankPage,
   onToggleAnalysisEnabled,
 }: EditorProps) {
+  const { language } = useI18n();
+  const [selfReportCloseSignal, setSelfReportCloseSignal] = useState(0);
+  const [selfReportValues, setSelfReportValues] = useState<SelfReportValues>(
+    DEFAULT_SELF_REPORT_VALUES,
+  );
+  const pendingSelfReportRef = useRef<SelfReportValues | null>(null);
+
   const athenaPlaceholder = useMemo(
-    () => buildAthenaPlaceholder(editorInsight, personaTextEnabled),
-    [editorInsight, personaTextEnabled],
+    () => buildAthenaPlaceholder(editorInsight, personaTextEnabled, language),
+    [editorInsight, language, personaTextEnabled],
   );
 
   const {
@@ -70,6 +86,81 @@ export function Editor({
     onChangeText,
   });
 
+  const persistSelfReport = useCallback(
+    async (entryId: string, valuesToSave: SelfReportValues) => {
+      await saveEntrySelfReportAndSync({
+        entryId,
+        localDay: entryDate || todayDateOnly(),
+        values: valuesToSave,
+      });
+    },
+    [entryDate],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOrAttachSelfReport() {
+      if (!editingEntryId) {
+        if (!pendingSelfReportRef.current) {
+          setSelfReportValues(DEFAULT_SELF_REPORT_VALUES);
+        }
+
+        return;
+      }
+
+      const pendingValues = pendingSelfReportRef.current;
+
+      if (pendingValues) {
+        pendingSelfReportRef.current = null;
+        setSelfReportValues(pendingValues);
+        await persistSelfReport(editingEntryId, pendingValues).catch((error) =>
+          console.warn("[self-report:attach-pending]", error),
+        );
+        return;
+      }
+
+      const report = await getEntrySelfReport(editingEntryId).catch((error) => {
+        console.warn("[self-report:load-entry]", error);
+        return null;
+      });
+
+      if (!cancelled) {
+        setSelfReportValues(report?.values ?? DEFAULT_SELF_REPORT_VALUES);
+      }
+    }
+
+    void loadOrAttachSelfReport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editingEntryId, persistSelfReport]);
+
+  useEffect(() => {
+    if (editingEntryId) return;
+    if (text.trim() || visibleTags.length > 0) return;
+
+    pendingSelfReportRef.current = null;
+    setSelfReportValues(DEFAULT_SELF_REPORT_VALUES);
+  }, [editingEntryId, text, visibleTags.length]);
+
+  const commitSelfReport = useCallback(
+    (valuesToSave: SelfReportValues) => {
+      setSelfReportValues(valuesToSave);
+
+      if (!editingEntryId) {
+        pendingSelfReportRef.current = valuesToSave;
+        return;
+      }
+
+      void persistSelfReport(editingEntryId, valuesToSave).catch((error) =>
+        console.warn("[self-report:save-entry]", error),
+      );
+    },
+    [editingEntryId, persistSelfReport],
+  );
+
   return (
     <section className="flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden px-1.5 pt-1">
       <EditorTagChips
@@ -89,8 +180,11 @@ export function Editor({
       >
         <EditorActionButtons
           analysisEnabled={analysisEnabled}
+          selfReportCloseSignal={selfReportCloseSignal}
+          selfReportValues={selfReportValues}
           onInsertTag={insertHashAtCursor}
           onNewBlankPage={onNewBlankPage}
+          onSelfReportCommit={commitSelfReport}
           onToggleAnalysisEnabled={onToggleAnalysisEnabled}
         />
 
@@ -103,7 +197,7 @@ export function Editor({
         />
 
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3 text-xs text-zinc-600">
-          <span>{formatLongDate(entryDate || todayDateOnly())}</span>
+          <span>{formatLongDate(entryDate || todayDateOnly(), language)}</span>
         </div>
 
         <textarea
@@ -118,6 +212,7 @@ export function Editor({
           onChange={(event) => {
             setCursorPosition(event.currentTarget.selectionStart);
             setDismissedTagInputKey(null);
+            setSelfReportCloseSignal((current) => current + 1);
             onChangeText(event.currentTarget.value);
           }}
           onClick={(event) => {

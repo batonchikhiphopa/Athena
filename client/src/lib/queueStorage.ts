@@ -36,50 +36,33 @@ function openTransaction(
 
 export async function addQueueJob(job: QueueJob): Promise<QueueJob> {
   const db = await openAthenaLocalDb();
+  const store = openTransaction(db, "readwrite");
+  await promisifyRequest(store.add(job));
 
-  try {
-    const store = openTransaction(db, "readwrite");
-    await promisifyRequest(store.add(job));
-    return job;
-  } finally {
-    db.close();
-  }
+  return job;
 }
 
 export async function updateQueueJob(job: QueueJob): Promise<QueueJob> {
   const db = await openAthenaLocalDb();
+  const store = openTransaction(db, "readwrite");
+  await promisifyRequest(store.put(job));
 
-  try {
-    const store = openTransaction(db, "readwrite");
-    await promisifyRequest(store.put(job));
-    return job;
-  } finally {
-    db.close();
-  }
+  return job;
 }
 
 export async function getQueueJob(id: string): Promise<QueueJob | null> {
   const db = await openAthenaLocalDb();
+  const store = openTransaction(db, "readonly");
+  const job = await promisifyRequest<QueueJob | undefined>(store.get(id));
 
-  try {
-    const store = openTransaction(db, "readonly");
-    const job = await promisifyRequest<QueueJob | undefined>(store.get(id));
-
-    return job ?? null;
-  } finally {
-    db.close();
-  }
+  return job ?? null;
 }
 
 export async function getQueueJobs(): Promise<QueueJob[]> {
   const db = await openAthenaLocalDb();
+  const store = openTransaction(db, "readonly");
 
-  try {
-    const store = openTransaction(db, "readonly");
-    return await promisifyRequest<QueueJob[]>(store.getAll());
-  } finally {
-    db.close();
-  }
+  return promisifyRequest<QueueJob[]>(store.getAll());
 }
 
 export async function getRunnableQueueJobs(
@@ -208,13 +191,9 @@ export async function findQueueJobByIdempotencyKey(
 
 export async function deleteQueueJob(id: string): Promise<void> {
   const db = await openAthenaLocalDb();
+  const store = openTransaction(db, "readwrite");
 
-  try {
-    const store = openTransaction(db, "readwrite");
-    await promisifyRequest(store.delete(id));
-  } finally {
-    db.close();
-  }
+  await promisifyRequest(store.delete(id));
 }
 
 export async function compactQueueJobs(): Promise<void> {

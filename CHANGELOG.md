@@ -2,6 +2,30 @@
 
 All notable changes to Athena are documented here.
 
+## v0.6.0 - 2026-06-01
+
+### Added
+
+- Added optional self-report state sliders in the Editor prototype flow.
+- Added browser-local self-report storage and daily aggregate recomputation.
+- Added `self_report.sync_daily_aggregate` queue handling for syncing numeric aggregates without raw self-report event data.
+- Added SQLite storage and API routes for self-report daily aggregates.
+- Added self-report aggregate contract coverage for strict server payloads.
+
+### Changed
+
+- Bumped root and client package versions to `0.6.0`.
+- Aligned Express/Node type packages with the Express 4 and Node 24 runtime versions, and updated Vite to the latest 8.0 patch.
+- Added the `/self-reports` Vite dev proxy route.
+- Made server authentication optional through `ATHENA_AUTH_REQUIRED`; passwordless local API access is the default, and strict owner login remains available when enabled.
+- Reworked app access into a zero-friction local lock: first launch opens the editor immediately, Settings exposes one app-protection toggle, and vault credential details stay hidden from the UI.
+- Stripped client-local aggregate IDs before syncing self-report aggregate payloads.
+- Updated README route, migration, privacy, and queue documentation for the current repository state.
+
+### Notes
+
+- Self-report sync sends daily numeric aggregates only; raw diary text and per-entry self-report events remain browser-local.
+
 ## v0.5.0 - 2026-05-31
 
 ### Added

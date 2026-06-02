@@ -13,10 +13,19 @@ import {
 export async function extractSignalForText(
   rawText: string,
   settings: ExtractionSettings,
+  signal?: AbortSignal,
 ) {
+  if (signal?.aborted) {
+    throw new Error("Job was cancelled.");
+  }
+
   const emotionResult = getLocalEmotionSpikeEnabled()
     ? await extractLocalEmotionSignals(rawText)
     : null;
+
+  if (signal?.aborted) {
+    throw new Error("Job was cancelled.");
+  }
 
   if (settings.provider === "gemini" && !reserveGeminiDailyExtraction()) {
     return mergeEmotionIfAvailable({
@@ -31,7 +40,7 @@ export async function extractSignalForText(
 
   try {
     return mergeEmotionIfAvailable(
-      await extractSignal({ text: rawText, settings }),
+      await extractSignal({ text: rawText, settings, signal }),
       emotionResult,
     );
   } catch (error) {

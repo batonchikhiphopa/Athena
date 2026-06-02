@@ -1,11 +1,17 @@
 import express, { type ErrorRequestHandler } from "express";
 import path from "path";
 import analyticsRouter from "./api/analytics.route.js";
+import authRouter from "./api/auth.route.js";
 import configRouter from "./api/config.route.js";
 import entriesRouter from "./api/entries.route.js";
 import extractionsRouter from "./api/extractions.route.js";
 import insightsRouter from "./api/insights.route.js";
+import selfReportsRouter from "./api/self-reports.route.js";
 import { PROJECT_ROOT } from "./config/env.js";
+import {
+  requireProtectedApiAuth,
+  requireProtectedApiCsrf,
+} from "./middleware/auth.middleware.js";
 
 const CLIENT_DIR = path.join(PROJECT_ROOT, "client", "dist");
 
@@ -28,10 +34,14 @@ export function createApp(): express.Express {
   app.use(express.json({ limit: "64kb" }));
   app.use(jsonErrorHandler);
   app.use(configRouter);
+  app.use(authRouter);
+  app.use(requireProtectedApiAuth);
+  app.use(requireProtectedApiCsrf);
   app.use(extractionsRouter);
   app.use(entriesRouter);
   app.use(analyticsRouter);
   app.use(insightsRouter);
+  app.use(selfReportsRouter);
   app.use(express.static(CLIENT_DIR));
 
   app.get("*", (_req, res) => {

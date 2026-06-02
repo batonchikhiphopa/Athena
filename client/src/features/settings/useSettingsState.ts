@@ -1,4 +1,6 @@
 import { useCallback, useState } from "react";
+import type { Language } from "../../i18n/languages";
+import { translateMessage } from "../../i18n/messages";
 import type {
   EntryView,
   ExtractionConfig,
@@ -41,7 +43,7 @@ type ReprocessCallbacks = {
   refreshObservationHistory: () => Promise<void>;
 };
 
-export function useSettingsState() {
+export function useSettingsState(language: Language) {
   const [debugMode, setDebugMode] = useState(() => getDebugMode());
   const [localEmotionSpikeEnabled, setLocalEmotionSpikeEnabled] = useState(() =>
     getLocalEmotionSpikeEnabled(),
@@ -129,7 +131,7 @@ export function useSettingsState() {
     setLocalEmotionSpikeStatus("running");
 
     const result = await extractLocalEmotionSignals(
-      "Сегодня тревожно, но я всё равно рад, что удалось спокойно закончить важную работу.",
+      translateMessage(language, "settings.records.localEmotionDemoText"),
     );
 
     setLocalEmotionSpikeResult(result);
@@ -156,8 +158,15 @@ export function useSettingsState() {
     setReprocessStatus("running");
     setReprocessMessage(
       extractionSettings.provider === "gemini"
-        ? `Подготовлено к повторному анализу: ${processableCandidates.length}/${candidates.length}. Осталось попыток Gemini сегодня: ${remainingGeminiExtractions}/${GEMINI_DAILY_EXTRACTION_LIMIT}`
-        : `Подготовлено к повторному анализу: ${candidates.length}`,
+        ? translateMessage(language, "reprocess.geminiPrepared", {
+            limit: GEMINI_DAILY_EXTRACTION_LIMIT,
+            processable: processableCandidates.length,
+            remaining: remainingGeminiExtractions,
+            total: candidates.length,
+          })
+        : translateMessage(language, "reprocess.prepared", {
+            count: candidates.length,
+          }),
     );
 
     let queued = 0;
@@ -178,7 +187,10 @@ export function useSettingsState() {
 
         queued += 1;
         setReprocessMessage(
-          `Подготовлено: ${queued} из ${processableCandidates.length}`,
+          translateMessage(language, "reprocess.progress", {
+            queued,
+            total: processableCandidates.length,
+          }),
         );
       } catch (error) {
         failed += 1;
@@ -193,11 +205,15 @@ export function useSettingsState() {
     setReprocessStatus(failed > 0 ? "error" : "done");
     setReprocessMessage(
       [
-        `Подготовлено к обработке: ${queued}`,
+        translateMessage(language, "reprocess.done", {
+          failed,
+          queued,
+        }),
         skippedByGeminiLimit > 0
-          ? `Отложено до следующего лимита Gemini: ${skippedByGeminiLimit}`
+          ? translateMessage(language, "reprocess.skippedGemini", {
+              count: skippedByGeminiLimit,
+            })
           : null,
-        `Не удалось подготовить: ${failed}`,
       ]
         .filter(Boolean)
         .join(", "),

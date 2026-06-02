@@ -1,12 +1,6 @@
-export type AthenaInsightTopic = {
-id: string;
-aliases: string[];
-subject: string;
-templates: string[];
-advice: string[];
-};
+import type { AthenaInsightTopic } from "./athenaInsightPhrasesTypes";
 
-export const ATHENA_INSIGHT_TOPICS: AthenaInsightTopic[] = [
+export const ATHENA_INSIGHT_TOPICS_RU: AthenaInsightTopic[] = [
 {
 id: "health",
 aliases: ["здоровье", "самочувствие", "тело", "health"],

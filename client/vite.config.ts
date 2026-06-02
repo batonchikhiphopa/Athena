@@ -6,10 +6,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/config': 'http://127.0.0.1:3000',
+      '/auth': 'http://127.0.0.1:3000',
       '/entries': 'http://127.0.0.1:3000',
       '/extractions': 'http://127.0.0.1:3000',
       '/analytics': 'http://127.0.0.1:3000',
       '/insights': 'http://127.0.0.1:3000',
+      '/self-reports': 'http://127.0.0.1:3000',
     },
   },
 })

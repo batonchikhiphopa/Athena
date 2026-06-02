@@ -2,6 +2,7 @@ import type {
   MenuPosition,
   SuggestionOption,
 } from "../../features/editor/editorTagUtils";
+import { useI18n } from "../../i18n/useI18n";
 
 type EditorTagMenuProps = {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export function EditorTagMenu({
   suggestions,
   onCommitSuggestion,
 }: EditorTagMenuProps) {
+  const { t } = useI18n();
+
   if (!isOpen || !menuPosition) return null;
 
   return (
@@ -50,7 +53,10 @@ export function EditorTagMenu({
             onClick={() => onCommitSuggestion(option)}
             type="button"
           >
-            <span>{option.type === "create" ? "Создать " : ""}#{option.tag}</span>
+            <span>
+              {option.type === "create" ? t("editor.tag.create") : ""}#
+              {option.tag}
+            </span>
             {option.count !== null && (
               <span className="text-zinc-400">{option.count}</span>
             )}

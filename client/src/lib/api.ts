@@ -8,9 +8,34 @@ import type {
   Signal,
   SignalMetadata,
 } from "../types";
+import type { SelfReportDailyAggregate } from "../features/selfReports/selfReportTypes";
 
 type EntriesResponse = {
   entries: ServerEntry[];
+};
+
+export type ServerAuthUser = {
+  id: number;
+  username: string;
+  role: "owner";
+};
+
+export type ServerAuthStatus = {
+  auth_required: boolean;
+  authenticated: boolean;
+  setup_required: boolean;
+  user: ServerAuthUser | null;
+  csrf_token?: string;
+};
+
+type ServerAuthResponse = {
+  user: ServerAuthUser;
+  csrf_token: string;
+};
+
+type ServerAuthPayload = {
+  username: string;
+  password: string;
 };
 
 type CreateEntryPayload = {
@@ -52,9 +77,79 @@ type AppendSignalPayload = {
   metadata?: SignalMetadata;
 };
 
+export type SyncSelfReportDailyAggregatePayload = Omit<
+  SelfReportDailyAggregate,
+  "id"
+>;
+
+export const SERVER_AUTH_REQUIRED_EVENT = "athena:server-auth-required";
+
+const CSRF_COOKIE_NAME = "athena_csrf";
+
+export async function loadServerAuthStatus() {
+  const response = await fetch("/auth/me", {
+    credentials: "same-origin",
+  });
+
+  if (!response.ok) {
+    throw new Error("Не удалось проверить вход");
+  }
+
+  return (await response.json()) as ServerAuthStatus;
+}
+
+export async function setupServerOwner(payload: ServerAuthPayload) {
+  const response = await fetch("/auth/setup", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Не удалось настроить владельца: ${text}`);
+  }
+
+  return (await response.json()) as ServerAuthResponse;
+}
+
+export async function loginServerOwner(payload: ServerAuthPayload) {
+  const response = await fetch("/auth/login", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: jsonHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Не удалось войти: ${text}`);
+  }
+
+  return (await response.json()) as ServerAuthResponse;
+}
+
+export async function logoutServerOwner() {
+  const response = await fetch("/auth/logout", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: csrfHeaders(),
+  });
+
+  if (!response.ok && response.status !== 401) {
+    const text = await response.text();
+    throw new Error(`Не удалось выйти: ${text}`);
+  }
+}
+
 export async function loadServerEntries() {
   try {
-    const response = await fetch("/entries");
+    const response = await fetch("/entries", {
+      credentials: "same-origin",
+    });
+
+    handleUnauthorized(response);
 
     if (!response.ok) {
       throw new Error("Не удалось загрузить записи");
@@ -70,7 +165,11 @@ export async function loadServerEntries() {
 
 export async function loadServerEntry(entryId: number | string) {
   try {
-    const response = await fetch(`/entries/${encodeURIComponent(entryId)}`);
+    const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
+      credentials: "same-origin",
+    });
+
+    handleUnauthorized(response);
 
     if (!response.ok) {
       throw new Error("Не удалось загрузить запись");
@@ -87,11 +186,12 @@ export async function loadServerEntry(entryId: number | string) {
 export async function createEntry(payload: CreateEntryPayload) {
   const response = await fetch("/entries", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    credentials: "same-origin",
+    headers: csrfJsonHeaders(),
     body: JSON.stringify(payload),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     const text = await response.text();
@@ -108,11 +208,12 @@ export async function updateServerEntry(
 ) {
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    credentials: "same-origin",
+    headers: csrfJsonHeaders(),
     body: JSON.stringify(payload),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     const text = await response.text();
@@ -126,7 +227,11 @@ export async function updateServerEntry(
 export async function deleteServerEntry(entryId: number | string) {
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
     method: "DELETE",
+    credentials: "same-origin",
+    headers: csrfHeaders(),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok && response.status !== 404) {
     const text = await response.text();
@@ -135,7 +240,11 @@ export async function deleteServerEntry(entryId: number | string) {
 }
 
 export async function loadExtractionConfig() {
-  const response = await fetch("/extractions/config");
+  const response = await fetch("/extractions/config", {
+    credentials: "same-origin",
+  });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     throw new Error("Не удалось загрузить настройки анализа");
@@ -149,7 +258,11 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
     provider: settings.provider,
     model: settings.model,
   });
-  const response = await fetch(`/extractions/status?${params.toString()}`);
+  const response = await fetch(`/extractions/status?${params.toString()}`, {
+    credentials: "same-origin",
+  });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     throw new Error("Не удалось проверить доступность анализа");
@@ -161,18 +274,21 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
 export async function extractSignal(payload: {
   text: string;
   settings: ExtractionSettings;
+  signal?: AbortSignal;
 }) {
   const response = await fetch("/extractions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    signal: payload.signal,
+    credentials: "same-origin",
+    headers: csrfJsonHeaders(),
     body: JSON.stringify({
       text: payload.text,
       provider: payload.settings.provider,
       model: payload.settings.model,
     }),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     const text = await response.text();
@@ -188,11 +304,12 @@ export async function appendEntrySignal(
 ) {
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}/signals`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    credentials: "same-origin",
+    headers: csrfJsonHeaders(),
     body: JSON.stringify(payload),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok) {
     const text = await response.text();
@@ -206,7 +323,11 @@ export async function appendEntrySignal(
 export async function loadCurrentInsights(today: string) {
   try {
     const params = new URLSearchParams({ today });
-    const response = await fetch(`/insights/current?${params.toString()}`);
+    const response = await fetch(`/insights/current?${params.toString()}`, {
+      credentials: "same-origin",
+    });
+
+    handleUnauthorized(response);
 
     if (!response.ok) {
       throw new Error("Не удалось загрузить текущие наблюдения");
@@ -222,7 +343,11 @@ export async function loadCurrentInsights(today: string) {
 
 export async function loadInsightHistory() {
   try {
-    const response = await fetch("/insights");
+    const response = await fetch("/insights", {
+      credentials: "same-origin",
+    });
+
+    handleUnauthorized(response);
 
     if (!response.ok) {
       throw new Error("Не удалось загрузить историю наблюдений");
@@ -239,10 +364,105 @@ export async function loadInsightHistory() {
 export async function deleteInsightSnapshot(insightId: number | string) {
   const response = await fetch(`/insights/${encodeURIComponent(insightId)}`, {
     method: "DELETE",
+    credentials: "same-origin",
+    headers: csrfHeaders(),
   });
+
+  handleUnauthorized(response);
 
   if (!response.ok && response.status !== 404) {
     const text = await response.text();
     throw new Error(`Не удалось удалить наблюдение: ${text}`);
   }
+}
+
+export async function syncSelfReportDailyAggregates(
+  localDay: string,
+  aggregates: SelfReportDailyAggregate[],
+) {
+  const response = await fetch(
+    `/self-reports/daily-aggregates/${encodeURIComponent(localDay)}`,
+    {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: csrfJsonHeaders(),
+      body: JSON.stringify({
+        aggregates: serializeSelfReportDailyAggregates(aggregates),
+      }),
+    },
+  );
+
+  handleUnauthorized(response);
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Не удалось синхронизировать self-report aggregates: ${text}`);
+  }
+}
+
+export function serializeSelfReportDailyAggregates(
+  aggregates: SelfReportDailyAggregate[],
+): SyncSelfReportDailyAggregatePayload[] {
+  return aggregates.map((aggregate) => ({
+    local_day: aggregate.local_day,
+    axis: aggregate.axis,
+    count: aggregate.count,
+    sum: aggregate.sum,
+    sum_squares: aggregate.sum_squares,
+    mean: aggregate.mean,
+    min: aggregate.min,
+    max: aggregate.max,
+    schema_version: aggregate.schema_version,
+    aggregate_version: aggregate.aggregate_version,
+    updated_at: aggregate.updated_at,
+  }));
+}
+
+function jsonHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+  };
+}
+
+function csrfJsonHeaders(): Record<string, string> {
+  return {
+    ...jsonHeaders(),
+    ...csrfHeaders(),
+  };
+}
+
+function csrfHeaders(): Record<string, string> {
+  const token = readBrowserCookie(CSRF_COOKIE_NAME);
+
+  return token ? { "X-CSRF-Token": token } : {};
+}
+
+function readBrowserCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+
+  if (!cookie) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(cookie.slice(prefix.length));
+  } catch {
+    return cookie.slice(prefix.length);
+  }
+}
+
+function handleUnauthorized(response: Response): void {
+  if (response.status !== 401 || typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(SERVER_AUTH_REQUIRED_EVENT));
 }

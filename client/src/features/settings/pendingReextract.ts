@@ -15,6 +15,7 @@ import {
 export async function reprocessLocalEntry(
   entry: LocalEntry,
   settings: ExtractionSettings,
+  signal?: AbortSignal,
 ): Promise<
   | {
       status: "processed";
@@ -24,7 +25,7 @@ export async function reprocessLocalEntry(
       errorCode: string;
     }
 > {
-  const extraction = await extractSignalForText(entry.text, settings);
+  const extraction = await extractSignalForText(entry.text, settings, signal);
 
   if (
     extraction.signal.signal_quality === "fallback" &&

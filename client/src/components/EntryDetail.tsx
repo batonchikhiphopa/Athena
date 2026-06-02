@@ -1,5 +1,6 @@
 import type { EntryView } from "../types";
 import { formatLongDate } from "../lib/dates";
+import { useI18n } from "../i18n/useI18n";
 import { DebugPanel } from "./DebugPanel";
 
 type EntryDetailProps = {
@@ -13,6 +14,8 @@ export function EntryDetail({
   entry,
   onEditEntry,
 }: EntryDetailProps) {
+  const { language, t } = useI18n();
+
   if (!entry) {
     return;
   }
@@ -22,10 +25,10 @@ export function EntryDetail({
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="text-xs uppercase text-zinc-400">
-            Запись
+            {t("entry.eyebrow")}
           </div>
           <h2 className="mt-2 text-2xl font-medium text-zinc-950">
-            {formatLongDate(entry.entryDate)}
+            {formatLongDate(entry.entryDate, language)}
           </h2>
         </div>
 
@@ -34,7 +37,9 @@ export function EntryDetail({
           onClick={() => onEditEntry(entry)}
           type="button"
         >
-          {entry.isDraft ? "Продолжить черновик" : "Редактировать"}
+          {entry.isDraft
+            ? t("entry.action.continueDraft")
+            : t("entry.action.edit")}
         </button>
       </div>
 

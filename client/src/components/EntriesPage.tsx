@@ -2,6 +2,7 @@ import type { EntrySortDirection, EntryView } from "../types";
 import { EntryDetail } from "./EntryDetail";
 import { excerpt } from "../lib/text";
 import { formatLongDate } from "../lib/dates";
+import { useI18n } from "../i18n/useI18n";
 import { normalizeTag } from "../features/entries/entryFilters";
 import { EyeClosedIcon, EyeOpenIcon } from "./icon";
 
@@ -48,12 +49,16 @@ export function EntriesPage({
   onToggleEntryAnalysis,
   onToggleTag,
 }: EntriesPageProps) {
+  const { language, t } = useI18n();
+
   return (
     <section className="-mx-4 grid h-full min-h-0 w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)] overflow-hidden">
       <div className="grid h-screen min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
         <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
           <div>
-            <div className="text-xs uppercase text-zinc-400">Записи</div>
+            <div className="text-xs uppercase text-zinc-400">
+              {t("entries.title")}
+            </div>
           </div>
 
           <button
@@ -61,7 +66,7 @@ export function EntriesPage({
             onClick={onRefresh}
             type="button"
           >
-            Обновить
+            {t("common.refresh")}
           </button>
         </div>
 
@@ -76,7 +81,7 @@ export function EntriesPage({
             onClick={() => onChangeSortDirection("desc")}
             type="button"
           >
-            Новые
+            {t("entries.sort.newest")}
           </button>
           <button
             className={[
@@ -88,14 +93,14 @@ export function EntriesPage({
             onClick={() => onChangeSortDirection("asc")}
             type="button"
           >
-            Старые
+            {t("entries.sort.oldest")}
           </button>
         </div>
 
         <div className="mb-4 space-y-3">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input
-              aria-label="Поиск по записям"
+              aria-label={t("entries.searchAria")}
               className="
                 h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm
                 text-zinc-800 outline-none transition
@@ -103,7 +108,7 @@ export function EntriesPage({
                 focus:border-zinc-400
               "
               onChange={(event) => onSearchQueryChange(event.target.value)}
-              placeholder="Поиск по записям, дате или тегам"
+              placeholder={t("entries.searchPlaceholder")}
               type="search"
               value={searchQuery}
             />
@@ -114,7 +119,7 @@ export function EntriesPage({
                 onClick={onClearFilters}
                 type="button"
               >
-                Сбросить фильтры
+                {t("entries.action.clearFilters")}
               </button>
             )}
           </div>
@@ -148,7 +153,9 @@ export function EntriesPage({
           )}
 
           {isSearching && (
-            <div className="text-xs text-zinc-400">Идёт поиск…</div>
+            <div className="text-xs text-zinc-400">
+              {t("entries.searching")}
+            </div>
           )}
         </div>
 
@@ -169,10 +176,10 @@ export function EntriesPage({
                 type="button"
               >
                 <div className="grid grid-flow-col auto-cols-max items-center justify-start gap-2 text-xs text-zinc-400">
-                  <span>{formatLongDate(entry.entryDate)}</span>
+                  <span>{formatLongDate(entry.entryDate, language)}</span>
                   {entry.isDraft && (
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-500">
-                      Черновик
+                      {t("entries.draft")}
                     </span>
                   )}
                 </div>
@@ -197,8 +204,8 @@ export function EntriesPage({
                 <button
                   aria-label={
                     entry.analysisEnabled
-                      ? "Исключить запись из анализа"
-                      : "Включить запись в анализ"
+                      ? t("entries.action.excludeAnalysis")
+                      : t("entries.action.includeAnalysis")
                   }
                   aria-pressed={entry.analysisEnabled}
                   className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
@@ -211,7 +218,7 @@ export function EntriesPage({
                   {entry.analysisEnabled ? <EyeOpenIcon /> : <EyeClosedIcon />}
                 </button>
                 <button
-                  aria-label="Редактировать запись"
+                  aria-label={t("entries.action.edit")}
                   className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -222,7 +229,7 @@ export function EntriesPage({
                   ✎
                 </button>
                 <button
-                  aria-label="Удалить запись"
+                  aria-label={t("entries.action.delete")}
                   className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-red-50 hover:text-red-700"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -239,8 +246,8 @@ export function EntriesPage({
           {entries.length === 0 && (
             <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400">
               {hasActiveFilters
-                ? "По этим фильтрам записей нет."
-                : "Записей пока нет."}
+                ? t("entries.emptyFiltered")
+                : t("entries.empty")}
             </div>
           )}
         </div>

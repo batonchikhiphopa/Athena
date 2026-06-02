@@ -1,600 +1,175 @@
 # Athena
 
-Athena is an editor-first daily reflection app with a hidden analytical engine.
+<p align="center">
+  <img src="client/src/assets/logo-bg.jpg" alt="Athena" width="960">
+</p>
 
-The current app is intentionally quiet: the first thing a user gets is a writing surface, not a dashboard, chat, coach, tracker, or analytics console. The analytical layer exists under the surface: it extracts structured signals from entries, stores textless metadata on the backend, computes deterministic recurrence, and shows short observations only when there is enough valid data.
+Athena is a local-first daily reflection app with a calm writing surface and a
+strict analytical engine underneath.
 
-This README describes the project as it currently works in this repository.
+The product opens as an editor. The user writes, adds tags, and decides which
+entries may be analyzed. Athena is not a dashboard, chatbot, coach, productivity
+tracker, or medical tool. Its analytical layer stays quiet until there is enough
+supported data to show a short observation.
 
-## Current Product Shape
-
-Athena currently has five main screens:
-
-- Editor: the primary writing surface. The app autosaves text locally.
-- Entries: a list/detail view of local entries merged with backend metadata.
-- Graph: a visual mock only. It is not real graph analytics yet.
-- Observations: history of generated day/week/month insight snapshots.
-- Settings: extraction provider/model, status check, network status, durable queue status/controls, Signal v3 reprocessing, debug mode, local emotion spike demo, persona text toggle, local data clearing.
-
-The current client also has an offline-first app shell. After the first successful online load, the app shell and static assets can be served from the service worker cache. Local writing remains available without network/backend access, while server-backed reads degrade quietly until connectivity returns.
-
-The guiding rule is:
+The working principle is:
 
 ```text
 The surface is calm. The engine is strict.
 ```
 
-## What Athena Is
+## What Athena Is Today
 
-Athena is currently:
+![Editor screen](client/assets/editor.png)
 
-- a local-first daily writing surface;
-- a note-first reflection app;
-- a local search and tag filtering surface for entries;
-- a hidden signal extraction pipeline over personal writing;
-- a deterministic analytics layer over stored signals;
-- an observation system that reveals recurrence over time;
-- an offline-capable browser app shell after first load;
-- a privacy-oriented prototype where the app backend stores no raw diary text.
+Athena currently has four visible work surfaces:
 
-## How To Run
+- **Editor** - the primary writing surface. It has local autosave, tags, an
+  analysis toggle for the current entry, voluntary self-report scales, and a
+  quick way to start a new entry.
+- **Entries** - the local archive. It supports text, date, and tag search;
+  filtering; sorting; reading; editing; deletion; and per-entry analysis
+  control.
+- **Observations** - saved day, week, and month observations. They are derived
+  from deterministic analytics and shown only after sufficiency rules pass.
+- **Settings** - interface language, app protection, extraction settings,
+  processing queue state, reprocessing controls, debug mode, and local data
+  controls.
 
-### Requirements
+![Entries screen](client/assets/entries.png)
 
-- Node.js with npm.
-- Windows is the most directly supported path right now because the repo includes the `run-dev.bat` launcher.
-- Optional: local Ollama if you want local AI extraction.
-- Optional: Gemini API key if you explicitly want cloud extraction.
+After the first successful load, Athena also behaves as an offline-capable
+browser app shell. The editor and local archive stay useful even when the
+backend is temporarily unavailable.
 
-### Quick Dev Start On Windows
+## What Athena Does
 
-From the project root:
+- stores raw diary text in the browser;
+- encrypts browser-local entries and drafts through the local vault when app
+  protection is enabled;
+- stores only textless structure on the backend: ids, dates, tags, hashes,
+  signals, metadata, self-report aggregates, and insight snapshots;
+- extracts signals from the current entry only, without history, RAG, hidden
+  memory, or prior trends;
+- supports `ollama`, `gemini`, and `off` extraction providers;
+- validates and sanitizes Signal v3 payloads before persistence;
+- recomputes `load`, `fatigue`, `focus`, confidence, and quality through a
+  deterministic mapper;
+- keeps a durable browser-local queue for signal reprocessing;
+- syncs numeric daily self-report aggregates without raw self-report events;
+- shows internal signal details only in debug mode.
 
-```bat
-run-dev.bat
-```
+Athena is not a diagnostic system and does not replace therapy or medical care.
+It is a private diary with a careful analytical layer.
 
-This script:
+## Privacy Boundary
 
-- installs backend dependencies if `node_modules/` is missing;
-- installs frontend dependencies if `client/node_modules/` is missing;
-- applies SQLite migrations;
-- starts the backend at `http://127.0.0.1:3000`;
-- starts Vite at `http://127.0.0.1:5173`;
-- opens the frontend URL.
+Raw diary text belongs to the local browser environment.
 
-Use this mode while editing the frontend. Vite serves the app and proxies API calls to the backend through relative paths.
+The backend is not a diary-text store. It keeps the textless data needed for
+analytics and observation history: `source_text_hash`, sanitized signals,
+effective signals, metadata, daily aggregates, and snapshots.
 
-### Manual Dev Start
+There is one important boundary: when analysis is enabled, the current entry
+text is passed transiently to the selected extraction provider. With `ollama`,
+that provider is intended to run locally. With `gemini`, the current entry text
+is sent to the Gemini API. With `off`, no model is called and Athena uses the
+fallback path.
+
+## Access Model
+
+Athena has two independent access rings:
+
+- **Server auth** - optional protection for the backend API. By default, the
+  local API is open for passwordless local use. Set
+  `ATHENA_AUTH_REQUIRED=true` to enable owner login with Argon2id password
+  hashes, HttpOnly session cookies, hashed session tokens in SQLite, and CSRF
+  checks for mutating requests.
+- **Local app protection** - optional protection for local diary data. It is
+  enabled from Settings and uses the local vault to encrypt entries and drafts
+  in IndexedDB. Athena can auto-lock or be locked manually.
+
+## Stack
+
+- React 19, TypeScript, Vite, Tailwind CSS;
+- IndexedDB for local entries, draft state, queue state, and vault envelopes;
+- Express 4 backend;
+- SQLite migrations and repositories;
+- Zod schemas for strict API contracts;
+- optional browser ONNX emotion spike through `@huggingface/transformers`;
+- service worker for app shell caching.
+
+## Run Locally
 
 Install dependencies:
 
-```bash
+```powershell
 npm install
 npm --prefix client install
 ```
 
-Create `.env` if needed:
+Create a local env file:
 
-```bash
-copy .env.example .env
+```powershell
+Copy-Item .env.example .env
 ```
 
-Apply migrations:
+On macOS/Linux:
 
 ```bash
+cp .env.example .env
+```
+
+Run migrations and start the backend:
+
+```powershell
 npm run migrate
-```
-
-Start backend:
-
-```bash
 npm run dev
 ```
 
-In another terminal, start frontend:
+In a second terminal, start the client:
 
-```bash
-npm --prefix client run dev -- --host 127.0.0.1
+```powershell
+npm run client:dev
 ```
 
-Open:
+The Vite dev server opens at `http://127.0.0.1:5173` or the next free port. API
+requests are proxied to `http://127.0.0.1:3000`.
 
-```text
-http://127.0.0.1:5173
-```
+## Production Build
 
-### Manual Built Start
-
-```bash
-npm install
-npm --prefix client install
-npm run migrate
+```powershell
 npm run client:build
+npm run migrate
 npm run dev
 ```
 
-Open:
+After `client:build`, Express serves the built client from `client/dist`.
 
-```text
-http://127.0.0.1:3000
-```
+## Release Checks
 
-## Configuration
+Basic checks:
 
-The app reads `.env` through `server/config/load-env.js`.
-
-The example file is `.env.example`:
-
-```env
-ATHENA_AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gpt-oss:20b
-OLLAMA_REQUEST_TIMEOUT_MS=30000
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash-lite
-GEMINI_REQUEST_TIMEOUT_MS=30000
-ATHENA_HOST=127.0.0.1
-```
-
-Supported environment variables currently include:
-
-- `ATHENA_AI_PROVIDER`: `ollama`, `gemini`, or `off`.
-- `OLLAMA_BASE_URL`: local Ollama URL. The code only allows local Ollama hostnames.
-- `OLLAMA_MODEL`: default Ollama model. Defaults to `gpt-oss:20b`.
-- `OLLAMA_REQUEST_TIMEOUT_MS`: Ollama request timeout.
-- `GEMINI_API_KEY`: required only for Gemini extraction.
-- `GEMINI_MODEL`: default Gemini model. Defaults to `gemini-2.5-flash-lite`.
-- `GEMINI_REQUEST_TIMEOUT_MS`: Gemini request timeout.
-- `ATHENA_HOST`: backend host. Defaults to `127.0.0.1`.
-- `PORT`: backend port. Defaults to `3000`.
-- `ATHENA_DATA_DIR`: directory for local runtime data. Defaults to `data/`.
-- `ATHENA_DATABASE_PATH`: full SQLite path. Defaults to `data/athena.db`.
-
-## AI Extraction Modes
-
-Athena has three extraction providers:
-
-- `ollama`: local Ollama extraction. This is the default privacy-first mode.
-- `gemini`: Gemini API extraction. This requires `GEMINI_API_KEY`.
-- `off`: no model extraction. The app uses deterministic fallback signals.
-
-These options are exposed in Settings under `AI extraction`.
-
-Important privacy detail: the backend does not persist raw diary text, but the current extraction endpoint does receive the current entry text transiently in order to call the selected provider. With `ollama`, that provider is intended to be local. With `gemini`, the current entry text is sent to the Gemini API.
-
-The client keeps a browser-local Gemini extraction counter and limits Gemini extraction to 20 requests per local calendar day. Pending extraction and queued Signal v3 reprocessing respect the remaining daily quota.
-
-## Data And Privacy Model
-
-Athena splits data between browser-local storage and backend SQLite.
-
-### Browser Local Data
-
-Raw diary text is stored locally in the browser using IndexedDB:
-
-```text
-athena-private-v1
-```
-
-Local entries include:
-
-- raw text;
-- local entry date;
-- manually managed local tags;
-- per-entry analysis permission;
-- source text hash;
-- latest known signal metadata;
-- sync status.
-
-Settings and UI state are stored in `localStorage`, including:
-
-- debug mode;
-- extraction settings;
-- entry sort direction;
-- online/offline derived UI state;
-- persona text toggle;
-- seen editor insight IDs;
-- insight phrase choice/bag state.
-
-### Backend Data
-
-The backend uses SQLite. By default the database is:
-
-```text
-data/athena.db
-```
-
-The backend stores:
-
-- textless entry metadata;
-- `source_text_hash`;
-- tags;
-- immutable signal rows;
-- signal overrides;
-- effective signal view;
-- insight snapshots;
-- schema/prompt/model metadata.
-
-The backend is designed not to store raw diary text.
-
-There are tests that enforce this boundary, including rejection of raw text in entry API payloads.
-
-## Current Pipeline
-
-The current end-to-end flow is:
-
-```text
-user writes locally
--> browser stores raw text in IndexedDB
--> user may allow or block analysis for the entry
--> browser hashes raw text
--> extraction runs for the current entry only
--> extraction returns a signal candidate
--> app sanitizes / falls back when needed
--> backend stores textless entry metadata and immutable signal rows
--> analytics read effective signals
--> insight snapshots are generated when sufficiency rules pass
--> UI renders short observations
-```
-
-Extraction sees only the current entry and only runs for entries whose analysis is enabled. It does not read note history, prior trends, database state, or graph context.
-
-## Offline Behavior
-
-Athena has a small offline-first shell:
-
-- `client/public/sw.js` caches the app shell, `index.html`, and same-origin static assets.
-- `client/src/lib/serviceWorker.ts` registers the service worker from the browser client.
-- `client/src/lib/offline.ts` tracks `navigator.onLine` and browser `online` / `offline` events.
-- Settings shows the current network status.
-- Entry and insight list reads return empty arrays on API failure instead of breaking the writing surface.
-
-This is not a full background sync engine yet. The app now includes a durable IndexedDB operation queue for reliability work, but does not include background sync, offline API analytics cache, push notifications, or multi-device conflict handling.
-
-## Operation Queue
-
-Sprint 3a adds the first durable operation queue layer.
-
-Current queue behavior:
-
-- jobs persist in browser IndexedDB under `queue_jobs`;
-- job payloads store local source references, not duplicate raw diary text;
-- processing is sequential;
-- stale `running` jobs recover on startup;
-- retry/backoff handles retryable backend, network, and provider failures;
-- failed and blocked jobs can be retried from Settings;
-- saved local entries enqueue Signal v3 extraction/reprocess through `entry.reprocess_signal`;
-- queued reprocess jobs read the latest local source entry at execution time;
-- fallback, metric-empty sparse, retryable provider failure, and legacy signal rows can be explicitly reprocessed;
-- retryable provider failures remain queue/provider state and do not append fallback signals over usable entries;
-- queue health and the latest job reason are visible in Settings without becoming a primary product surface.
-
-Server reliability was tightened with serialized SQLite write transactions and idempotent `POST /entries` by `client_entry_id`.
-
-## Signals
-
-Signals currently contain:
-
-- `topics`: up to 5 strings;
-- `activities`: up to 5 strings;
-- `markers`: enum values;
-- `state_inference`: structured single-entry state axes with `level`, `confidence`, and `basis`;
-- `emotion_signals`: optional local emotion evidence object, empty unless the debug-only local emotion path is enabled;
-- `metric_confidence`: confidence for `load`, `fatigue`, and `focus`;
-- `quality_reason`: short deterministic reason for the final projection or abstention;
-- `load`: integer `0-10` or `null`;
-- `fatigue`: integer `0-10` or `null`;
-- `focus`: integer `0-10` or `null`;
-- `signal_quality`: `valid`, `sparse`, or app-created `fallback`.
-
-Sprint 3d adds an opt-in local emotion spike behind debug Settings. It loads a browser-side ONNX classifier through `@huggingface/transformers`, keeps raw diary text out of queue/backend payloads, and merges output as optional `emotion_signals` evidence. Sprint 3e lets that evidence weakly nudge existing state-derived `load`, `fatigue`, and `focus`; emotion output never creates metrics by itself. The preferred CEDR model remains the documented candidate, while the runnable spike currently uses the ONNX-compatible `onnx-community/tanaos-emotion-detection-v1-ONNX` model.
-
-Allowed markers currently include:
-
-```text
-deadline_pressure
-context_switching
-deep_work
-admin_work
-creative_work
-late_night_ideas
-social_interaction
-conflict
-uncertainty
-health
-health_issue
-sleep
-sleep_issue
-exercise
-learning
-recovery
-recovery_need
-travel
-```
-
-Fallback means the system did not get a usable signal. Fallback values do not pretend to be real measurements.
-
-The active signal schema is currently `signal.v3`, and the active extraction prompt contract is `extraction.v4`.
-
-Extraction still sees only the current entry. History-aware comparisons, trends, and baseline deviation remain analytics-layer work, not extraction output.
-
-## Analytics
-
-Analytics are deterministic. They do not call an LLM.
-
-The backend currently computes:
-
-- valid/sparse/fallback counts;
-- signal density;
-- average load/fatigue/focus from valid signals only;
-- topic counts;
-- marker distribution with marker-specific priority ordering;
-- recurrence;
-- daily states;
-- entry gaps;
-- version boundaries.
-
-The `/analytics/summary` endpoint currently returns week and month summaries based on the latest entry date. This is mostly an internal/debug-style API; the default UI does not show a dashboard.
-
-## Insight Snapshots And Observations
-
-Insight snapshots are persisted in SQLite and shown in the Observations page.
-
-Current sufficiency rules:
-
-- day insight appears if yesterday has at least 1 valid day;
-- week insight appears if the last 7 calendar days have at least 4 valid days;
-- month insight appears if the last 30 calendar days have at least 14 valid days;
-- week snapshots may remain visible for up to 14 days after sufficiency is lost;
-- month snapshots may remain visible for up to 45 days after sufficiency is lost.
-
-The server snapshot stores:
-
-- layer: `day`, `week`, or `month`;
-- period start/end;
-- top topic;
-- generated text;
-- generated/expiry timestamps;
-- schema/prompt version.
-
-The client then formats the visible observation text through phrase libraries.
-
-Observations can also surface first-class context markers, including sparse markers that do not carry numeric state scores.
-
-## Persona Text And Insight Phrase Libraries
-
-There are two distinct insight phrase libraries:
-
-- `client/src/lib/insightPhrases.ts`: ordinary human-readable insight phrases.
-- `client/src/lib/athenaInsightPhrases.ts`: Athena-style insight phrases.
-
-The formatter is:
-
-```text
-client/src/lib/insightText.ts
-```
-
-It:
-
-- extracts the snapshot topic;
-- supports legacy text like `тема: health`;
-- finds a topic profile by `id` or `aliases`;
-- picks a template and advice;
-- replaces `{subject}`;
-- keeps a stable choice per insight;
-- uses phrase bags in `localStorage` to reduce repeated text.
-
-The general Athena placeholder/CTA library is separate:
-
-```text
-client/src/lib/athenaPhrases.ts
-```
-
-That file is for the editor persona text, not the main insight topic libraries.
-
-## Editor Behavior
-
-The Editor is the primary screen.
-
-Current behavior:
-
-- opens to a blank writing surface;
-- autosaves after a short delay;
-- includes an eye control for allowing or blocking text analysis for the current entry;
-- supports visible local tags above the writing surface;
-- supports adding tags through `#`, local tag autocomplete, editing tags, and removing tags;
-- empty input deletes the active local entry and tries to delete its server metadata if it exists;
-- source text hash is calculated locally;
-- new or changed entries are marked `pending_reextract` only when analysis is enabled;
-- pending entries are processed during app initialization.
-
-The editor placeholder can use Athena persona text when the persona toggle is enabled.
-
-## Entries Behavior
-
-The Entries page shows local entries merged with backend metadata.
-
-Current behavior:
-
-- list entries newest-first or oldest-first;
-- search local entries by text, date, or tag;
-- filter entries by one or more included tags;
-- clear stale tag filters when the last matching tag disappears;
-- select entry to read details;
-- edit an entry by reopening it in the editor;
-- delete local entry and attempt to delete server metadata;
-- allow or block analysis per entry through the eye control in the feed;
-- show tags;
-- show internal signal details only when debug mode is enabled.
-
-The backend may contain textless metadata that no longer has local text. The client currently treats those as server-only orphan entries and attempts to clean them up during refresh.
-
-## Settings
-
-Settings currently include:
-
-- extraction provider select;
-- model select;
-- extraction status check;
-- network status;
-- operation queue status and retry/pause/start controls;
-- queue-backed Signal v3 reprocessing for fallback, metric-empty sparse, provider-failure, and legacy rows that still have local text;
-- Gemini daily extraction limit protection for queued reprocessing;
-- debug mode toggle;
-- debug-only local emotion spike toggle and local demo runner;
-- persona text toggle;
-- local data clearing.
-
-Debug mode is off by default. When enabled, entry details show internal signal and metadata fields, and Settings exposes the local emotion spike controls.
-
-## API Surface
-
-Current backend routes:
-
-```text
-GET    /config
-
-GET    /extractions/config
-GET    /extractions/status
-POST   /extractions
-
-GET    /entries
-GET    /entries/:id
-POST   /entries
-PATCH  /entries/:id
-DELETE /entries/:id
-POST   /entries/:id/signals
-
-GET    /analytics/summary
-
-GET    /insights/current?today=YYYY-MM-DD
-GET    /insights
-DELETE /insights/:id
-```
-
-Express also serves the built frontend from `client/dist` when running the built app on port `3000`.
-
-## Database
-
-Migrations live in:
-
-```text
-migrations/
-```
-
-Current migration files:
-
-```text
-001_init.sql
-002_refresh_effective_signals.sql
-003_insight_snapshots.sql
-004_signal_provider_metadata.sql
-005_soft_delete_insight_snapshots.sql
-006_insight_snapshot_topic.sql
-```
-
-Run migrations with:
-
-```bash
-npm run migrate
-```
-
-## Project Layout
-
-```text
-client/
-  React/Vite frontend.
-
-server/
-  Express backend, API routes, services, repositories, SQLite access,
-  extraction, analytics, insights.
-
-shared/
-  Reserved for shared contracts.
-
-migrations/
-  SQLite schema migrations.
-
-data/
-  Local runtime data. Default SQLite database location.
-
-test/
-  Node test suite for backend/data invariants and flows.
-```
-
-## Useful Commands
-
-Run tests:
-
-```bash
+```powershell
 npm test
-```
-
-Build frontend:
-
-```bash
+npm run server:check
+npm run lint
 npm run client:build
 ```
 
-Start backend:
+Full release script:
 
-```bash
-npm run dev
+```powershell
+npm run release:check
 ```
 
-Start frontend dev server:
+`release:check` also runs `npm audit` for both root and client dependencies.
 
-```bash
-npm --prefix client run dev -- --host 127.0.0.1
-```
+## Data And Artifacts
 
-Run frontend lint:
+Local runtime data lives in `data/`. Local documents, `.env`, `node_modules/`,
+and `client/dist/` are ignored by Git and should not be part of a release
+commit.
 
-```bash
-npm --prefix client run lint
-```
-
-## Current Limitations
-
-These are current facts, not future promises:
-
-- Graph is a mock.
-- There is no mobile app.
-- There is no audio input.
-- There is no real semantic note graph yet.
-- There is no dashboard UI for analytics.
-- Insight text is selected from static phrase libraries, not generated by an LLM at display time.
-- Extraction may use an LLM, but only for the current entry.
-- The backend does not store raw text, but the extraction endpoint currently receives current-entry text transiently.
-- If Gemini is selected, current-entry text is sent to Gemini.
-- The default UI hides most engine details unless debug mode is enabled.
-
-## Screenshots
-
-### Editor
-<img src="client/assets/editor.png" width="700" />
-
-### Entries
-<img src="client/assets/entries.png" width="700" />
-
-## Design Direction
-
-Athena should feel:
-
-- quiet;
-- precise;
-- observant;
-- editor-first;
-- light on the surface;
-- strict underneath.
-
-Avoid turning the default experience into:
-
-- a metrics dashboard;
-- a motivational coach;
-- a therapy simulator;
-- a chat-first app;
-- a visible analytics console.
-
-If a future feature conflicts with the editor-first experience, the editor-first experience wins.
+README screenshots live in `client/assets/`. The app background image lives in
+`client/src/assets/logo-bg.jpg`.

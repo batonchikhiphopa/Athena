@@ -49,6 +49,7 @@ let snapshot: QueueSnapshot = {
 let processorStarted = false;
 let processorPaused = false;
 let activeAbortController: AbortController | null = null;
+let activeJobPromise: Promise<void> | null = null;
 let wakeTimer: number | null = null;
 
 const listeners = new Set<QueueListener>();
@@ -272,6 +273,24 @@ export function pauseQueue(): void {
   emitQueueSnapshot();
 }
 
+export async function stopQueueForVaultLock(): Promise<void> {
+  clearWakeTimer();
+  processorPaused = true;
+  processorStarted = false;
+  activeAbortController?.abort();
+
+  snapshot = {
+    ...snapshot,
+    isProcessing: false,
+  };
+
+  emitQueueSnapshot();
+
+  if (activeJobPromise) {
+    await activeJobPromise.catch(() => undefined);
+  }
+}
+
 export async function retryQueueJob(jobId: string): Promise<void> {
   const job = await getQueueJob(jobId);
   if (!job) return;
@@ -414,7 +433,8 @@ async function processQueue(): Promise<void> {
   await refreshQueueSnapshot();
 
   try {
-    await handler(runningJob, activeAbortController.signal);
+    activeJobPromise = handler(runningJob, activeAbortController.signal);
+    await activeJobPromise;
 
     if (activeAbortController.signal.aborted) {
       await updateQueueJob({
@@ -442,6 +462,7 @@ async function processQueue(): Promise<void> {
       await markJobFailedOrRetry(runningJob, error);
     }
   } finally {
+    activeJobPromise = null;
     activeAbortController = null;
     await refreshQueueSnapshot();
   }

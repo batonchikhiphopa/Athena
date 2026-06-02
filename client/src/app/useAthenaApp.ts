@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useI18n } from "../i18n/useI18n";
 import type { EntryView, Page } from "../types";
 import { deleteAthenaLocalData } from "../lib/storage";
 import { useEditorDraft } from "../features/editor/useEditorDraft";
@@ -8,8 +9,10 @@ import { processPendingReextractEntries } from "../features/settings/pendingReex
 import { useSettingsState } from "../features/settings/useSettingsState";
 import { useSyncQueue } from "../features/sync/useSyncQueue";
 import { useOnlineStatus } from "../lib/offline";
+import { stopQueueForVaultLock } from "../lib/queue";
 
 export function useAthenaApp() {
+  const { language, t } = useI18n();
   const [page, setPage] = useState<Page>("editor");
 
   const entries = useEntries();
@@ -20,7 +23,7 @@ export function useAthenaApp() {
     selectEntry: entries.selectEntry,
   });
 
-  const settings = useSettingsState();
+  const settings = useSettingsState(language);
 
   const insights = useInsights({
     draftLoaded: editor.draftLoaded,
@@ -116,9 +119,7 @@ export function useAthenaApp() {
   }
 
   async function handleClearLocalData() {
-    const confirmed = window.confirm(
-      "Удалить все записи и черновик с этого устройства? Это действие нельзя отменить.",
-    );
+    const confirmed = window.confirm(t("app.clearLocalDataConfirm"));
 
     if (!confirmed) return;
 
@@ -136,6 +137,13 @@ export function useAthenaApp() {
       refreshInsights: insights.refreshInsights,
       refreshObservationHistory: insights.refreshObservationHistory,
     });
+  }
+
+  async function handlePrepareForVaultLock() {
+    await stopQueueForVaultLock();
+    editor.clearAutosaveTimer();
+    await editor.persistEditorText(editor.draftText);
+    await stopQueueForVaultLock();
   }
 
   return {
@@ -204,6 +212,7 @@ export function useAthenaApp() {
       retryQueueJob: syncQueue.retry,
       cancelQueueJob: syncQueue.cancel,
       pauseQueue: syncQueue.pause,
+      prepareForVaultLock: handlePrepareForVaultLock,
       startQueue: syncQueue.start,
       retryRecoverableQueueJobs: syncQueue.retryRecoverable,
     },

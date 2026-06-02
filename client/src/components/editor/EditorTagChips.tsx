@@ -1,3 +1,5 @@
+import { useI18n } from "../../i18n/useI18n";
+
 type EditorTagChipsProps = {
   editingTagIndex: number | null;
   editingTagValue: string;
@@ -19,6 +21,8 @@ export function EditorTagChips({
   onRemoveTag,
   onStartEditingTag,
 }: EditorTagChipsProps) {
+  const { t } = useI18n();
+
   return (
     <div className="mb-1.5 h-8 px-0">
       <div className="flex h-9 flex-wrap items-start gap-2 overflow-hidden">
@@ -64,7 +68,7 @@ export function EditorTagChips({
                 #{tag}
               </button>
               <button
-                aria-label={`Удалить тег ${tag}`}
+                aria-label={t("editor.tag.remove", { tag })}
                 className="text-zinc-300 transition hover:text-zinc-700"
                 onClick={() => onRemoveTag(tag)}
                 type="button"

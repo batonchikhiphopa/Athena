@@ -7,6 +7,7 @@ import {
   recoverStaleJobs,
   retryQueueJob,
   startQueue,
+  stopQueueForVaultLock,
   subscribeToQueue,
   retryRecoverableQueueJobs,
 } from "../../lib/queue";
@@ -48,6 +49,7 @@ export function useSyncQueue({ extractionSettings }: UseSyncQueueInput) {
 
     return () => {
       cancelled = true;
+      void stopQueueForVaultLock();
       unsubscribe();
     };
   }, []);

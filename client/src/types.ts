@@ -1,4 +1,4 @@
-export type Page = "editor" | "entries" | "observations" | "graph" | "settings";
+export type Page = "editor" | "entries" | "observations" | "settings";
 export type ExtractionProvider = "ollama" | "gemini" | "off";
 export type EntrySortDirection = "desc" | "asc";
 

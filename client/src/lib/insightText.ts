@@ -1,8 +1,13 @@
 import type { InsightSnapshot } from "../types";
-import { ATHENA_INSIGHT_TOPICS } from "./athenaInsightPhrases";
-import { PLAIN_INSIGHT_TOPICS } from "./insightPhrases";
+import {
+  DEFAULT_ATHENA_INSIGHT_LANGUAGE,
+  getAthenaInsightTopics,
+  type AthenaInsightLanguage,
+} from "./athenaInsightPhraseLibraries";
+import { getPlainInsightTopics } from "./plainInsightPhraseLibraries";
 
 type InsightTextOptions = {
+  language?: AthenaInsightLanguage;
   personaTextEnabled: boolean;
 };
 
@@ -16,18 +21,23 @@ type InsightTopic = {
 
 export function formatInsightText(
   insight: InsightSnapshot,
-  { personaTextEnabled }: InsightTextOptions,
+  {
+    language = DEFAULT_ATHENA_INSIGHT_LANGUAGE,
+    personaTextEnabled,
+  }: InsightTextOptions,
 ) {
   const topic = getInsightTopic(insight);
 
   if (!topic) return insight.text;
 
   const topics = personaTextEnabled
-    ? ATHENA_INSIGHT_TOPICS
-    : PLAIN_INSIGHT_TOPICS;
+    ? getAthenaInsightTopics(language)
+    : getPlainInsightTopics(language);
   const topicProfile = findTopicProfile(topic, topics);
   const subject = topicProfile?.subject ?? `«${topic.trim()}»`;
-  const tone = personaTextEnabled ? "athena" : "plain";
+  const tone = personaTextEnabled
+    ? getAthenaInsightTone(language)
+    : getPlainInsightTone(language);
   const topicKey = topicProfile?.id ?? normalizeTopic(topic);
   const seed = [
     tone,
@@ -44,7 +54,7 @@ export function formatInsightText(
       tone,
       topicKey,
     }) ??
-    fallbackTemplate(insight.layer, personaTextEnabled);
+    fallbackTemplate(insight.layer, personaTextEnabled, language);
   const advice =
     pickInsightLine(topicProfile?.advice ?? [], `${seed}:advice`, {
       insightId: insight.id,
@@ -52,7 +62,7 @@ export function formatInsightText(
       tone,
       topicKey,
     }) ??
-    fallbackAdvice(personaTextEnabled);
+    fallbackAdvice(personaTextEnabled, language);
 
   return joinSentences(
     renderTemplate(template, subject),
@@ -80,8 +90,45 @@ function getInsightTopic(insight: InsightSnapshot) {
 function fallbackTemplate(
   layer: InsightSnapshot["layer"],
   personaTextEnabled: boolean,
+  language: AthenaInsightLanguage,
 ) {
   if (personaTextEnabled) {
+    if (language === "en") {
+      if (layer === "day") {
+        return "Yesterday's weave brought {subject} back into view.";
+      }
+
+      if (layer === "week") {
+        return "Across the week, {subject} kept forming a visible line.";
+      }
+
+      return "Across the month, {subject} became one of the clearer patterns.";
+    }
+
+    if (language === "de") {
+      if (layer === "day") {
+        return "Im gestrigen Gewebe trat {subject} wieder hervor.";
+      }
+
+      if (layer === "week") {
+        return "In der Woche blieb {subject} als deutlicher Faden sichtbar.";
+      }
+
+      return "Im Monatsmuster wurde {subject} klarer erkennbar.";
+    }
+
+    if (language === "uk") {
+      if (layer === "day") {
+        return "У візерунку вчорашнього дня знову проступила тема {subject}.";
+      }
+
+      if (layer === "week") {
+        return "У тканині тижня {subject} залишалася помітною ниткою.";
+      }
+
+      return "У місячному полотні {subject} стала виразнішим знаком.";
+    }
+
     if (layer === "day") {
       return "В узоре вчерашнего дня снова проступила тема {subject}.";
     }
@@ -94,22 +141,97 @@ function fallbackTemplate(
   }
 
   if (layer === "day") {
+    if (language === "en") {
+      return "Yesterday brought {subject} back into focus.";
+    }
+
+    if (language === "de") {
+      return "Gestern rückte {subject} wieder in den Fokus.";
+    }
+
+    if (language === "uk") {
+      return "Учора {subject} знову опинилася у фокусі.";
+    }
+
     return "Вчера снова возвращалась тема {subject}.";
   }
 
   if (layer === "week") {
+    if (language === "en") {
+      return "This week, {subject} appeared more than once.";
+    }
+
+    if (language === "de") {
+      return "Diese Woche tauchte {subject} mehr als einmal auf.";
+    }
+
+    if (language === "uk") {
+      return "Цього тижня {subject} з'являлася більше ніж раз.";
+    }
+
     return "На этой неделе снова возвращалась тема {subject}.";
+  }
+
+  if (language === "en") {
+    return "Across the month, {subject} appeared more often than other themes.";
+  }
+
+  if (language === "de") {
+    return "Im Monatsverlauf erschien {subject} häufiger als andere Themen.";
+  }
+
+  if (language === "uk") {
+    return "Протягом місяця {subject} з'являлася частіше за інші теми.";
   }
 
   return "За месяц тема {subject} появлялась чаще других.";
 }
 
-function fallbackAdvice(personaTextEnabled: boolean) {
+function fallbackAdvice(
+  personaTextEnabled: boolean,
+  language: AthenaInsightLanguage,
+) {
   if (personaTextEnabled) {
+    if (language === "en") {
+      return "Choose one precise step and do not try to untangle the whole pattern at once.";
+    }
+
+    if (language === "de") {
+      return "Wähle einen klaren Schritt und versuche nicht, das ganze Gewebe sofort zu ordnen.";
+    }
+
+    if (language === "uk") {
+      return "Обери один точний крок і не намагайся розплутати все полотно одразу.";
+    }
+
     return "Выбери один точный шаг и не пытайся распутать весь узел сразу.";
   }
 
+  if (language === "en") {
+    return "Choose one small step that makes this topic clearer or lighter.";
+  }
+
+  if (language === "de") {
+    return "Wähle einen kleinen Schritt, der dieses Thema klarer oder leichter macht.";
+  }
+
+  if (language === "uk") {
+    return "Обери один малий крок, який зробить цю тему яснішою або легшою.";
+  }
+
   return "Выбери один маленький шаг, который сделает эту тему понятнее или легче.";
+}
+
+function getAthenaInsightTone(language: AthenaInsightLanguage) {
+  return language === DEFAULT_ATHENA_INSIGHT_LANGUAGE
+    ? "athena"
+    : `athena:${language}`;
+}
+
+function getPlainInsightTone(language: AthenaInsightLanguage) {
+  return language === DEFAULT_ATHENA_INSIGHT_LANGUAGE
+    ? "plain"
+    : `plain:${language}`;
 }
 
 function renderTemplate(template: string, subject: string) {

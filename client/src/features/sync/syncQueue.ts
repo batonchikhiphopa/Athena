@@ -2,6 +2,10 @@ import type { ExtractionSettings } from "../../types";
 import { registerQueueHandler } from "../../lib/queue";
 import type { EntryQueuePayload, QueueJob } from "../../lib/queueTypes";
 import { getLocalEntry } from "../../lib/storage";
+import {
+  handleSelfReportAggregateSyncJob,
+  type SelfReportDailyAggregateQueuePayload,
+} from "../selfReports/selfReportQueue";
 import { reprocessLocalEntry } from "../settings/pendingReextract";
 import { planEntryReprocessJob } from "./reprocessPolicy";
 
@@ -20,6 +24,11 @@ export function registerSyncQueueHandlers(settings: ExtractionSettings): void {
     async (job, signal) => {
       await handleEntryReprocessSignalJob(job, currentSettings ?? settings, signal);
     },
+  );
+
+  registerQueueHandler<SelfReportDailyAggregateQueuePayload>(
+    "self_report.sync_daily_aggregate",
+    handleSelfReportAggregateSyncJob,
   );
 }
 
@@ -53,7 +62,7 @@ async function handleEntryReprocessSignalJob(
     throw new Error("Job was cancelled.");
   }
 
-  const result = await reprocessLocalEntry(entry, settings);
+  const result = await reprocessLocalEntry(entry, settings, signal);
 
   if (result.status === "retryable_provider_failure") {
     throw new Error(`retryable_provider_failure:${result.errorCode}`);

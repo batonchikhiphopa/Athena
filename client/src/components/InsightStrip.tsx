@@ -1,16 +1,14 @@
 import type { InsightSnapshot } from "../types";
+import { useI18n } from "../i18n/useI18n";
+import type { MessageKey } from "../i18n/messages";
 
 type InsightStripProps = {
   insights: InsightSnapshot[];
 };
 
-const layerLabels: Record<InsightSnapshot["layer"], string> = {
-  day: "Вчера",
-  week: "Неделя",
-  month: "Месяц",
-};
-
 export function InsightStrip({ insights }: InsightStripProps) {
+  const { t } = useI18n();
+
   if (insights.length === 0) return null;
 
   return (
@@ -21,11 +19,17 @@ export function InsightStrip({ insights }: InsightStripProps) {
           key={`${insight.layer}-${insight.period_start}-${insight.period_end}`}
         >
           <div className="mb-2 text-xs uppercase text-zinc-400">
-            {layerLabels[insight.layer]}
+            {t(getLayerLabelKey(insight.layer))}
           </div>
           <div className="text-sm leading-6 text-zinc-800">{insight.text}</div>
         </div>
       ))}
     </div>
   );
+}
+
+function getLayerLabelKey(layer: InsightSnapshot["layer"]): MessageKey {
+  if (layer === "day") return "insights.layer.day";
+  if (layer === "week") return "insights.layer.week";
+  return "insights.layer.month";
 }

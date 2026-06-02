@@ -1,12 +1,21 @@
 import type { EntrySortDirection, ExtractionSettings, LocalEntry } from "../types";
 import { normalizeSignal } from "./signals";
+import {
+  decryptVaultJson,
+  encryptVaultJson,
+  isVaultEncryptedPayload,
+  type VaultEncryptedPayload,
+} from "./vault";
 
 const ATHENA_LOCAL_DB_NAME = "athena-private-v1";
-const ATHENA_LOCAL_DB_VERSION = 2;
+const ATHENA_LOCAL_DB_VERSION = 3;
 
 const ENTRY_STORE = "entries";
 const DRAFT_STORE = "drafts";
 export const QUEUE_JOBS_STORE = "queue_jobs";
+export const SELF_REPORT_STORE = "self_reports";
+export const SELF_REPORT_DAILY_AGGREGATES_STORE =
+  "self_report_daily_aggregates";
 
 const CURRENT_DRAFT_ID = "current";
 const DEBUG_MODE_KEY = "athena_debug_mode";
@@ -24,6 +33,25 @@ type DraftRecord = {
   text: string;
   updatedAt: string;
 };
+
+type EncryptedDraftRecord = {
+  id: typeof CURRENT_DRAFT_ID;
+  updatedAt: string;
+  vault_version: 1;
+  vault_payload: VaultEncryptedPayload;
+};
+
+type StoredDraftRecord = DraftRecord | EncryptedDraftRecord;
+
+type EncryptedLocalEntryRecord = {
+  id: string;
+  entry_date: string;
+  updatedAt: string;
+  vault_version: 1;
+  vault_payload: VaultEncryptedPayload;
+};
+
+type StoredLocalEntryRecord = LocalEntry | EncryptedLocalEntryRecord;
 
 type GeminiDailyExtractionUsage = {
   date: string;
@@ -170,29 +198,32 @@ export function markEditorInsightSeen(id: number) {
 export async function getAllLocalEntries() {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
-  const entries = await idbRequest<LocalEntry[]>(
+  const entries = await idbRequest<StoredLocalEntryRecord[]>(
     transaction.objectStore(ENTRY_STORE).getAll(),
   );
 
-  return entries.map(normalizeLocalEntry).sort(compareLocalEntries);
+  const decryptedEntries = await Promise.all(entries.map(readStoredLocalEntry));
+
+  return decryptedEntries.map(normalizeLocalEntry).sort(compareLocalEntries);
 }
 
 export async function getLocalEntry(id: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
 
-  const entry = await idbRequest<LocalEntry | undefined>(
+  const entry = await idbRequest<StoredLocalEntryRecord | undefined>(
     transaction.objectStore(ENTRY_STORE).get(id),
   );
 
-  return entry ? normalizeLocalEntry(entry) : undefined;
+  return entry ? normalizeLocalEntry(await readStoredLocalEntry(entry)) : undefined;
 }
 
 export async function saveLocalEntry(entry: LocalEntry) {
+  const encryptedEntry = await encryptLocalEntry(entry);
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readwrite");
 
-  await idbRequest(transaction.objectStore(ENTRY_STORE).put(entry));
+  await idbRequest(transaction.objectStore(ENTRY_STORE).put(encryptedEntry));
 }
 
 export async function updateLocalEntry(id: string, patch: Partial<LocalEntry>) {
@@ -218,16 +249,17 @@ export async function deleteLocalEntry(id: string) {
 }
 
 export async function saveLocalDraft(text: string) {
+  const updatedAt = new Date().toISOString();
+  const draft: DraftRecord = {
+    id: CURRENT_DRAFT_ID,
+    text,
+    updatedAt,
+  };
+  const encryptedDraft = await encryptLocalDraft(draft);
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(DRAFT_STORE, "readwrite");
 
-  await idbRequest(
-    transaction.objectStore(DRAFT_STORE).put({
-      id: CURRENT_DRAFT_ID,
-      text,
-      updatedAt: new Date().toISOString(),
-    } satisfies DraftRecord),
-  );
+  await idbRequest(transaction.objectStore(DRAFT_STORE).put(encryptedDraft));
 }
 
 export async function clearLocalDraft() {
@@ -240,6 +272,12 @@ export async function migrateLegacyDraftToIndexedDb() {
   if (legacyDraft === null) return;
 
   localStorage.removeItem("athenaDraft");
+}
+
+export async function migrateLocalStorageToVault() {
+  const db = await openAthenaLocalDb();
+  await migrateEntriesToVault(db);
+  await migrateDraftsToVault(db);
 }
 
 export async function deleteAthenaLocalData() {
@@ -317,6 +355,29 @@ export function openAthenaLocalDb(): Promise<IDBDatabase> {
           unique: false,
         });
       }
+
+      if (!db.objectStoreNames.contains(SELF_REPORT_STORE)) {
+        const selfReports = db.createObjectStore(SELF_REPORT_STORE, {
+          keyPath: "id",
+        });
+
+        selfReports.createIndex("entry_id", "entry_id", { unique: true });
+        selfReports.createIndex("local_day", "local_day");
+        selfReports.createIndex("updated_at", "updated_at");
+      }
+
+      if (!db.objectStoreNames.contains(SELF_REPORT_DAILY_AGGREGATES_STORE)) {
+        const aggregates = db.createObjectStore(
+          SELF_REPORT_DAILY_AGGREGATES_STORE,
+          {
+            keyPath: "id",
+          },
+        );
+
+        aggregates.createIndex("local_day", "local_day");
+        aggregates.createIndex("axis", "axis");
+        aggregates.createIndex("updated_at", "updated_at");
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -345,6 +406,110 @@ function normalizeLocalEntry(entry: LocalEntry): LocalEntry {
     ...entry,
     signals: normalizeSignal(entry.signals),
   };
+}
+
+async function migrateEntriesToVault(db: IDBDatabase) {
+  const transaction = db.transaction(ENTRY_STORE, "readonly");
+  const records = await idbRequest<StoredLocalEntryRecord[]>(
+    transaction.objectStore(ENTRY_STORE).getAll(),
+  );
+
+  for (const record of records) {
+    if (isEncryptedLocalEntryRecord(record)) continue;
+
+    const encryptedRecord = await encryptLocalEntry(record);
+    const writeTransaction = db.transaction(ENTRY_STORE, "readwrite");
+    await idbRequest(
+      writeTransaction.objectStore(ENTRY_STORE).put(encryptedRecord),
+    );
+  }
+}
+
+async function migrateDraftsToVault(db: IDBDatabase) {
+  const transaction = db.transaction(DRAFT_STORE, "readonly");
+  const records = await idbRequest<StoredDraftRecord[]>(
+    transaction.objectStore(DRAFT_STORE).getAll(),
+  );
+
+  for (const record of records) {
+    if (isEncryptedDraftRecord(record)) continue;
+
+    const encryptedRecord = await encryptLocalDraft(record);
+    const writeTransaction = db.transaction(DRAFT_STORE, "readwrite");
+    await idbRequest(
+      writeTransaction.objectStore(DRAFT_STORE).put(encryptedRecord),
+    );
+  }
+}
+
+async function readStoredLocalEntry(
+  record: StoredLocalEntryRecord,
+): Promise<LocalEntry> {
+  if (!isEncryptedLocalEntryRecord(record)) return record;
+
+  return decryptVaultJson<LocalEntry>(
+    record.vault_payload,
+    createEntryVaultAssociatedData(record.id),
+  );
+}
+
+async function encryptLocalEntry(
+  entry: LocalEntry,
+): Promise<EncryptedLocalEntryRecord> {
+  return {
+    id: entry.id,
+    entry_date: entry.entry_date,
+    updatedAt: entry.updatedAt,
+    vault_version: 1,
+    vault_payload: await encryptVaultJson(
+      entry,
+      createEntryVaultAssociatedData(entry.id),
+    ),
+  };
+}
+
+async function encryptLocalDraft(
+  draft: DraftRecord,
+): Promise<EncryptedDraftRecord> {
+  return {
+    id: draft.id,
+    updatedAt: draft.updatedAt,
+    vault_version: 1,
+    vault_payload: await encryptVaultJson(
+      draft,
+      createDraftVaultAssociatedData(draft.id),
+    ),
+  };
+}
+
+function isEncryptedLocalEntryRecord(
+  record: StoredLocalEntryRecord,
+): record is EncryptedLocalEntryRecord {
+  return (
+    typeof record === "object" &&
+    record !== null &&
+    "vault_payload" in record &&
+    isVaultEncryptedPayload(record.vault_payload)
+  );
+}
+
+function isEncryptedDraftRecord(
+  record: StoredDraftRecord,
+): record is EncryptedDraftRecord {
+  return (
+    typeof record === "object" &&
+    record !== null &&
+    "vault_payload" in record &&
+    isVaultEncryptedPayload(record.vault_payload)
+  );
+}
+
+function createEntryVaultAssociatedData(entryId: string) {
+  return `athena:vault:entry:${entryId}`;
+}
+
+function createDraftVaultAssociatedData(draftId: string) {
+  return `athena:vault:draft:${draftId}`;
 }
 
 function localDateKey() {

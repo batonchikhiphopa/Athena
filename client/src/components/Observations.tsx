@@ -1,4 +1,7 @@
-import { formatLongDate } from "../lib/dates";
+import type { Language } from "../i18n/languages";
+import { formatLongDate, getLocale } from "../lib/dates";
+import { useI18n } from "../i18n/useI18n";
+import type { MessageKey } from "../i18n/messages";
 import { formatInsightText } from "../lib/insightText";
 import type { InsightSnapshot } from "../types";
 
@@ -9,27 +12,24 @@ type ObservationsProps = {
   onRefresh: () => void;
 };
 
-const layerLabels: Record<InsightSnapshot["layer"], string> = {
-  day: "День",
-  week: "Неделя",
-  month: "Месяц",
-};
-
 export function Observations({
   insights,
   personaTextEnabled,
   onDeleteInsight,
   onRefresh,
 }: ObservationsProps) {
+  const { language, t } = useI18n();
   const groups = groupInsightsByDate(insights);
 
   return (
     <section className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col overflow-y-auto px-8 py-8">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className="text-xs uppercase text-zinc-400">Наблюдения</div>
+          <div className="text-xs uppercase text-zinc-400">
+            {t("observations.eyebrow")}
+          </div>
           <h1 className="mt-2 text-2xl font-medium text-zinc-950">
-            История наблюдений
+            {t("observations.title")}
           </h1>
         </div>
 
@@ -38,20 +38,20 @@ export function Observations({
           onClick={onRefresh}
           type="button"
         >
-          Обновить
+          {t("common.refresh")}
         </button>
       </div>
 
       {groups.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400">
-          Наблюдений пока нет. Они появятся, когда накопится достаточно записей.
+          {t("observations.empty")}
         </div>
       ) : (
         <div className="space-y-6">
           {groups.map((group) => (
             <section key={group.date}>
               <div className="mb-3 text-sm font-medium text-zinc-500">
-                {formatLongDate(group.date)}
+                {formatLongDate(group.date, language)}
               </div>
 
               <div className="space-y-2">
@@ -63,21 +63,22 @@ export function Observations({
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="text-xs uppercase text-zinc-400">
-                          {layerLabels[insight.layer]} ·{" "}
-                          {formatPeriod(insight)}
+                          {t(getLayerLabelKey(insight.layer))} ·{" "}
+                          {formatPeriod(insight, language)}
                         </div>
                         <p className="mt-2 text-sm leading-6 text-zinc-800">
                           {formatInsightText(insight, {
+                            language,
                             personaTextEnabled,
                           })}
                         </p>
                         <div className="mt-3 text-xs text-zinc-400">
-                          {formatGeneratedAt(insight.generated_at)}
+                          {formatGeneratedAt(insight.generated_at, language)}
                         </div>
                       </div>
 
                       <button
-                        aria-label="Удалить из истории"
+                        aria-label={t("observations.action.delete")}
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 opacity-70 transition hover:bg-red-50 hover:text-red-700 group-hover:opacity-100"
                         onClick={() => onDeleteInsight(insight)}
                         type="button"
@@ -127,21 +128,28 @@ function layerWeight(layer: InsightSnapshot["layer"]) {
   return 2;
 }
 
-function formatPeriod(insight: InsightSnapshot) {
+function formatPeriod(insight: InsightSnapshot, language: Language) {
   if (insight.period_start === insight.period_end) {
-    return formatLongDate(insight.period_end);
+    return formatLongDate(insight.period_end, language);
   }
 
-  return `${formatLongDate(insight.period_start)} - ${formatLongDate(
+  return `${formatLongDate(insight.period_start, language)} - ${formatLongDate(
     insight.period_end,
+    language,
   )}`;
 }
 
-function formatGeneratedAt(value: string) {
-  return new Date(value).toLocaleString("ru-RU", {
+function formatGeneratedAt(value: string, language: Language) {
+  return new Date(value).toLocaleString(getLocale(language), {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getLayerLabelKey(layer: InsightSnapshot["layer"]): MessageKey {
+  if (layer === "day") return "insights.layer.day";
+  if (layer === "week") return "insights.layer.week";
+  return "insights.layer.month";
 }

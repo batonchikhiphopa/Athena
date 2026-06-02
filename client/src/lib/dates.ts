@@ -1,20 +1,33 @@
+import type { Language } from "../i18n/languages";
+
+const localeByLanguage: Record<Language, string> = {
+  de: "de-DE",
+  en: "en-US",
+  ru: "ru-RU",
+  uk: "uk-UA",
+};
+
 export function todayDateOnly() {
   return toDateOnly(new Date());
 }
 
-export function formatLongDate(dateOnly: string) {
-  return parseDateOnly(dateOnly).toLocaleDateString("ru-RU", {
+export function formatLongDate(dateOnly: string, language: Language = "en") {
+  return parseDateOnly(dateOnly).toLocaleDateString(getLocale(language), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-export function formatShortDate(dateOnly: string) {
-  return parseDateOnly(dateOnly).toLocaleDateString("ru-RU", {
+export function formatShortDate(dateOnly: string, language: Language = "en") {
+  return parseDateOnly(dateOnly).toLocaleDateString(getLocale(language), {
     day: "2-digit",
     month: "short",
   });
+}
+
+export function getLocale(language: Language) {
+  return localeByLanguage[language];
 }
 
 function toDateOnly(date: Date) {
