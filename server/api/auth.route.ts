@@ -19,6 +19,7 @@ import {
   logout,
   setupOwner,
 } from "../services/auth.service.js";
+import { sendValidationError } from "./http.js";
 
 const router = express.Router();
 
@@ -85,10 +86,11 @@ router.post("/auth/setup", async (req, res, next) => {
   const parsed = setupOwnerSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать данные владельца",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать данные владельца",
+      parsed.error,
+    );
   }
 
   try {
@@ -131,10 +133,11 @@ router.post("/auth/login", async (req, res, next) => {
   const parsed = loginSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать данные входа",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать данные входа",
+      parsed.error,
+    );
   }
 
   try {

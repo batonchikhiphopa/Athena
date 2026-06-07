@@ -6,6 +6,7 @@ import {
 } from "../../features/selfReports/selfReportTypes";
 import { useI18n } from "../../i18n/useI18n";
 import type { MessageKey } from "../../i18n/messages";
+import { TooltipButton } from "../TooltipButton";
 import { LineLever } from "./LineLever";
 
 type SelfReportAxisView = {
@@ -102,14 +103,15 @@ export function SelfReportMenu({
   return (
     <div
       ref={menuRef}
-      className="
-        absolute top-9 right-2 z-40
-        w-[min(31rem,calc(100vw-2rem))]
-        border border-zinc-200 bg-white px-7 pb-4 pt-7
-        text-zinc-500 shadow-xl shadow-zinc-900/8
-      "
+        className="
+          absolute top-9 right-2 z-40
+          w-[min(31rem,calc(100vw-2rem))]
+          rounded-2xl border border-white/30 bg-white/50 backdrop-blur-md
+          px-7 pb-4 pt-7 text-zinc-500
+        "
+      data-testid="self-report-menu"
     >
-      <button
+      <TooltipButton
         aria-label={t("common.close")}
         className="
           absolute right-2 top-2 flex h-6 w-6 items-center justify-center
@@ -117,17 +119,20 @@ export function SelfReportMenu({
           hover:bg-zinc-100 hover:text-zinc-700
         "
         onClick={closePanel}
+        tooltip={t("common.close")}
+        tooltipPlacement="left"
         type="button"
       >
         <span className="translate-y-[-1px]">×</span>
-      </button>
+      </TooltipButton>
 
       <div className="grid grid-cols-5 items-end gap-2.5">
         {axes.map((axis) => (
           <label className="grid min-w-0 justify-items-center gap-3" key={axis.key}>
             <LineLever
               label={t(axisLabelKeys[axis.key])}
-              value={values[axis.key]}
+              testId={`self-report-slider-${axis.key}`}
+              value={values[axis.key] ?? 5}
               onChange={(value) => setAxisValue(axis, value)}
             />
             <span className="max-w-[4.75rem] truncate text-center text-[10px] text-zinc-400">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EntryView, LocalEntry } from "../../types";
-import { deleteServerEntry } from "../../lib/api";
+import { deleteServerEntry } from "../entries/entriesApi";
 import { todayDateOnly } from "../../lib/dates";
 import { createFallbackMetadata, createFallbackSignal } from "../../lib/signals";
 import {
@@ -15,6 +15,7 @@ import {
 } from "../../lib/storage";
 import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
+import { enqueueEntrySyncJob } from "../sync/entrySyncJob";
 
 export type DraftStatus = "loading" | "saved" | "saving";
 export type SaveStatus =
@@ -178,12 +179,21 @@ export function useEditorDraft({
         };
 
         await saveLocalEntry(entry);
+
+        await enqueuePendingEntrySyncJob({
+          entryId: id,
+          sourceTextHash,
+          localRevision: now,
+          analysisEnabled,
+        });
+
         await enqueuePendingSignalJob({
           entryId: id,
           serverId: null,
           sourceTextHash,
           analysisEnabled,
         });
+
         if (runId !== autosaveRunRef.current) return;
 
         activeEntryIdRef.current = id;
@@ -204,6 +214,13 @@ export function useEditorDraft({
           source_text_hash: sourceTextHash,
           sync_status: analysisEnabled ? "pending_reextract" : "local_only",
           updatedAt: now,
+        });
+
+        await enqueuePendingEntrySyncJob({
+          entryId: targetEntryId,
+          sourceTextHash,
+          localRevision: now,
+          analysisEnabled,
         });
 
         await enqueuePendingSignalJob({
@@ -398,6 +415,28 @@ export function useEditorDraft({
     resetAfterLocalDataClear,
     toggleAnalysisEnabled,
   };
+}
+
+async function enqueuePendingEntrySyncJob({
+  analysisEnabled,
+  entryId,
+  sourceTextHash,
+  localRevision,
+}: {
+  analysisEnabled: boolean;
+  entryId: string;
+  sourceTextHash: string;
+  localRevision: string;
+}) {
+  if (!analysisEnabled) return;
+
+  await enqueueEntrySyncJob({
+    entryId,
+    sourceTextHash,
+    localRevision,
+  }).catch((error) => {
+    console.warn("[entry:enqueue-sync]", error);
+  });
 }
 
 async function enqueuePendingSignalJob({

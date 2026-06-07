@@ -6,14 +6,15 @@ import {
   normalizeEmotionClassifierOutput,
   requestContainsRawText,
 } from "../client/src/features/emotion/localEmotion.ts";
+import { extractSignalForText } from "../client/src/lib/extraction.ts";
 import { fallbackSignal, validSignal } from "./signal-fixtures.js";
 
 function extraction(signal) {
   return {
     signal,
     metadata: {
-      schema_version: "signal.v3",
-      prompt_version: "extraction.v4",
+      schema_version: "signal.v4",
+      prompt_version: "extraction.v5",
       provider: "off",
       model: "fallback",
       error_code: null,
@@ -113,4 +114,38 @@ test("raw-text request guard detects accidental text transfer", () => {
     ),
     true,
   );
+});
+
+test("local emotion runtime is gated behind Russian interface language", async () => {
+  const values = new Map([
+    ["athena_local_emotion_spike_enabled", "true"],
+    ["athena_language", "en"],
+  ]);
+  const previousLocalStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+    clear: () => values.clear(),
+  };
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 503,
+    text: async () => "backend unavailable",
+  });
+
+  try {
+    const result = await extractSignalForText("synthetic text", {
+      provider: "off",
+      model: "fallback",
+    });
+
+    assert.equal(result.signal.signal_quality, "fallback");
+    assert.deepEqual(result.signal.emotion_signals, {});
+  } finally {
+    globalThis.localStorage = previousLocalStorage;
+    globalThis.fetch = previousFetch;
+  }
 });

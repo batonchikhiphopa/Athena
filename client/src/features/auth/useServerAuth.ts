@@ -6,7 +6,7 @@ import {
   SERVER_AUTH_REQUIRED_EVENT,
   setupServerOwner,
   type ServerAuthUser,
-} from "../../lib/api";
+} from "./authApi";
 
 export type ServerAuthPhase =
   | "checking"

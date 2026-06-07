@@ -1,0 +1,15 @@
+node_modules
+client/node_modules
+dist
+client/dist
+data
+.tmp
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results
+.git
+.github
+prod

@@ -1,18 +1,29 @@
 {
   "name": "athena",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "author": "batonchikhiphopa",
+  "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "workspaces": [
+    "client"
+  ],
   "scripts": {
-    "audit": "npm audit && npm --prefix client audit",
-    "client:build": "npm --prefix client run build",
-    "client:dev": "npm --prefix client run dev",
+    "server:build": "node -e \"require('node:fs').rmSync('dist/server',{recursive:true,force:true})\" && tsc -p tsconfig.server.build.json",
+    "build": "npm run client:build && npm run server:build",
+    "start": "node dist/server/server/db/migrate.js && node dist/server/server/server.js",
+    "audit": "npm audit --workspaces",
+    "client:build": "npm --workspace athena-client run build",
+    "client:dev": "npm --workspace athena-client run dev",
     "dev": "tsx server/server.ts",
-    "lint": "npm --prefix client run lint",
+    "lint": "npm --workspace athena-client run lint",
     "migrate": "tsx server/db/migrate.ts",
-    "release:check": "npm test && npm run server:check && npm run lint && npm run client:build && npm run audit",
+    "release:check": "npm test && npm run server:check && npm run lint && npm run build && npm run test:e2e && npm run audit",
     "server:check": "tsc -p tsconfig.server.json --noEmit",
-    "test": "tsx --test"
+    "test": "tsx --test test/*.test.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "argon2": "^0.44.0",
@@ -22,6 +33,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/express": "^4.17.25",
     "@types/node": "^24.12.4",
     "fake-indexeddb": "^6.2.5",

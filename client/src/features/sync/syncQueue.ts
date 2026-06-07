@@ -1,12 +1,17 @@
 import type { ExtractionSettings } from "../../types";
-import { registerQueueHandler } from "../../lib/queue";
-import type { EntryQueuePayload, QueueJob } from "../../lib/queueTypes";
 import { getLocalEntry } from "../../lib/storage";
 import {
   handleSelfReportAggregateSyncJob,
   type SelfReportDailyAggregateQueuePayload,
 } from "../selfReports/selfReportQueue";
 import { reprocessLocalEntry } from "../settings/pendingReextract";
+import { registerQueueHandler } from "../../lib/queue";
+import type {
+  EntryQueuePayload,
+  EntrySyncQueuePayload,
+  QueueJob,
+} from "../../lib/queueTypes";
+import { handleEntrySyncJob } from "./entrySyncJob";
 import { planEntryReprocessJob } from "./reprocessPolicy";
 
 let handlersRegistered = false;
@@ -19,10 +24,16 @@ export function registerSyncQueueHandlers(settings: ExtractionSettings): void {
 
   handlersRegistered = true;
 
+  registerQueueHandler<EntrySyncQueuePayload>("entry.sync", handleEntrySyncJob);
+
   registerQueueHandler<EntryQueuePayload>(
     "entry.reprocess_signal",
     async (job, signal) => {
-      await handleEntryReprocessSignalJob(job, currentSettings ?? settings, signal);
+      await handleEntryReprocessSignalJob(
+        job,
+        currentSettings ?? settings,
+        signal,
+      );
     },
   );
 
@@ -80,6 +91,7 @@ function getEntryId(job: QueueJob<EntryQueuePayload>): string | null {
     !Array.isArray(job.payload)
       ? (job.payload as Record<string, unknown>)
       : {};
+
   const payloadEntryId = payload.entry_id;
 
   if (typeof payloadEntryId === "string" && payloadEntryId.trim()) {

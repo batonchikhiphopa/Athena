@@ -1,12 +1,16 @@
 import { createEmptyMetricConfidence } from "../core/signal.mapper.js";
 import type {
   EntryStatus,
+  EntryIntentSignal,
   ExtractionProvider,
   MetricConfidence,
   Signal,
   SignalMetadata,
+  StructureSignal,
+  TemporalContext,
   StateInference,
 } from "../core/types.js";
+import { createDefaultSignalContext } from "../../shared/contracts/signalAnalysis.js";
 import type { AthenaDb } from "../db/sqlite.js";
 
 type EntryWrite = {
@@ -35,6 +39,9 @@ type EntryJoinedRow = {
   state_inference: string | null;
   emotion_signals: string | null;
   metric_confidence: string | null;
+  entry_intent: string | null;
+  structure_signal: string | null;
+  temporal_context: string | null;
   quality_reason: string | null;
   load: number | null;
   fatigue: number | null;
@@ -107,7 +114,12 @@ export async function listEntries(db: AthenaDb): Promise<EntryView[]> {
       s.topics,
       s.activities,
       s.markers,
+      s.state_inference,
+      s.emotion_signals,
       s.metric_confidence,
+      s.entry_intent,
+      s.structure_signal,
+      s.temporal_context,
       s.quality_reason,
       s.load,
       s.fatigue,
@@ -156,6 +168,9 @@ export async function getEntryById(
       s.state_inference,
       s.emotion_signals,
       s.metric_confidence,
+      s.entry_intent,
+      s.structure_signal,
+      s.temporal_context,
       s.quality_reason,
       s.load,
       s.fatigue,
@@ -250,6 +265,7 @@ export async function markEntryFailed(
 }
 
 function mapEntryRow(row: EntryJoinedRow): EntryView {
+  const defaultContext = createDefaultSignalContext();
   const signal: Signal | null = row.signal_id
     ? {
         topics: parseStringArray(row.topics),
@@ -263,6 +279,18 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
         metric_confidence: parseRecord<MetricConfidence>(
           row.metric_confidence,
           createEmptyMetricConfidence(),
+        ),
+        entry_intent: parseRecord<EntryIntentSignal>(
+          row.entry_intent,
+          defaultContext.entry_intent,
+        ),
+        structure_signal: parseRecord<StructureSignal>(
+          row.structure_signal,
+          defaultContext.structure_signal,
+        ),
+        temporal_context: parseRecord<TemporalContext>(
+          row.temporal_context,
+          defaultContext.temporal_context,
         ),
         quality_reason: row.quality_reason || "legacy_signal_v2",
         load: row.load,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Language } from "../../i18n/languages";
 import { translateMessage } from "../../i18n/messages";
 import type {
@@ -7,7 +7,7 @@ import type {
   ExtractionSettings,
   ExtractionStatus,
 } from "../../types";
-import { loadExtractionConfig, loadExtractionStatus } from "../../lib/api";
+import { loadExtractionConfig, loadExtractionStatus } from "../extraction/extractionApi";
 import {
   GEMINI_DAILY_EXTRACTION_LIMIT,
   getDebugMode,
@@ -21,10 +21,7 @@ import {
   setPersonaTextEnabled as persistPersonaTextEnabled,
   updateLocalEntry,
 } from "../../lib/storage";
-import {
-  extractLocalEmotionSignals,
-  type LocalEmotionResult,
-} from "../emotion/localEmotion";
+import type { LocalEmotionResult } from "../emotion/localEmotion";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 import {
   getSignalReprocessReason,
@@ -44,6 +41,7 @@ type ReprocessCallbacks = {
 };
 
 export function useSettingsState(language: Language) {
+  const localEmotionSpikeAvailable = language === "ru";
   const [debugMode, setDebugMode] = useState(() => getDebugMode());
   const [localEmotionSpikeEnabled, setLocalEmotionSpikeEnabled] = useState(() =>
     getLocalEmotionSpikeEnabled(),
@@ -64,6 +62,15 @@ export function useSettingsState(language: Language) {
   const [reprocessStatus, setReprocessStatus] =
     useState<ReprocessStatus>("idle");
   const [reprocessMessage, setReprocessMessage] = useState("");
+
+  useEffect(() => {
+    if (localEmotionSpikeAvailable) return;
+
+    setLocalEmotionSpikeEnabled(false);
+    persistLocalEmotionSpikeEnabled(false);
+    setLocalEmotionSpikeResult(null);
+    setLocalEmotionSpikeStatus("idle");
+  }, [localEmotionSpikeAvailable]);
 
   const refreshExtractionStatus = useCallback(
     async (settings: ExtractionSettings) => {
@@ -118,8 +125,15 @@ export function useSettingsState(language: Language) {
   }
 
   function toggleLocalEmotionSpike(nextValue: boolean) {
-    setLocalEmotionSpikeEnabled(nextValue);
-    persistLocalEmotionSpikeEnabled(nextValue);
+    const enabled = localEmotionSpikeAvailable && nextValue;
+
+    setLocalEmotionSpikeEnabled(enabled);
+    persistLocalEmotionSpikeEnabled(enabled);
+
+    if (!enabled) {
+      setLocalEmotionSpikeResult(null);
+      setLocalEmotionSpikeStatus("idle");
+    }
   }
 
   function togglePersonaText(nextValue: boolean) {
@@ -128,8 +142,19 @@ export function useSettingsState(language: Language) {
   }
 
   async function runLocalEmotionSpikeDemo() {
+    if (!localEmotionSpikeAvailable) {
+      setLocalEmotionSpikeEnabled(false);
+      persistLocalEmotionSpikeEnabled(false);
+      setLocalEmotionSpikeResult(null);
+      setLocalEmotionSpikeStatus("idle");
+      return;
+    }
+
     setLocalEmotionSpikeStatus("running");
 
+    const { extractLocalEmotionSignals } = await import(
+      "../emotion/localEmotion"
+    );
     const result = await extractLocalEmotionSignals(
       translateMessage(language, "settings.records.localEmotionDemoText"),
     );

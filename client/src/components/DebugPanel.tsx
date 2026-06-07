@@ -59,6 +59,33 @@ export function DebugPanel({ entry }: DebugPanelProps) {
           <DebugRow label="nulls" value={formatNullReasons(entry.signals)} />
         </DebugBlock>
 
+        <DebugBlock title="signal context">
+          <DebugRow
+            label="intent"
+            value={`${entry.signals.entry_intent.intent}/${entry.signals.entry_intent.confidence}${formatBasis(
+              entry.signals.entry_intent.basis,
+            )}`}
+          />
+          <DebugRow
+            label="density"
+            value={entry.signals.structure_signal.density}
+          />
+          <DebugRow
+            label="coherence"
+            value={entry.signals.structure_signal.coherence}
+          />
+          <DebugRow
+            label="shape"
+            value={`question:${entry.signals.structure_signal.has_question} plan:${entry.signals.structure_signal.has_plan}${formatBasis(
+              entry.signals.structure_signal.basis,
+            )}`}
+          />
+          <DebugRow
+            label="time"
+            value={`${entry.signals.temporal_context.local_date ?? "-"} ${entry.signals.temporal_context.time_bucket}/${entry.signals.temporal_context.source}`}
+          />
+        </DebugBlock>
+
         <DebugBlock title="emotion signals">
           {Object.keys(entry.signals.emotion_signals).length > 0 ? (
             <>

@@ -2,16 +2,18 @@ import type { CSSProperties } from "react";
 
 type LineLeverProps = {
   label: string;
+  testId?: string;
   value: number;
   onChange: (value: number) => void;
 };
 
-export function LineLever({ label, value, onChange }: LineLeverProps) {
+export function LineLever({ label, testId, value, onChange }: LineLeverProps) {
   return (
     <span className="athena-line-lever">
       <input
         aria-label={label}
         className="athena-line-lever-input"
+        data-testid={testId}
         max="10"
         min="0"
         onChange={(event) => onChange(Number(event.currentTarget.value))}

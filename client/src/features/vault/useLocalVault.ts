@@ -13,7 +13,7 @@ import {
   unlockVaultWithoutSecret,
   type VaultStatus,
   type VaultCredentialSummary,
-} from "../../lib/vault";
+} from "./vaultApi";
 import { migrateLocalDataToVault } from "../../lib/vaultMigration";
 
 export type LocalVaultPhase = VaultStatus;

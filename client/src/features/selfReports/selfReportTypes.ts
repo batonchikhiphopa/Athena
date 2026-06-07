@@ -12,7 +12,9 @@ export const SELF_REPORT_AXES = [
 
 export type SelfReportAxis = (typeof SELF_REPORT_AXES)[number];
 
-export type SelfReportValues = Record<SelfReportAxis, number>;
+export type SelfReportAxisValue = number | null;
+
+export type SelfReportValues = Record<SelfReportAxis, SelfReportAxisValue>;
 
 export type SelfReportEvent = {
   id: string;
@@ -41,9 +43,9 @@ export type SelfReportDailyAggregate = {
 };
 
 export const DEFAULT_SELF_REPORT_VALUES: SelfReportValues = {
-  mood: 5,
-  stress: 5,
-  energy: 5,
-  sleep_quality: 5,
-  function: 5,
+  mood: null,
+  stress: null,
+  energy: null,
+  sleep_quality: null,
+  function: null,
 };

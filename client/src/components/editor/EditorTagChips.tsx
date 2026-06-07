@@ -58,6 +58,7 @@ export function EditorTagChips({
                 rounded-full bg-sky-50 px-2.5 py-1.5
                 text-sm text-sky-700
               "
+              data-testid="editor-tag-chip"
               key={tag}
             >
               <button

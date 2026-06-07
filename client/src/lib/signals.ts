@@ -9,6 +9,7 @@ import type {
   StateInference,
   StateInferenceValue,
 } from "../types";
+import { createDefaultSignalContext } from "../../../shared/contracts/signalAnalysis.js";
 import {
   CLIENT_ACTIVE_PROMPT_VERSION,
   CLIENT_ACTIVE_SCHEMA_VERSION,
@@ -99,6 +100,8 @@ const CONFIDENCE_RANK: Record<ConfidenceLevel, number> = {
 const EMOTION_ADJUSTMENT_THRESHOLD = 0.55;
 
 export function createFallbackSignal(): Signal {
+  const context = createDefaultSignalContext();
+
   return {
     topics: [],
     activities: [],
@@ -106,6 +109,9 @@ export function createFallbackSignal(): Signal {
     state_inference: {},
     emotion_signals: {},
     metric_confidence: createEmptyMetricConfidence(),
+    entry_intent: context.entry_intent,
+    structure_signal: context.structure_signal,
+    temporal_context: context.temporal_context,
     quality_reason: "fallback",
     load: null,
     fatigue: null,
@@ -155,6 +161,9 @@ export function normalizeSignal(value: unknown): Signal {
     state_inference: normalizeStateInference(value.state_inference),
     emotion_signals: isRecord(value.emotion_signals) ? value.emotion_signals : {},
     metric_confidence: normalizeMetricConfidence(value.metric_confidence),
+    entry_intent: normalizeEntryIntent(value.entry_intent),
+    structure_signal: normalizeStructureSignal(value.structure_signal),
+    temporal_context: normalizeTemporalContext(value.temporal_context),
     quality_reason:
       typeof value.quality_reason === "string" && value.quality_reason.trim()
         ? value.quality_reason
@@ -193,6 +202,9 @@ export function mapSignalCandidate(candidate: Signal): Signal {
       fatigue: fatigue.confidence,
       focus: focus.confidence,
     },
+    entry_intent: normalizeEntryIntent(candidate.entry_intent),
+    structure_signal: normalizeStructureSignal(candidate.structure_signal),
+    temporal_context: normalizeTemporalContext(candidate.temporal_context),
     quality_reason: getQualityReason(
       candidate.state_inference,
       hasMetric,
@@ -461,6 +473,80 @@ function normalizeMetricConfidence(value: unknown): MetricConfidence {
   };
 }
 
+function normalizeEntryIntent(value: unknown): Signal["entry_intent"] {
+  const fallback = createDefaultSignalContext().entry_intent;
+  if (!isRecord(value)) return fallback;
+
+  const intent =
+    value.intent === "log" ||
+    value.intent === "reflection" ||
+    value.intent === "planning" ||
+    value.intent === "decision" ||
+    value.intent === "gratitude" ||
+    value.intent === "venting" ||
+    value.intent === "unknown"
+      ? value.intent
+      : fallback.intent;
+
+  return {
+    intent,
+    confidence: normalizeConfidence(value.confidence),
+    basis: normalizeStringArray(value.basis).slice(0, 6),
+  };
+}
+
+function normalizeStructureSignal(value: unknown): Signal["structure_signal"] {
+  const fallback = createDefaultSignalContext().structure_signal;
+  if (!isRecord(value)) return fallback;
+
+  const density =
+    value.density === "empty" ||
+    value.density === "sparse" ||
+    value.density === "normal" ||
+    value.density === "dense"
+      ? value.density
+      : fallback.density;
+
+  return {
+    density,
+    coherence: normalizeConfidence(value.coherence),
+    has_question: value.has_question === true,
+    has_plan: value.has_plan === true,
+    basis: normalizeStringArray(value.basis).slice(0, 6),
+  };
+}
+
+function normalizeTemporalContext(value: unknown): Signal["temporal_context"] {
+  const fallback = createDefaultSignalContext().temporal_context;
+  if (!isRecord(value)) return fallback;
+
+  const timeBucket =
+    value.time_bucket === "morning" ||
+    value.time_bucket === "day" ||
+    value.time_bucket === "evening" ||
+    value.time_bucket === "night" ||
+    value.time_bucket === "unknown"
+      ? value.time_bucket
+      : fallback.time_bucket;
+  const source =
+    value.source === "entry_metadata" ||
+    value.source === "created_at" ||
+    value.source === "absent"
+      ? value.source
+      : fallback.source;
+  const localDate =
+    typeof value.local_date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value.local_date)
+      ? value.local_date
+      : null;
+
+  return {
+    local_date: localDate,
+    time_bucket: timeBucket,
+    source,
+  };
+}
+
 function normalizeConfidence(value: unknown): ConfidenceLevel {
   return LEVELS.has(String(value)) ? (value as ConfidenceLevel) : "low";
 }
@@ -491,6 +577,9 @@ function isNormalizedSignal(value: Record<string, unknown>): value is Signal {
     isNormalizedStateInference(value.state_inference) &&
     isRecord(value.emotion_signals) &&
     isNormalizedMetricConfidence(value.metric_confidence) &&
+    isNormalizedEntryIntent(value.entry_intent) &&
+    isNormalizedStructureSignal(value.structure_signal) &&
+    isNormalizedTemporalContext(value.temporal_context) &&
     typeof value.quality_reason === "string" &&
     value.quality_reason.trim().length > 0 &&
     isNormalizedScore(value.load) &&
@@ -538,6 +627,56 @@ function isNormalizedMetricConfidence(
     LEVELS.has(String(value.load)) &&
     LEVELS.has(String(value.fatigue)) &&
     LEVELS.has(String(value.focus))
+  );
+}
+
+function isNormalizedEntryIntent(value: unknown): value is Signal["entry_intent"] {
+  return (
+    isRecord(value) &&
+    (value.intent === "log" ||
+      value.intent === "reflection" ||
+      value.intent === "planning" ||
+      value.intent === "decision" ||
+      value.intent === "gratitude" ||
+      value.intent === "venting" ||
+      value.intent === "unknown") &&
+    LEVELS.has(String(value.confidence)) &&
+    isBoundedStringArray(value.basis, 6)
+  );
+}
+
+function isNormalizedStructureSignal(
+  value: unknown,
+): value is Signal["structure_signal"] {
+  return (
+    isRecord(value) &&
+    (value.density === "empty" ||
+      value.density === "sparse" ||
+      value.density === "normal" ||
+      value.density === "dense") &&
+    LEVELS.has(String(value.coherence)) &&
+    typeof value.has_question === "boolean" &&
+    typeof value.has_plan === "boolean" &&
+    isBoundedStringArray(value.basis, 6)
+  );
+}
+
+function isNormalizedTemporalContext(
+  value: unknown,
+): value is Signal["temporal_context"] {
+  return (
+    isRecord(value) &&
+    (value.local_date === null ||
+      (typeof value.local_date === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(value.local_date))) &&
+    (value.time_bucket === "morning" ||
+      value.time_bucket === "day" ||
+      value.time_bucket === "evening" ||
+      value.time_bucket === "night" ||
+      value.time_bucket === "unknown") &&
+    (value.source === "entry_metadata" ||
+      value.source === "created_at" ||
+      value.source === "absent")
   );
 }
 

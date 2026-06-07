@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SelfReportValues } from "../../features/selfReports/selfReportTypes";
 import { useI18n } from "../../i18n/useI18n";
 import { EyeClosedIcon, EyeOpenIcon, HeartIcon } from "../icon";
+import { TooltipButton } from "../TooltipButton";
 import { SelfReportMenu } from "./SelfReportMenu";
 
 type EditorActionButtonsProps = {
@@ -52,12 +53,14 @@ export function EditorActionButtons({
     }, 560);
   }
 
+  const analysisTooltip = analysisEnabled
+    ? t("editor.action.analysisDisable")
+    : t("editor.action.analysisEnable");
+
   return (
     <>
-      <button
+      <TooltipButton
         aria-label={t("editor.action.addTag")}
-        onClick={onInsertTag}
-        type="button"
         className="
           absolute top-1 right-[6.5rem] z-20
           h-6 w-6 flex items-center justify-center
@@ -71,19 +74,18 @@ export function EditorActionButtons({
           opacity-70 hover:opacity-100
           transition
         "
+        data-testid="editor-add-tag"
+        onClick={onInsertTag}
+        tooltip={t("editor.action.addTag")}
+        tooltipPlacement="left"
+        type="button"
       >
         #
-      </button>
+      </TooltipButton>
 
-      <button
-        aria-label={
-          analysisEnabled
-            ? t("editor.action.analysisDisable")
-            : t("editor.action.analysisEnable")
-        }
+      <TooltipButton
+        aria-label={analysisTooltip}
         aria-pressed={analysisEnabled}
-        onClick={onToggleAnalysisEnabled}
-        type="button"
         className="
           absolute top-1 right-[4.5rem] z-20
           h-6 w-6 flex items-center justify-center
@@ -96,15 +98,17 @@ export function EditorActionButtons({
           opacity-70 hover:opacity-100
           transition
         "
+        onClick={onToggleAnalysisEnabled}
+        tooltip={analysisTooltip}
+        tooltipPlacement="left"
+        type="button"
       >
         {analysisEnabled ? <EyeOpenIcon /> : <EyeClosedIcon />}
-      </button>
+      </TooltipButton>
 
-      <button
+      <TooltipButton
         aria-label={t("editor.action.selfReport")}
         aria-expanded={isSelfReportMenuOpen}
-        onClick={handleSelfReportClick}
-        type="button"
         className="
           absolute top-1 right-10 z-20
           h-6 w-6 flex items-center justify-center
@@ -117,6 +121,11 @@ export function EditorActionButtons({
           opacity-70 hover:opacity-100
           transition
         "
+        data-testid="editor-self-report"
+        onClick={handleSelfReportClick}
+        tooltip={t("editor.action.selfReport")}
+        tooltipPlacement="left"
+        type="button"
       >
         <span
           className={isHeartPulsing ? "heart-double-pulse" : ""}
@@ -125,12 +134,10 @@ export function EditorActionButtons({
         >
           <HeartIcon />
         </span>
-      </button>
+      </TooltipButton>
 
-      <button
+      <TooltipButton
         aria-label={t("editor.action.newEntry")}
-        onClick={onNewBlankPage}
-        type="button"
         className="
           absolute top-1 right-2 z-20
           h-6 w-6 flex items-center justify-center
@@ -144,9 +151,13 @@ export function EditorActionButtons({
           opacity-70 hover:opacity-100
           transition
         "
+        onClick={onNewBlankPage}
+        tooltip={t("editor.action.newEntry")}
+        tooltipPlacement="left"
+        type="button"
       >
         <span className="translate-y-[-2px]">×</span>
-      </button>
+      </TooltipButton>
 
       <SelfReportMenu
         externalCloseSignal={selfReportCloseSignal}

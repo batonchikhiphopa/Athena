@@ -1,29 +1,9 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import test from "node:test";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 import { syncSelfReportDailyAggregates } from "../server/services/self-report.service.js";
 import { syncSelfReportDailyAggregatesSchema } from "../server/core/self-report.schema.js";
-import { serializeSelfReportDailyAggregates } from "../client/src/lib/api.ts";
-
-async function createTestDb() {
-  const db = await open({
-    filename: ":memory:",
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA foreign_keys = ON;");
-  const files = (await fs.readdir("./migrations"))
-    .filter((filename) => filename.endsWith(".sql"))
-    .sort();
-
-  for (const filename of files) {
-    await db.exec(await fs.readFile(`./migrations/${filename}`, "utf8"));
-  }
-
-  return db;
-}
+import { serializeSelfReportDailyAggregates } from "../client/src/features/selfReports/selfReportApi.ts";
+import { createTestDb } from "./helpers/createTestDb.js";
 
 function aggregate(overrides = {}) {
   return {

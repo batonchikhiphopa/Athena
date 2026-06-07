@@ -5,6 +5,7 @@ import {
 } from "../core/signal.schema.js";
 import { createEmptyMetricConfidence, mapSignalCandidate } from "../core/signal.mapper.js";
 import type { Signal } from "../core/types.js";
+import { createDefaultSignalContext } from "../../shared/contracts/signalAnalysis.js";
 
 type SanitizedSignalResult =
   | {
@@ -44,6 +45,7 @@ export function sanitizeSignalCandidate(
 }
 
 export function createFallbackSignal(): Signal {
+  const context = createDefaultSignalContext();
   const fallback = {
     topics: [],
     activities: [],
@@ -51,6 +53,9 @@ export function createFallbackSignal(): Signal {
     state_inference: {},
     emotion_signals: {},
     metric_confidence: createEmptyMetricConfidence(),
+    entry_intent: context.entry_intent,
+    structure_signal: context.structure_signal,
+    temporal_context: context.temporal_context,
     quality_reason: "fallback",
     load: null,
     fatigue: null,

@@ -121,6 +121,12 @@ export function useEntrySearch({
 
     if (!normalizedTag) return;
 
+    setExcludedTags((currentTags) =>
+      currentTags.filter(
+        (currentTag) => normalizeTag(currentTag) !== normalizedTag,
+      ),
+    );
+
     setIncludedTags((currentTags) => {
       const hasTag = currentTags.some(
         (currentTag) => normalizeTag(currentTag) === normalizedTag,
@@ -140,6 +146,12 @@ export function useEntrySearch({
     const normalizedTag = normalizeTag(tag);
 
     if (!normalizedTag) return;
+
+    setIncludedTags((currentTags) =>
+      currentTags.filter(
+        (currentTag) => normalizeTag(currentTag) !== normalizedTag,
+      ),
+    );
 
     setExcludedTags((currentTags) => {
       const hasTag = currentTags.some(

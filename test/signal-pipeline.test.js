@@ -1,8 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 
 import {
   ACTIVE_MODEL,
@@ -19,25 +16,8 @@ import {
   createFallbackSignal,
   sanitizeSignalCandidate,
 } from "../server/services/sanitization.service.js";
+import { createTestDb } from "./helpers/createTestDb.js";
 import { fallbackSignal, state, validSignal } from "./signal-fixtures.js";
-
-async function createTestDb() {
-  const db = await open({
-    filename: ":memory:",
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA foreign_keys = ON;");
-  const files = (await fs.readdir("./migrations"))
-    .filter((filename) => filename.endsWith(".sql"))
-    .sort();
-
-  for (const filename of files) {
-    await db.exec(await fs.readFile(`./migrations/${filename}`, "utf8"));
-  }
-
-  return db;
-}
 
 test("invalid extraction output persists deterministic fallback without raw text", async () => {
   const db = await createTestDb();
@@ -148,12 +128,12 @@ test("fallback entry can receive a later signal for the same text hash", async (
   }
 });
 
-test("stored Signal v3 details round-trip through entry reads", async () => {
+test("stored Signal v4 details round-trip through entry reads", async () => {
   const db = await createTestDb();
 
   try {
     const entryId = await createEntry(db, {
-      client_entry_id: "client-entry-v3-details",
+      client_entry_id: "client-entry-v4-details",
       entry_date: "2026-04-24",
       tags: [],
       source_text_hash: "e".repeat(64),
@@ -188,18 +168,27 @@ test("stored Signal v3 details round-trip through entry reads", async () => {
     });
     assert.equal(entry.signal.metric_confidence.load, "medium");
     assert.equal(entry.signal.quality_reason, "state_distress_high");
-    assert.deepEqual(entries[0].signal.state_inference, {});
+    assert.deepEqual(
+      entries[0].signal.state_inference,
+      entry.signal.state_inference,
+    );
     assert.deepEqual(entries[0].signal.emotion_signals, {});
     assert.equal(entries[0].signal.metric_confidence.load, "medium");
+    assert.equal(entries[0].signal.entry_intent.intent, "unknown");
+    assert.equal(entries[0].signal.structure_signal.density, "empty");
+    assert.equal(entries[0].signal.temporal_context.source, "absent");
     assert.equal(JSON.parse(storedSignal.state_inference).distress.level, "high");
     assert.equal(JSON.parse(storedSignal.metric_confidence).load, "medium");
+    assert.equal(JSON.parse(storedSignal.entry_intent).intent, "unknown");
+    assert.equal(JSON.parse(storedSignal.structure_signal).density, "empty");
+    assert.equal(JSON.parse(storedSignal.temporal_context).source, "absent");
     assert.equal(storedSignal.quality_reason, "state_distress_high");
   } finally {
     await db.close();
   }
 });
 
-test("legacy stored signal rows normalize to v3 read shape", async () => {
+test("legacy stored signal rows normalize to current read shape", async () => {
   const db = await createTestDb();
 
   try {

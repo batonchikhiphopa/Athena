@@ -52,12 +52,12 @@ backend is temporarily unavailable.
 - extracts signals from the current entry only, without history, RAG, hidden
   memory, or prior trends;
 - supports `ollama`, `gemini`, and `off` extraction providers;
-- validates and sanitizes Signal v3 payloads before persistence;
+- validates and sanitizes Signal v4 payloads before persistence;
 - recomputes `load`, `fatigue`, `focus`, confidence, and quality through a
   deterministic mapper;
 - keeps a durable browser-local queue for signal reprocessing;
 - syncs numeric daily self-report aggregates without raw self-report events;
-- shows internal signal details only in debug mode.
+- shows detailed signal metadata only in debug mode.
 
 Athena is not a diagnostic system and does not replace therapy or medical care.
 It is a private diary with a careful analytical layer.
@@ -99,13 +99,24 @@ Athena has two independent access rings:
 - optional browser ONNX emotion spike through `@huggingface/transformers`;
 - service worker for app shell caching.
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Privacy model](docs/PRIVACY.md)
+- [API reference](docs/API.md)
+- [Contracts and versioning](docs/CONTRACTS.md)
+- [Database migrations](docs/MIGRATIONS.md)
+- [Testing strategy](docs/TESTING.md)
+- [Deployment notes](docs/DEPLOYMENT.md)
+- [Self-hosting](docs/SELF_HOSTING.md)
+- [Security notes](docs/SECURITY.md)
+
 ## Run Locally
 
 Install dependencies:
 
 ```powershell
 npm install
-npm --prefix client install
 ```
 
 Create a local env file:
@@ -139,12 +150,11 @@ requests are proxied to `http://127.0.0.1:3000`.
 ## Production Build
 
 ```powershell
-npm run client:build
-npm run migrate
-npm run dev
+npm run build
+npm run start
 ```
 
-After `client:build`, Express serves the built client from `client/dist`.
+`npm run start` runs compiled SQLite migrations, then starts the compiled Node server. Express serves the built client from `client/dist`.
 
 ## Release Checks
 
@@ -155,6 +165,7 @@ npm test
 npm run server:check
 npm run lint
 npm run client:build
+npm run test:e2e
 ```
 
 Full release script:
@@ -168,7 +179,7 @@ npm run release:check
 ## Data And Artifacts
 
 Local runtime data lives in `data/`. Local documents, `.env`, `node_modules/`,
-and `client/dist/` are ignored by Git and should not be part of a release
+`dist/`, and `client/dist/` are ignored by Git and should not be part of a release
 commit.
 
 README screenshots live in `client/assets/`. The app background image lives in

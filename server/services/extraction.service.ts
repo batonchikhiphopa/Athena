@@ -7,6 +7,7 @@ import {
 import { MARKERS } from "../core/markers.js";
 import { SIGNAL_AXES } from "../core/signal.schema.js";
 import type { ExtractionProvider, ExtractionResult, SignalMetadata } from "../core/types.js";
+import { analyzeSignalContext } from "../../shared/contracts/signalAnalysis.js";
 import {
   createFallbackSignal,
   sanitizeSignalCandidate,
@@ -53,32 +54,25 @@ const METRIC_NAMES = ["load", "fatigue", "focus"];
 
 const STATE_INFERENCE_JSON_SCHEMA = {
   type: "object",
-  properties: Object.fromEntries(
-    SIGNAL_AXES.map((axis) => [
-      axis,
-      {
-        type: "object",
-        properties: {
-          level: {
-            type: "string",
-            enum: STATE_LEVELS,
-          },
-          confidence: {
-            type: "string",
-            enum: CONFIDENCE_LEVELS,
-          },
-          basis: {
-            type: "array",
-            maxItems: 6,
-            items: { type: "string", maxLength: 160 },
-          },
-        },
-        required: ["level", "confidence", "basis"],
-        additionalProperties: false,
+  additionalProperties: {
+    type: "object",
+    properties: {
+      level: {
+        type: "string",
+        enum: STATE_LEVELS,
       },
-    ]),
-  ),
-  additionalProperties: false,
+      confidence: {
+        type: "string",
+        enum: CONFIDENCE_LEVELS,
+      },
+      basis: {
+        type: "array",
+        maxItems: 6,
+        items: { type: "string" },
+      },
+    },
+    required: ["level", "confidence", "basis"],
+  },
 };
 
 const SIGNAL_JSON_SCHEMA = {
@@ -87,25 +81,21 @@ const SIGNAL_JSON_SCHEMA = {
     topics: {
       type: "array",
       maxItems: 5,
-      items: { type: "string", maxLength: 80 },
+      items: { type: "string" },
     },
     activities: {
       type: "array",
       maxItems: 5,
-      items: { type: "string", maxLength: 80 },
+      items: { type: "string" },
     },
     markers: {
       type: "array",
       maxItems: 8,
-      items: {
-        type: "string",
-        enum: ALLOWED_MARKERS,
-      },
+      items: { type: "string" },
     },
     state_inference: STATE_INFERENCE_JSON_SCHEMA,
     emotion_signals: {
       type: "object",
-      maxProperties: 16,
       additionalProperties: true,
     },
     metric_confidence: {
@@ -122,7 +112,7 @@ const SIGNAL_JSON_SCHEMA = {
       required: METRIC_NAMES,
       additionalProperties: false,
     },
-    quality_reason: { type: "string", maxLength: 128 },
+    quality_reason: { type: "string" },
     load: { type: ["integer", "null"] },
     fatigue: { type: ["integer", "null"] },
     focus: { type: ["integer", "null"] },
@@ -144,7 +134,6 @@ const SIGNAL_JSON_SCHEMA = {
     "focus",
     "signal_quality",
   ],
-  additionalProperties: false,
 };
 
 export function getExtractionOptions() {
@@ -226,16 +215,24 @@ export async function extractSignal({
   text,
   provider,
   model,
+  entry_date,
+  captured_at,
 }: {
   text: string;
   provider?: unknown;
   model?: unknown;
+  entry_date?: string;
+  captured_at?: string;
 }): Promise<ExtractionResult> {
   const selectedProvider = normalizeProvider(provider);
   const selectedModel = normalizeModel(selectedProvider, model);
+  const context = analyzeSignalContext(text, {
+    entryDate: entry_date,
+    capturedAt: captured_at,
+  });
 
   if (selectedProvider === EXTRACTION_PROVIDERS.OFF) {
-    return createFallbackResult(selectedProvider, selectedModel, "provider_off");
+    return createFallbackResult(selectedProvider, selectedModel, "provider_off", context);
   }
 
   try {
@@ -250,14 +247,17 @@ export async function extractSignal({
     }
 
     return {
-      signal: sanitized.data,
+      signal: {
+        ...sanitized.data,
+        ...context,
+      },
       metadata: createSignalMetadata(selectedProvider, selectedModel),
     };
   } catch (error) {
     const errorCode = classifyProviderError(error, selectedProvider);
     console.warn(`[extraction:${selectedProvider}] using fallback:`, error);
 
-    return createFallbackResult(selectedProvider, selectedModel, errorCode);
+    return createFallbackResult(selectedProvider, selectedModel, errorCode, context);
   }
 }
 
@@ -415,6 +415,7 @@ function buildSystemInstruction(): string {
     "Use concrete markers when the entry directly names a context, symptom, rhythm, or event.",
     "State inference separates observed context, inferred state, uncertainty, and final numeric projection.",
     "The app recomputes final metrics deterministically from state_inference, but you must still provide the full v3 shape.",
+    "The app also computes entry_intent, structure_signal, and temporal_context deterministically; do not include those fields.",
     "Use null for load, fatigue, or focus only if the entry contains no relevant signal for that metric at all.",
     "Prefer a cautious estimate over null when the entry gives any directional evidence.",
     "Do not invent load, fatigue, or focus from a marker alone; markers may support a score only when the entry also gives contextual evidence.",
@@ -425,7 +426,7 @@ function buildSystemInstruction(): string {
 
 function buildUserExtractionPrompt(rawText: string): string {
   return [
-    "Extract a Signal v3 candidate from this entry.",
+    "Extract a Signal v4 candidate from this entry.",
     "",
     "Return exactly this JSON shape:",
     "{",
@@ -459,6 +460,7 @@ function buildUserExtractionPrompt(rawText: string): string {
     "- metric_confidence: confidence for final load/fatigue/focus projection",
     "- quality_reason: short snake_case reason for the projection or abstention",
     "- load/fatigue/focus: integer 0-10 or null",
+    "- do not include entry_intent, structure_signal, temporal_context, coaching, advice, or diagnosis",
     "",
     "Allowed state axes:",
     SIGNAL_AXES.join(", "),
@@ -526,9 +528,13 @@ function createFallbackResult(
   provider: ExtractionProvider,
   model: string,
   errorCode: string,
+  context = analyzeSignalContext(""),
 ): ExtractionResult {
   return {
-    signal: createFallbackSignal(),
+    signal: {
+      ...createFallbackSignal(),
+      ...context,
+    },
     metadata: createSignalMetadata(provider, model, errorCode),
   };
 }
@@ -547,6 +553,7 @@ function classifyProviderError(error: unknown, provider: ExtractionProvider): st
       ? "gemini_auth_error"
       : "provider_auth_error";
   }
+  if (message.includes("http_400")) return "provider_request_error";
   if (message.includes("http_429")) return "quota_error";
   if (message.includes("http_404")) return "model_missing";
 

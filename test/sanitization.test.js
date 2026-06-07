@@ -5,7 +5,7 @@ import { mapSignalCandidate } from "../server/core/signal.mapper.js";
 import { sanitizeSignalCandidate } from "../server/services/sanitization.service.js";
 import { metricConfidence, sparseSignal, state, validSignal } from "./signal-fixtures.js";
 
-test("accepts valid Signal v3 candidate", () => {
+test("accepts valid Signal v4 candidate", () => {
   const result = sanitizeSignalCandidate(validSignal());
 
   assert.equal(result.ok, true);

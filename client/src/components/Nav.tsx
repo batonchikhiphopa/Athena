@@ -1,6 +1,8 @@
 import type { Page } from "../types";
+import type { MessageKey } from "../i18n/messages";
 import { useI18n } from "../i18n/useI18n";
 import { Icon } from "./icon";
+import { TooltipButton } from "./TooltipButton";
 
 type NavProps = {
   canLockAthena: boolean;
@@ -11,11 +13,15 @@ type NavProps = {
 
 const IconComponent = Icon;
 
-const navItems = [
-  { icon: "feather", page: "editor" },
-  { icon: "list", page: "entries" },
-  { icon: "observations", page: "observations" },
-] as const;
+const navItems: Array<{
+  icon: "feather" | "list" | "observations";
+  label: MessageKey;
+  page: Extract<Page, "editor" | "entries" | "observations">;
+}> = [
+  { icon: "feather", label: "nav.editor", page: "editor" },
+  { icon: "list", label: "nav.entries", page: "entries" },
+  { icon: "observations", label: "nav.observations", page: "observations" },
+];
 
 export function Nav({
   canLockAthena,
@@ -29,25 +35,30 @@ export function Nav({
     <aside className="sticky top-0 flex h-screen w-fit flex-col px-2 py-5">
       <nav className="mt-4 flex h-full flex-col items-center gap-2">
         {navItems.map((item) => (
-          <button
+          <TooltipButton
+            aria-current={currentPage === item.page ? "page" : undefined}
+            aria-label={t(item.label)}
             className={[
               "flex h-9 w-9 items-center justify-center rounded-full text-sm transition",
               currentPage === item.page
                 ? "text-zinc-900"
                 : "text-zinc-400 opacity-50 hover:text-zinc-700 hover:opacity-100",
             ].join(" ")}
+            data-testid={`nav-${item.page}`}
             key={item.page}
             onClick={() => onNavigate(item.page)}
+            tooltip={t(item.label)}
+            tooltipPlacement="right"
             type="button"
           >
             <span className="translate-y-[-1px]">
               <IconComponent name={item.icon} className="h-5 w-5" />
             </span>
-          </button>
+          </TooltipButton>
         ))}
 
         {canLockAthena ? (
-          <button
+          <TooltipButton
             aria-label={t("nav.lock")}
             className="
               mt-auto flex h-9 w-9 items-center justify-center rounded-full
@@ -56,29 +67,35 @@ export function Nav({
               hover:border-zinc-300 hover:bg-white hover:text-zinc-950
             "
             onClick={onLockAthena}
+            tooltip={t("nav.lock")}
+            tooltipPlacement="right"
             type="button"
-            title={t("nav.lock")}
           >
             <IconComponent name="lock" className="h-4 w-4" />
-          </button>
+          </TooltipButton>
         ) : (
           <div className="mt-auto" />
         )}
 
-        <button
+        <TooltipButton
+          aria-current={currentPage === "settings" ? "page" : undefined}
+          aria-label={t("nav.settings")}
           className={[
             "flex h-9 w-9 items-center justify-center rounded-full text-sm transition",
             currentPage === "settings"
               ? "text-zinc-900"
               : "text-zinc-400 opacity-50 hover:text-zinc-700 hover:opacity-100",
           ].join(" ")}
+          data-testid="nav-settings"
           onClick={() => onNavigate("settings")}
+          tooltip={t("nav.settings")}
+          tooltipPlacement="right"
           type="button"
         >
           <span className="translate-y-[-1px]">
             <IconComponent name="settings" className="h-5 w-5" />
           </span>
-        </button>
+        </TooltipButton>
       </nav>
     </aside>
   );

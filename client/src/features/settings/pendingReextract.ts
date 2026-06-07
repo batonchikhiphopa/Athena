@@ -1,5 +1,5 @@
 import type { ExtractionSettings, LocalEntry } from "../../types";
-import { createEntry, updateServerEntry } from "../../lib/api";
+import { createEntry, updateServerEntry } from "../entries/entriesApi";
 import { extractSignalForText } from "../../lib/extraction";
 import {
   getAllLocalEntries,
@@ -25,7 +25,15 @@ export async function reprocessLocalEntry(
       errorCode: string;
     }
 > {
-  const extraction = await extractSignalForText(entry.text, settings, signal);
+  const extraction = await extractSignalForText(
+    entry.text,
+    settings,
+    {
+      entryDate: entry.entry_date,
+      capturedAt: entry.updatedAt,
+    },
+    signal,
+  );
 
   if (
     extraction.signal.signal_quality === "fallback" &&

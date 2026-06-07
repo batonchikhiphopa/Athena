@@ -8,16 +8,20 @@ node_modules/
 client/node_modules/
 
 # Builds and caches
+dist/
 client/dist/
 client/.vite/
 client/node_modules/.vite/
 client/node_modules/.tmp/
+.tmp/
+playwright-report/
+test-results/
 
 # Runtime data
 data/
 
-# Private project notes, plans, prompts
-docs/
+# Private production notes, plans, prompts
+prod/
 
 # Logs
 *.log

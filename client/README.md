@@ -15,9 +15,9 @@ The service worker in `public/sw.js` caches the app shell and static assets afte
 From the repository root:
 
 ```bash
-npm --prefix client run dev -- --host 127.0.0.1
-npm --prefix client run build
-npm --prefix client run lint
+npm --workspace athena-client run dev -- --host 127.0.0.1
+npm --workspace athena-client run build
+npm --workspace athena-client run lint
 ```
 
 From this directory:

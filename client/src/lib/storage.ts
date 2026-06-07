@@ -248,6 +248,19 @@ export async function deleteLocalEntry(id: string) {
   await idbRequest(transaction.objectStore(ENTRY_STORE).delete(id));
 }
 
+export async function replaceAllLocalEntries(entries: LocalEntry[]) {
+  const encryptedEntries = await Promise.all(entries.map(encryptLocalEntry));
+  const db = await openAthenaLocalDb();
+  const transaction = db.transaction(ENTRY_STORE, "readwrite");
+  const store = transaction.objectStore(ENTRY_STORE);
+
+  await idbRequest(store.clear());
+
+  for (const entry of encryptedEntries) {
+    await idbRequest(store.put(entry));
+  }
+}
+
 export async function saveLocalDraft(text: string) {
   const updatedAt = new Date().toISOString();
   const draft: DraftRecord = {

@@ -2,6 +2,7 @@ import express from "express";
 import { appendSignalSchema } from "../core/extraction.schema.js";
 import { createEntrySchema, updateEntrySchema } from "../core/entry.schema.js";
 import { getDb } from "../db/sqlite.js";
+import { asyncHandler, isCodedError, sendValidationError } from "./http.js";
 import {
   appendEntrySignal,
   createEntry,
@@ -11,29 +12,20 @@ import {
   updateEntry,
 } from "../services/entry.service.js";
 
-type CodedError = Error & {
-  code?: string;
-};
-
 const router = express.Router();
 
-router.get("/entries", async (_req, res) => {
-  try {
-    const db = await getDb();
-    const entries = await listEntries(db);
+router.get(
+  "/entries",
+  asyncHandler(async (_req, res) => {
+    const entries = await listEntries(await getDb());
 
     return res.json({ entries });
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось загрузить записи",
-    });
-  }
-});
-
-router.get("/entries/:id", async (req, res) => {
-  try {
+router.get(
+  "/entries/:id",
+  asyncHandler(async (req, res) => {
     const db = await getDb();
     const entry = await getEntryById(db, req.params.id);
 
@@ -44,23 +36,18 @@ router.get("/entries/:id", async (req, res) => {
     }
 
     return res.json({ entry });
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось загрузить запись",
-    });
-  }
-});
-
-router.post("/entries", async (req, res) => {
+router.post("/entries", async (req, res, next) => {
   const parsed = createEntrySchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать данные записи",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать данные записи",
+      parsed.error,
+    );
   }
 
   try {
@@ -70,31 +57,29 @@ router.post("/entries", async (req, res) => {
 
     return res.status(201).json({ entry });
   } catch (error) {
-    console.error(error);
-
     if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
       return res.status(409).json({
         error: "Запись изменилась, попробуйте сохранить её ещё раз",
       });
     }
 
-    return res.status(500).json({
-      error: "Не удалось сохранить запись",
-    });
+    return next(error);
   }
 });
 
-router.patch("/entries/:id", async (req, res) => {
+router.patch(
+  "/entries/:id",
+  asyncHandler(async (req, res) => {
   const parsed = updateEntrySchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать данные записи",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать данные записи",
+      parsed.error,
+    );
   }
 
-  try {
     const db = await getDb();
     const entry = await updateEntry(db, req.params.id, parsed.data);
 
@@ -105,17 +90,12 @@ router.patch("/entries/:id", async (req, res) => {
     }
 
     return res.json({ entry });
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось обновить запись",
-    });
-  }
-});
-
-router.delete("/entries/:id", async (req, res) => {
-  try {
+router.delete(
+  "/entries/:id",
+  asyncHandler(async (req, res) => {
     const db = await getDb();
     const deleted = await deleteEntry(db, req.params.id);
 
@@ -126,23 +106,18 @@ router.delete("/entries/:id", async (req, res) => {
     }
 
     return res.status(204).send();
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось удалить запись",
-    });
-  }
-});
-
-router.post("/entries/:id/signals", async (req, res) => {
+router.post("/entries/:id/signals", async (req, res, next) => {
   const parsed = appendSignalSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать данные анализа",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать данные анализа",
+      parsed.error,
+    );
   }
 
   try {
@@ -157,22 +132,14 @@ router.post("/entries/:id/signals", async (req, res) => {
 
     return res.json({ entry });
   } catch (error) {
-    console.error(error);
-
     if (isCodedError(error) && error.code === "SOURCE_HASH_MISMATCH") {
       return res.status(409).json({
         error: "Запись изменилась, попробуйте сохранить её ещё раз",
       });
     }
 
-    return res.status(500).json({
-      error: "Не удалось обновить результаты анализа",
-    });
+    return next(error);
   }
 });
 
 export default router;
-
-function isCodedError(error: unknown): error is CodedError {
-  return error instanceof Error && "code" in error;
-}

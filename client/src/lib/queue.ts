@@ -12,10 +12,15 @@ import {
   getQueueJobsByStatuses,
   getLatestQueueJobSummary,
 } from "./queueStorage";
+import {
+  classifyQueueError,
+  queueBlocked,
+  queueCancelled,
+  serializeQueueError,
+} from "./queueErrors";
 import type {
   QueueHandler,
   QueueJob,
-  QueueJobStatus,
   QueueJobType,
   QueueListener,
   QueueSnapshot,
@@ -135,47 +140,6 @@ function getRetryDelayMs(attempts: number) {
   return 120_000;
 }
 
-function errorToMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Unknown queue error";
-  }
-}
-
-function isRetryableQueueError(error: unknown) {
-  const message = errorToMessage(error).toLowerCase();
-
-  if (message.includes("privacy")) return false;
-  if (message.includes("validation")) return false;
-  if (message.includes("schema")) return false;
-  if (message.includes("400")) return false;
-  if (message.includes("401")) return false;
-  if (message.includes("403")) return false;
-  if (message.includes("404")) return false;
-  if (message.includes("409")) return false;
-
-  if (message.includes("429")) return true;
-  if (message.includes("retryable_provider_failure")) return true;
-  if (message.includes("quota_error")) return true;
-  if (message.includes("gemini_daily_limit")) return true;
-  if (message.includes("ollama_unavailable")) return true;
-  if (message.includes("provider_error")) return true;
-  if (message.includes("timeout")) return true;
-  if (message.includes("network")) return true;
-  if (message.includes("failed to fetch")) return true;
-  if (message.includes("backend")) return true;
-  if (message.includes("500")) return true;
-  if (message.includes("502")) return true;
-  if (message.includes("503")) return true;
-  if (message.includes("504")) return true;
-
-  return false;
-}
-
 export function getQueueSnapshot(): QueueSnapshot {
   return snapshot;
 }
@@ -273,6 +237,20 @@ export function pauseQueue(): void {
   emitQueueSnapshot();
 }
 
+export function wakeQueue(): void {
+  if (!processorStarted || processorPaused) return;
+
+  clearWakeTimer();
+
+  snapshot = {
+    ...snapshot,
+    isProcessing: true,
+  };
+
+  emitQueueSnapshot();
+  void processQueue();
+}
+
 export async function stopQueueForVaultLock(): Promise<void> {
   clearWakeTimer();
   processorPaused = true;
@@ -335,6 +313,9 @@ export async function cancelQueueJob(jobId: string): Promise<void> {
     locked_at: null,
     completed_at: nowIso(),
     updated_at: nowIso(),
+    last_error: serializeQueueError(
+      queueCancelled("Job was cancelled by user."),
+    ),
   };
 
   await updateQueueJob(updated);
@@ -368,27 +349,52 @@ async function markJobSucceeded(job: QueueJob): Promise<void> {
 }
 
 async function markJobFailedOrRetry(job: QueueJob, error: unknown): Promise<void> {
-  const message = errorToMessage(error);
-  const retryable = isRetryableQueueError(error);
-  const canRetry = retryable && job.attempts < job.max_attempts;
+  const classified = classifyQueueError(error);
+  const serializedError = serializeQueueError(error);
 
-  const nextStatus: QueueJobStatus = canRetry ? "queued" : "failed";
+  if (classified.kind === "cancelled") {
+    await updateQueueJob({
+      ...job,
+      status: "cancelled",
+      locked_at: null,
+      completed_at: nowIso(),
+      updated_at: nowIso(),
+      last_error: serializedError,
+    });
+    return;
+  }
+
+  if (classified.kind === "blocked" || classified.kind === "conflict") {
+    await updateQueueJob({
+      ...job,
+      status: "blocked",
+      locked_at: null,
+      run_after: null,
+      completed_at: null,
+      updated_at: nowIso(),
+      last_error: serializedError,
+    });
+    return;
+  }
+
+  const canRetry = job.attempts < job.max_attempts;
 
   await updateQueueJob({
     ...job,
-    status: nextStatus,
+    status: canRetry ? "queued" : "failed",
     locked_at: null,
     run_after: canRetry
       ? new Date(Date.now() + getRetryDelayMs(job.attempts)).toISOString()
       : job.run_after,
     completed_at: canRetry ? null : nowIso(),
     updated_at: nowIso(),
-    last_error: message,
+    last_error: serializedError,
   });
 }
 
 async function processQueue(): Promise<void> {
   if (!processorStarted || processorPaused) return;
+  if (activeJobPromise) return;
 
   const runnableJobs = await getRunnableQueueJobs();
 
@@ -416,7 +422,12 @@ async function processQueue(): Promise<void> {
       ...job,
       status: "blocked",
       updated_at: nowIso(),
-      last_error: `No queue handler registered for ${job.type}`,
+      last_error: serializeQueueError(
+        queueBlocked(
+          "missing_handler",
+          `No queue handler registered for ${job.type}`,
+        ),
+      ),
     });
 
     await refreshQueueSnapshot();
@@ -428,42 +439,49 @@ async function processQueue(): Promise<void> {
   }
 
   const runningJob = await markJobRunning(job);
-  activeAbortController = new AbortController();
+  const abortController = new AbortController();
+  activeAbortController = abortController;
 
   await refreshQueueSnapshot();
 
   try {
-    activeJobPromise = handler(runningJob, activeAbortController.signal);
+    activeJobPromise = handler(runningJob, abortController.signal);
     await activeJobPromise;
 
-    if (activeAbortController.signal.aborted) {
+    if (abortController.signal.aborted) {
       await updateQueueJob({
         ...runningJob,
         status: "cancelled",
         locked_at: null,
         completed_at: nowIso(),
         updated_at: nowIso(),
-        last_error: "Job was cancelled.",
+        last_error: serializeQueueError(
+          queueCancelled("Job was cancelled."),
+        ),
       });
     } else {
       await markJobSucceeded(runningJob);
     }
   } catch (error) {
-    if (activeAbortController.signal.aborted) {
+    if (abortController.signal.aborted) {
       await updateQueueJob({
         ...runningJob,
         status: "cancelled",
         locked_at: null,
         completed_at: nowIso(),
         updated_at: nowIso(),
-        last_error: "Job was cancelled.",
+        last_error: serializeQueueError(
+          queueCancelled("Job was cancelled."),
+        ),
       });
     } else {
       await markJobFailedOrRetry(runningJob, error);
     }
   } finally {
     activeJobPromise = null;
-    activeAbortController = null;
+    if (activeAbortController === abortController) {
+      activeAbortController = null;
+    }
     await refreshQueueSnapshot();
   }
 

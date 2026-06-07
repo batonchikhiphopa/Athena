@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import test from "node:test";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 import {
   authenticateSessionToken,
   ensureCsrfToken,
@@ -13,24 +10,7 @@ import {
   setupOwner,
   verifyCsrfToken,
 } from "../server/services/auth.service.js";
-
-async function createTestDb() {
-  const db = await open({
-    filename: ":memory:",
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA foreign_keys = ON;");
-  const files = (await fs.readdir("./migrations"))
-    .filter((filename) => filename.endsWith(".sql"))
-    .sort();
-
-  for (const filename of files) {
-    await db.exec(await fs.readFile(`./migrations/${filename}`, "utf8"));
-  }
-
-  return db;
-}
+import { createTestDb } from "./helpers/createTestDb.js";
 
 test("first-run setup creates one owner with Argon2id password hash", async () => {
   const db = await createTestDb();

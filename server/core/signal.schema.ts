@@ -25,6 +25,28 @@ export const markerSchema = z.enum(MARKERS);
 export const signalAxisSchema = z.enum(SIGNAL_AXES);
 export const signalLevelSchema = z.enum(["low", "medium", "high"]);
 export const confidenceLevelSchema = z.enum(["low", "medium", "high"]);
+export const entryIntentSchema = z.enum([
+  "log",
+  "reflection",
+  "planning",
+  "decision",
+  "gratitude",
+  "venting",
+  "unknown",
+]);
+export const structureDensitySchema = z.enum(["empty", "sparse", "normal", "dense"]);
+export const temporalBucketSchema = z.enum([
+  "morning",
+  "day",
+  "evening",
+  "night",
+  "unknown",
+]);
+export const temporalContextSourceSchema = z.enum([
+  "entry_metadata",
+  "created_at",
+  "absent",
+]);
 
 const scoreSchema = z.number().int().min(0).max(10).nullable();
 const metricConfidenceSchema = z.object({
@@ -44,6 +66,46 @@ const stateInferenceValueSchema = z.object({
   basis: z.array(z.string().min(1).max(160)).max(6),
 }).strict();
 
+const entryIntentSignalSchema = z.object({
+  intent: entryIntentSchema,
+  confidence: confidenceLevelSchema,
+  basis: z.array(z.string().min(1).max(160)).max(6),
+}).strict();
+
+const defaultEntryIntentSignalSchema = z.object({
+  intent: z.literal("unknown"),
+  confidence: z.literal("low"),
+  basis: z.array(z.string()).length(0),
+}).strict();
+
+const structureSignalSchema = z.object({
+  density: structureDensitySchema,
+  coherence: confidenceLevelSchema,
+  has_question: z.boolean(),
+  has_plan: z.boolean(),
+  basis: z.array(z.string().min(1).max(160)).max(6),
+}).strict();
+
+const defaultStructureSignalSchema = z.object({
+  density: z.literal("empty"),
+  coherence: z.literal("low"),
+  has_question: z.literal(false),
+  has_plan: z.literal(false),
+  basis: z.array(z.string()).length(0),
+}).strict();
+
+const temporalContextSchema = z.object({
+  local_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  time_bucket: temporalBucketSchema,
+  source: temporalContextSourceSchema,
+}).strict();
+
+const defaultTemporalContextSchema = z.object({
+  local_date: z.null(),
+  time_bucket: z.literal("unknown"),
+  source: z.literal("absent"),
+}).strict();
+
 const stateInferenceShape = Object.fromEntries(
   SIGNAL_AXES.map((axis) => [axis, stateInferenceValueSchema.optional()]),
 ) as Record<(typeof SIGNAL_AXES)[number], z.ZodOptional<typeof stateInferenceValueSchema>>;
@@ -61,6 +123,23 @@ export const extractedSignalCandidateSchema = z.object({
   state_inference: stateInferenceSchema,
   emotion_signals: emotionSignalsSchema,
   metric_confidence: metricConfidenceSchema,
+  entry_intent: entryIntentSignalSchema.default({
+    intent: "unknown",
+    confidence: "low",
+    basis: [],
+  }),
+  structure_signal: structureSignalSchema.default({
+    density: "empty",
+    coherence: "low",
+    has_question: false,
+    has_plan: false,
+    basis: [],
+  }),
+  temporal_context: temporalContextSchema.default({
+    local_date: null,
+    time_bucket: "unknown",
+    source: "absent",
+  }),
   quality_reason: z.string().min(1).max(128),
 
   load: scoreSchema,
@@ -88,6 +167,9 @@ export const fallbackSignalSchema = z.object({
   state_inference: emptyStateInferenceSchema,
   emotion_signals: emptyEmotionSignalsSchema,
   metric_confidence: fallbackMetricConfidenceSchema,
+  entry_intent: defaultEntryIntentSignalSchema,
+  structure_signal: defaultStructureSignalSchema,
+  temporal_context: defaultTemporalContextSchema,
   quality_reason: z.literal("fallback"),
 
   load: z.null(),
@@ -113,6 +195,9 @@ export const clientFallbackSignalSchema = z.object({
   state_inference: emptyStateInferenceSchema,
   emotion_signals: emptyEmotionSignalsSchema,
   metric_confidence: fallbackMetricConfidenceSchema,
+  entry_intent: defaultEntryIntentSignalSchema,
+  structure_signal: defaultStructureSignalSchema,
+  temporal_context: defaultTemporalContextSchema,
   quality_reason: z.literal("fallback"),
 
   load: z.null(),

@@ -3,7 +3,7 @@ import {
   ACTIVE_SCHEMA_VERSION,
 } from "../config/versions.js";
 import type { InsightLayer, InsightSnapshot } from "../core/types.js";
-import type { AthenaDb } from "../db/sqlite.js";
+import { withDbWriteTransaction, type AthenaDb } from "../db/sqlite.js";
 import {
   countValidDays,
   listVisibleSnapshots,
@@ -101,7 +101,7 @@ export async function deleteInsightSnapshot(
 ): Promise<boolean> {
   if (!Number.isInteger(Number(id))) return false;
 
-  return softDeleteSnapshot(db, Number(id));
+  return withDbWriteTransaction(db, (tx) => softDeleteSnapshot(tx, Number(id)));
 }
 
 async function createOrRefreshSnapshot(
@@ -128,17 +128,19 @@ async function createOrRefreshSnapshot(
   const expiresAt =
     layer === "day" ? today : addDays(periodEnd, retainDays);
 
-  return upsertSnapshot(db, {
-    layer,
-    periodStart,
-    periodEnd,
-    topic: topTopic,
-    text,
-    generatedAt,
-    expiresAt,
-    schemaVersion: ACTIVE_SCHEMA_VERSION,
-    promptVersion: ACTIVE_PROMPT_VERSION,
-  });
+  return withDbWriteTransaction(db, (tx) =>
+    upsertSnapshot(tx, {
+      layer,
+      periodStart,
+      periodEnd,
+      topic: topTopic,
+      text,
+      generatedAt,
+      expiresAt,
+      schemaVersion: ACTIVE_SCHEMA_VERSION,
+      promptVersion: ACTIVE_PROMPT_VERSION,
+    }),
+  );
 }
 
 function composeInsightText({

@@ -7,6 +7,7 @@ import type {
   SignalLevel,
   StateInference,
 } from "./types.js";
+import { createDefaultSignalContext } from "../../shared/contracts/signalAnalysis.js";
 
 type SignalCandidate = Omit<
   Signal,
@@ -82,6 +83,7 @@ const CONFIDENCE_RANK: Record<ConfidenceLevel, number> = {
 };
 
 export function mapSignalCandidate(candidate: SignalCandidate): Signal {
+  const context = createDefaultSignalContext();
   const emotionLabels = extractEmotionLabels(candidate.emotion_signals);
   const load = mapMetric("load", candidate.state_inference, emotionLabels);
   const fatigue = mapMetric("fatigue", candidate.state_inference, emotionLabels);
@@ -107,6 +109,9 @@ export function mapSignalCandidate(candidate: SignalCandidate): Signal {
     state_inference: candidate.state_inference,
     emotion_signals: candidate.emotion_signals,
     metric_confidence,
+    entry_intent: candidate.entry_intent ?? context.entry_intent,
+    structure_signal: candidate.structure_signal ?? context.structure_signal,
+    temporal_context: candidate.temporal_context ?? context.temporal_context,
     quality_reason: getQualityReason(
       candidate.state_inference,
       hasMetric,

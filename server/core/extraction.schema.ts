@@ -7,6 +7,8 @@ export const extractionRequestSchema = z.object({
   text: z.string().min(1).max(20_000),
   provider: extractionProviderSchema.optional(),
   model: z.string().min(1).max(128).optional(),
+  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  captured_at: z.string().min(1).optional(),
 }).strict();
 
 export const signalMetadataPayloadSchema = z.object({

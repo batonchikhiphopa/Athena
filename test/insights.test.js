@@ -1,9 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 
 import { createEntry } from "../server/services/entry.service.js";
 import {
@@ -11,29 +8,11 @@ import {
   getCurrentInsightSnapshots,
   listInsightSnapshots,
 } from "../server/services/insight.service.js";
+import { createTestDb } from "./helpers/createTestDb.js";
 import {
   sparseSignal as baseSparseSignal,
   validSignal as baseValidSignal,
 } from "./signal-fixtures.js";
-
-async function createTestDb() {
-  const db = await open({
-    filename: ":memory:",
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA foreign_keys = ON;");
-
-  const files = (await fs.readdir("./migrations"))
-    .filter((filename) => filename.endsWith(".sql"))
-    .sort();
-
-  for (const filename of files) {
-    await db.exec(await fs.readFile(`./migrations/${filename}`, "utf8"));
-  }
-
-  return db;
-}
 
 function validSignal(topic = "работа") {
   return baseValidSignal({

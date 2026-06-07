@@ -1,5 +1,5 @@
 import type { EntryStatus, ExtractionProvider, Signal } from "../core/types.js";
-import type { AthenaDb } from "../db/sqlite.js";
+import { withDbWriteTransaction, type AthenaDb } from "../db/sqlite.js";
 
 type SignalStatus = "fallback" | "extracted";
 
@@ -83,10 +83,8 @@ export async function insertSignalAndFinalizeEntry(
     createdAt,
   }: InsertSignalAndFinalizeEntryParams,
 ): Promise<void> {
-  await db.exec("BEGIN");
-
-  try {
-    await insertSignalRow(db, {
+  await withDbWriteTransaction(db, async (tx) => {
+    await insertSignalRow(tx, {
       entryId,
       sourceTextHash,
       signal,
@@ -98,7 +96,7 @@ export async function insertSignalAndFinalizeEntry(
       createdAt,
     });
 
-    await db.run(
+    await tx.run(
       `
       UPDATE entries
       SET status = ?,
@@ -107,12 +105,7 @@ export async function insertSignalAndFinalizeEntry(
       `,
       [finalStatus, createdAt, entryId],
     );
-
-    await db.exec("COMMIT");
-  } catch (error) {
-    await db.exec("ROLLBACK");
-    throw error;
-  }
+  });
 }
 
 export async function insertSignalRow(
@@ -140,6 +133,9 @@ export async function insertSignalRow(
       state_inference,
       emotion_signals,
       metric_confidence,
+      entry_intent,
+      structure_signal,
+      temporal_context,
       quality_reason,
       load,
       fatigue,
@@ -151,7 +147,7 @@ export async function insertSignalRow(
       model,
       error_code,
       created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       entryId,
@@ -162,6 +158,9 @@ export async function insertSignalRow(
       JSON.stringify(signal.state_inference),
       JSON.stringify(signal.emotion_signals),
       JSON.stringify(signal.metric_confidence),
+      JSON.stringify(signal.entry_intent),
+      JSON.stringify(signal.structure_signal),
+      JSON.stringify(signal.temporal_context),
       signal.quality_reason,
       signal.load,
       signal.fatigue,

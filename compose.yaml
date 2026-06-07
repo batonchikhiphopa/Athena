@@ -1,0 +1,22 @@
+services:
+  athena:
+    image: athena:latest
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      ATHENA_HOST: 0.0.0.0
+      PORT: 3000
+      ATHENA_PROJECT_ROOT: /app
+      ATHENA_CLIENT_DIST_DIR: /app/client/dist
+      ATHENA_DATA_DIR: /app/data
+      ATHENA_AUTH_REQUIRED: "true"
+      ATHENA_AI_PROVIDER: off
+    volumes:
+      - athena-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  athena-data:
+    name: athena-data

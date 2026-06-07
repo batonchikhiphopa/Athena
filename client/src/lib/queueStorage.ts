@@ -113,7 +113,7 @@ export async function recoverStaleRunningJobs(
       status: "queued",
       locked_at: null,
       updated_at: new Date().toISOString(),
-      last_error: job.last_error ?? "Recovered stale running job.",
+      last_error: job.last_error ?? "recovered_stale_job: Recovered stale running job.",
     };
 
     await updateQueueJob(recoveredJob);
@@ -156,7 +156,9 @@ export async function getLastQueueError(): Promise<string | null> {
 
 export async function getLatestQueueJobSummary(): Promise<QueueJobSummary | null> {
   const jobs = await getQueueJobs();
-  const latestJob = jobs.sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
+  const latestJob = jobs.sort((a, b) =>
+    b.updated_at.localeCompare(a.updated_at),
+  )[0];
 
   if (!latestJob) return null;
 
@@ -167,6 +169,9 @@ export async function getLatestQueueJobSummary(): Promise<QueueJobSummary | null
     reason: readQueueJobReason(latestJob.payload),
     entity_id: latestJob.entity_id,
     updated_at: latestJob.updated_at,
+    run_after: latestJob.run_after,
+    attempts: latestJob.attempts,
+    max_attempts: latestJob.max_attempts,
     last_error: latestJob.last_error,
   };
 }

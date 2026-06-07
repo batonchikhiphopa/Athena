@@ -10,9 +10,11 @@ import {
   stopQueueForVaultLock,
   subscribeToQueue,
   retryRecoverableQueueJobs,
+  wakeQueue,
 } from "../../lib/queue";
 import type { QueueSnapshot } from "../../lib/queueTypes";
 import { registerSyncQueueHandlers } from "./syncQueue";
+import { useQueueWakeups } from "./useQueueWakeups";
 
 type UseSyncQueueInput = {
   extractionSettings: ExtractionSettings;
@@ -23,8 +25,11 @@ export function useSyncQueue({ extractionSettings }: UseSyncQueueInput) {
     getQueueSnapshot(),
   );
 
+  useQueueWakeups({ enabled: true });
+
   useEffect(() => {
     registerSyncQueueHandlers(extractionSettings);
+    wakeQueue();
   }, [extractionSettings]);
 
   useEffect(() => {

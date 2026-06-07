@@ -2,6 +2,29 @@
 
 All notable changes to Athena are documented here.
 
+## v0.7.0 - 2026-06-07
+
+### Added
+
+- Added Signal v4 context contracts and migration coverage.
+- Added browser-local JSON export/import in Settings with preview validation and replace-local-data apply.
+- Added backend textless metadata export at `/exports/backend-metadata`.
+- Added Playwright smoke coverage for Settings data export/import.
+- Added Docker and compose self-hosting artifacts.
+
+### Changed
+
+- Bumped root and client package versions to `0.7.0`.
+- Aligned local, CI, and Docker runtime policy on Node 24.
+- Kept root `dist/` and client build artifacts out of release commits.
+- Moved TypeScript build metadata out of `client/node_modules/.tmp`.
+- Made server builds clear stale `dist/server` output before compiling.
+- Moved Playwright's API server off port `3000` to avoid local dev conflicts.
+
+### Notes
+
+- Release verification still needs full tests in CI or a clean non-sandboxed shell if the local environment blocks child-process spawns.
+
 ## v0.6.0 - 2026-06-01
 
 ### Added

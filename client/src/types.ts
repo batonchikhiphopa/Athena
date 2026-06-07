@@ -1,62 +1,42 @@
+import type {
+  Signal,
+  SignalMetadata,
+} from "../../shared/contracts/index.js";
+
+export type {
+  ConfidenceLevel,
+  EntryIntent,
+  EntryIntentSignal,
+  EntryStatus,
+  ExtractionConfig,
+  ExtractionProvider,
+  ExtractionProviderOption,
+  ExtractionResult,
+  ExtractionSettings,
+  ExtractionStatus,
+  InsightLayer,
+  InsightSnapshot,
+  MetricConfidence,
+  MetricName,
+  SelfReportAxis,
+  SelfReportDailyAggregate,
+  ServerEntry,
+  Signal,
+  SignalAxis,
+  SignalLevel,
+  SignalMetadata,
+  SignalQuality,
+  StructureDensity,
+  StructureSignal,
+  TemporalBucket,
+  TemporalContext,
+  TemporalContextSource,
+  StateInference,
+  StateInferenceValue,
+} from "../../shared/contracts/index.js";
+
 export type Page = "editor" | "entries" | "observations" | "settings";
-export type ExtractionProvider = "ollama" | "gemini" | "off";
 export type EntrySortDirection = "desc" | "asc";
-
-export type SignalQuality = "valid" | "sparse" | "fallback";
-export type SignalLevel = "low" | "medium" | "high";
-export type ConfidenceLevel = "low" | "medium" | "high";
-export type SignalAxis =
-  | "load"
-  | "fatigue"
-  | "focus"
-  | "distress"
-  | "anxiety"
-  | "mood"
-  | "energy"
-  | "sleep_quality"
-  | "self_attack"
-  | "shame_guilt"
-  | "rumination"
-  | "avoidance"
-  | "agency"
-  | "conflict"
-  | "social_connection"
-  | "recovery_need"
-  | "confidence";
-export type MetricName = "load" | "fatigue" | "focus";
-
-export type StateInferenceValue = {
-  level: SignalLevel;
-  confidence: ConfidenceLevel;
-  basis: string[];
-};
-
-export type StateInference = Partial<Record<SignalAxis, StateInferenceValue>>;
-
-export type MetricConfidence = Record<MetricName, ConfidenceLevel>;
-
-export type Signal = {
-  topics: string[];
-  activities: string[];
-  markers: string[];
-  state_inference: StateInference;
-  emotion_signals: Record<string, unknown>;
-  metric_confidence: MetricConfidence;
-  quality_reason: string;
-  load: number | null;
-  fatigue: number | null;
-  focus: number | null;
-  signal_quality: SignalQuality;
-};
-
-export type SignalMetadata = {
-  schema_version: string;
-  prompt_version: string;
-  provider: ExtractionProvider;
-  model: string;
-  error_code?: string | null;
-  created_at?: string;
-};
 
 export type LocalEntry = {
   id: string;
@@ -71,19 +51,6 @@ export type LocalEntry = {
   sync_status: "syncing" | "synced" | "local_only" | "pending_reextract";
   createdAt: string;
   updatedAt: string;
-};
-
-export type ServerEntry = {
-  id: number;
-  client_entry_id: string;
-  entry_date: string;
-  created_at: string;
-  updated_at: string;
-  status: "extracted" | "fallback" | "failed";
-  tags: string[];
-  source_text_hash: string;
-  signal: Signal | null;
-  metadata: SignalMetadata | null;
 };
 
 export type EntryView = {
@@ -101,45 +68,4 @@ export type EntryView = {
   createdAt: string;
   updatedAt: string;
   isDraft?: boolean;
-};
-
-export type ExtractionConfig = {
-  defaults: ExtractionSettings;
-  providers: ExtractionProviderOption[];
-};
-
-export type ExtractionResult = {
-  signal: Signal;
-  metadata: SignalMetadata;
-};
-
-export type ExtractionProviderOption = {
-  id: ExtractionProvider;
-  label: string;
-  defaultModel: string;
-  models: string[];
-  configured: boolean;
-};
-
-export type ExtractionSettings = {
-  provider: ExtractionProvider;
-  model: string;
-};
-
-export type ExtractionStatus = {
-  provider: ExtractionProvider;
-  model: string;
-  available: boolean;
-  reason: string | null;
-};
-
-export type InsightSnapshot = {
-  id: number;
-  layer: "day" | "week" | "month";
-  period_start: string;
-  period_end: string;
-  topic: string | null;
-  text: string;
-  generated_at: string;
-  expires_at: string;
 };

@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useI18n } from "../i18n/useI18n";
-import type { EntryView, Page } from "../types";
+import type { EntryView } from "../types";
 import { deleteAthenaLocalData } from "../lib/storage";
+import { useAthenaLifecycle } from "./useAthenaLifecycle";
+import { useAthenaNavigation } from "./useAthenaNavigation";
+import { useVaultLockPreparation } from "./useVaultLockPreparation";
 import { useEditorDraft } from "../features/editor/useEditorDraft";
 import { useEntries } from "../features/entries/useEntries";
 import { useInsights } from "../features/insights/useInsights";
-import { processPendingReextractEntries } from "../features/settings/pendingReextract";
 import { useSettingsState } from "../features/settings/useSettingsState";
 import { useSyncQueue } from "../features/sync/useSyncQueue";
 import { useOnlineStatus } from "../lib/offline";
-import { stopQueueForVaultLock } from "../lib/queue";
 
 export function useAthenaApp() {
   const { language, t } = useI18n();
-  const [page, setPage] = useState<Page>("editor");
 
   const entries = useEntries();
 
@@ -34,11 +34,28 @@ export function useAthenaApp() {
   const syncQueue = useSyncQueue({
     extractionSettings: settings.extractionSettings,
   });
-  const initializeDraft = editor.initializeDraft;
-  const refreshEntries = entries.refreshEntries;
-  const refreshInsights = insights.refreshInsights;
-  const refreshObservationHistory = insights.refreshObservationHistory;
-  const initializeExtractionSettings = settings.initializeExtractionSettings;
+
+  const navigation = useAthenaNavigation({
+    editor,
+    entries,
+    insights,
+    draftText: editor.draftText,
+  });
+
+  useAthenaLifecycle({
+    initializeDraft: editor.initializeDraft,
+    initializeExtractionSettings: settings.initializeExtractionSettings,
+    refreshEntries: entries.refreshEntries,
+    refreshInsights: insights.refreshInsights,
+    refreshObservationHistory: insights.refreshObservationHistory,
+    setPage: navigation.setPage,
+  });
+
+  const prepareForVaultLock = useVaultLockPreparation({
+    clearAutosaveTimer: editor.clearAutosaveTimer,
+    draftText: editor.draftText,
+    persistEditorText: editor.persistEditorText,
+  });
 
   const activeEntry = useMemo(
     () =>
@@ -49,73 +66,11 @@ export function useAthenaApp() {
 
   const isOnline = useOnlineStatus();
 
-  const initialize = useCallback(async () => {
-    try {
-      const nextExtractionSettings = await initializeExtractionSettings();
-
-      await initializeDraft();
-      setPage("editor");
-
-      // Startup only enqueues persisted pending work. The queue itself starts
-      // after first render through useSyncQueue(), so editor startup stays fast.
-      await processPendingReextractEntries(nextExtractionSettings);
-
-      await refreshEntries();
-      await refreshInsights();
-      await refreshObservationHistory();
-    } catch (error) {
-      console.error(error);
-      await initializeDraft().catch((draftError) =>
-        console.error("[editor:init]", draftError),
-      );
-    }
-  }, [
-    initializeDraft,
-    initializeExtractionSettings,
-    refreshEntries,
-    refreshInsights,
-    refreshObservationHistory,
-  ]);
-
-  useEffect(() => {
-    void initialize();
-  }, [initialize]);
-
-  async function handleNewBlankPage() {
-    await editor.newBlankPage();
-    insights.clearEditorInsight();
-    setPage("editor");
-  }
-
-  async function handleEditEntry(entry: EntryView) {
-    await editor.editEntry(entry);
-    insights.clearEditorInsight();
-    setPage("editor");
-  }
-
   async function handleDeleteEntry(entry: EntryView) {
     await entries.deleteEntry(entry);
     editor.clearIfEditingEntry(entry.id);
     await insights.refreshInsights();
     await insights.refreshObservationHistory();
-  }
-
-  async function handleNavigate(nextPage: Page) {
-    if (nextPage !== "editor") {
-      editor.clearAutosaveTimer();
-      await editor.persistEditorText(editor.draftText);
-    }
-
-    setPage(nextPage);
-
-    if (nextPage === "entries") {
-      const activeEntryId = editor.activeEntryId();
-      if (activeEntryId) entries.selectEntry(activeEntryId);
-    }
-
-    if (nextPage === "observations") {
-      await insights.refreshObservationHistory();
-    }
   }
 
   async function handleClearLocalData() {
@@ -128,7 +83,7 @@ export function useAthenaApp() {
     entries.resetEntries();
     settings.resetAfterLocalDataClear();
     await entries.refreshEntries();
-    setPage("editor");
+    navigation.setPage("editor");
   }
 
   async function handleReprocessFallbackEntries() {
@@ -137,13 +92,6 @@ export function useAthenaApp() {
       refreshInsights: insights.refreshInsights,
       refreshObservationHistory: insights.refreshObservationHistory,
     });
-  }
-
-  async function handlePrepareForVaultLock() {
-    await stopQueueForVaultLock();
-    editor.clearAutosaveTimer();
-    await editor.persistEditorText(editor.draftText);
-    await stopQueueForVaultLock();
   }
 
   return {
@@ -163,6 +111,7 @@ export function useAthenaApp() {
     entrySortDirection: entries.entrySortDirection,
     entrySearchQuery: entries.entrySearchQuery,
     includedEntryTags: entries.includedEntryTags,
+    excludedEntryTags: entries.excludedEntryTags,
     availableEntryTags: entries.availableEntryTags,
     hasActiveEntryFilters: entries.hasActiveEntryFilters,
     isSearchingEntries: entries.isSearchingEntries,
@@ -174,7 +123,7 @@ export function useAthenaApp() {
     localEmotionSpikeStatus: settings.localEmotionSpikeStatus,
     insights: insights.insights,
     observationHistory: insights.observationHistory,
-    page,
+    page: navigation.page,
     personaTextEnabled: settings.personaTextEnabled,
     reprocessMessage: settings.reprocessMessage,
     reprocessStatus: settings.reprocessStatus,
@@ -190,11 +139,11 @@ export function useAthenaApp() {
       clearLocalData: handleClearLocalData,
       deleteEntry: handleDeleteEntry,
       deleteInsight: insights.deleteInsight,
-      editEntry: handleEditEntry,
+      editEntry: navigation.handlers.editEntry,
       editorTagsChange: editor.changeTags,
       editorTextChange: editor.changeText,
-      navigate: handleNavigate,
-      newBlankPage: handleNewBlankPage,
+      navigate: navigation.handlers.navigate,
+      newBlankPage: navigation.handlers.newBlankPage,
       refreshEntries: entries.refreshEntries,
       refreshExtractionStatus: settings.refreshExtractionStatus,
       refreshObservationHistory: insights.refreshObservationHistory,
@@ -205,6 +154,7 @@ export function useAthenaApp() {
       toggleDraftAnalysisEnabled: editor.toggleAnalysisEnabled,
       toggleEntryAnalysisEnabled: entries.toggleEntryAnalysisEnabled,
       toggleIncludedEntryTag: entries.toggleIncludedEntryTag,
+      toggleExcludedEntryTag: entries.toggleExcludedEntryTag,
       toggleDebugMode: settings.toggleDebugMode,
       toggleLocalEmotionSpike: settings.toggleLocalEmotionSpike,
       togglePersonaText: settings.togglePersonaText,
@@ -212,7 +162,7 @@ export function useAthenaApp() {
       retryQueueJob: syncQueue.retry,
       cancelQueueJob: syncQueue.cancel,
       pauseQueue: syncQueue.pause,
-      prepareForVaultLock: handlePrepareForVaultLock,
+      prepareForVaultLock,
       startQueue: syncQueue.start,
       retryRecoverableQueueJobs: syncQueue.retryRecoverable,
     },

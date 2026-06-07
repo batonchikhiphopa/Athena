@@ -86,6 +86,18 @@ export const SERVER_AUTH_REQUIRED_EVENT = "athena:server-auth-required";
 
 const CSRF_COOKIE_NAME = "athena_csrf";
 
+export class ApiHttpError extends Error {
+  status: number;
+  code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = "ApiHttpError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function loadServerAuthStatus() {
   const response = await fetch("/auth/me", {
     credentials: "same-origin",
@@ -194,8 +206,7 @@ export async function createEntry(payload: CreateEntryPayload) {
   handleUnauthorized(response);
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Не удалось сохранить запись: ${text}`);
+    throw await createApiHttpError(response, "Не удалось сохранить запись");
   }
 
   const data = (await response.json()) as CreateEntryResponse;
@@ -216,8 +227,7 @@ export async function updateServerEntry(
   handleUnauthorized(response);
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Не удалось обновить запись: ${text}`);
+    throw await createApiHttpError(response, "Не удалось обновить запись");
   }
 
   const data = (await response.json()) as CreateEntryResponse;
@@ -258,6 +268,7 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
     provider: settings.provider,
     model: settings.model,
   });
+
   const response = await fetch(`/extractions/status?${params.toString()}`, {
     credentials: "same-origin",
   });
@@ -274,6 +285,8 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
 export async function extractSignal(payload: {
   text: string;
   settings: ExtractionSettings;
+  entryDate?: string;
+  capturedAt?: string;
   signal?: AbortSignal;
 }) {
   const response = await fetch("/extractions", {
@@ -285,6 +298,8 @@ export async function extractSignal(payload: {
       text: payload.text,
       provider: payload.settings.provider,
       model: payload.settings.model,
+      entry_date: payload.entryDate,
+      captured_at: payload.capturedAt,
     }),
   });
 
@@ -457,6 +472,27 @@ function readBrowserCookie(name: string): string | null {
   } catch {
     return cookie.slice(prefix.length);
   }
+}
+
+async function createApiHttpError(
+  response: Response,
+  prefix: string,
+): Promise<ApiHttpError> {
+  const text = await response.text();
+
+  return new ApiHttpError(
+    response.status,
+    classifyHttpErrorCode(response.status),
+    `${prefix}: ${text}`,
+  );
+}
+
+function classifyHttpErrorCode(status: number): string {
+  if (status === 409) return "backend_conflict";
+  if (status === 429) return "rate_limited";
+  if (status >= 500) return "backend_unavailable";
+
+  return `http_${status}`;
 }
 
 function handleUnauthorized(response: Response): void {

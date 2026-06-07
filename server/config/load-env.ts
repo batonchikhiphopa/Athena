@@ -1,14 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 type AthenaGlobal = typeof globalThis & {
   __ATHENA_ENV_LOADED__?: boolean;
 };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, "..", "..");
+const projectRoot = process.env.ATHENA_PROJECT_ROOT
+  ? path.resolve(process.env.ATHENA_PROJECT_ROOT)
+  : path.resolve(process.cwd());
+
 const envPath = path.join(projectRoot, ".env");
 const athenaGlobal = globalThis as AthenaGlobal;
 

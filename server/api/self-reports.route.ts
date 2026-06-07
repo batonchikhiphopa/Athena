@@ -5,17 +5,19 @@ import {
   listSyncedSelfReportDailyAggregates,
   syncSelfReportDailyAggregates,
 } from "../services/self-report.service.js";
+import { asyncHandler, sendValidationError } from "./http.js";
 
 const router = express.Router();
 
-router.put("/self-reports/daily-aggregates/:localDay", async (req, res) => {
+router.put("/self-reports/daily-aggregates/:localDay", async (req, res, next) => {
   const parsed = syncSelfReportDailyAggregatesSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
-      error: "Не удалось обработать self-report aggregates",
-      details: parsed.error.flatten(),
-    });
+    return sendValidationError(
+      res,
+      "Не удалось обработать self-report aggregates",
+      parsed.error,
+    );
   }
 
   try {
@@ -28,8 +30,6 @@ router.put("/self-reports/daily-aggregates/:localDay", async (req, res) => {
 
     return res.json({ aggregates });
   } catch (error) {
-    console.error(error);
-
     if (
       error instanceof Error &&
       error.message === "self_report_aggregate_day_mismatch"
@@ -39,14 +39,13 @@ router.put("/self-reports/daily-aggregates/:localDay", async (req, res) => {
       });
     }
 
-    return res.status(500).json({
-      error: "Не удалось синхронизировать self-report aggregates",
-    });
+    return next(error);
   }
 });
 
-router.get("/self-reports/daily-aggregates/:localDay", async (req, res) => {
-  try {
+router.get(
+  "/self-reports/daily-aggregates/:localDay",
+  asyncHandler(async (req, res) => {
     const db = await getDb();
     const aggregates = await listSyncedSelfReportDailyAggregates(
       db,
@@ -54,13 +53,7 @@ router.get("/self-reports/daily-aggregates/:localDay", async (req, res) => {
     );
 
     return res.json({ aggregates });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Не удалось загрузить self-report aggregates",
-    });
-  }
-});
+  }),
+);
 
 export default router;

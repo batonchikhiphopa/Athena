@@ -1,5 +1,5 @@
-import { enqueueQueueJob } from "../../lib/queue";
-import type { EntryReprocessReason } from "../../lib/queueTypes";
+import { enqueueQueueJob } from "./queue";
+import type { EntryReprocessReason } from "./queueTypes";
 import {
   createEntryReprocessJobIdempotencyKey,
   createEntryReprocessPayload,

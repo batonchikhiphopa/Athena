@@ -8,12 +8,16 @@ import {
   isSignalReprocessCandidate,
   planEntryReprocessJob,
 } from "../client/src/features/sync/reprocessPolicy.ts";
+import {
+  CLIENT_ACTIVE_PROMPT_VERSION,
+  CLIENT_ACTIVE_SCHEMA_VERSION,
+} from "../client/src/lib/signalVersions.ts";
 import { fallbackSignal, sparseSignal, validSignal } from "./signal-fixtures.js";
 
 function metadata(overrides = {}) {
   return {
-    schema_version: "signal.v3",
-    prompt_version: "extraction.v4",
+    schema_version: CLIENT_ACTIVE_SCHEMA_VERSION,
+    prompt_version: CLIENT_ACTIVE_PROMPT_VERSION,
     provider: "off",
     model: "fallback",
     error_code: null,
@@ -147,7 +151,7 @@ test("reprocess payload is inspectable and does not carry raw text", () => {
   assert.equal(payload.entry_id, "entry-1");
   assert.equal(payload.server_id, 1);
   assert.equal(payload.reason, "sparse_no_metrics");
-  assert.equal(payload.requested_schema_version, "signal.v3");
-  assert.equal(payload.requested_prompt_version, "extraction.v4");
+  assert.equal(payload.requested_schema_version, CLIENT_ACTIVE_SCHEMA_VERSION);
+  assert.equal(payload.requested_prompt_version, CLIENT_ACTIVE_PROMPT_VERSION);
   assert.equal("text" in payload, false);
 });

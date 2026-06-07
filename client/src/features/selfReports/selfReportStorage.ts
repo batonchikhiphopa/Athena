@@ -8,7 +8,7 @@ import {
   encryptVaultJson,
   isVaultEncryptedPayload,
   type VaultEncryptedPayload,
-} from "../../lib/vault";
+} from "../vault/vaultApi";
 import {
   DEFAULT_SELF_REPORT_VALUES,
   SELF_REPORT_AXES,
@@ -51,6 +51,12 @@ type EncryptedSelfReportDailyAggregateRecord = {
 type StoredSelfReportDailyAggregateRecord =
   | SelfReportDailyAggregate
   | EncryptedSelfReportDailyAggregateRecord;
+
+export type ReplaceSelfReportEventsResult = {
+  events: SelfReportEvent[];
+  aggregates: SelfReportDailyAggregate[];
+  recomputedDays: string[];
+};
 
 export async function getEntrySelfReport(entryId: string) {
   const db = await openAthenaLocalDb();
@@ -112,6 +118,45 @@ export async function deleteEntrySelfReport(entryId: string) {
   return existing;
 }
 
+export async function replaceAllSelfReportEvents(
+  events: SelfReportEvent[],
+): Promise<ReplaceSelfReportEventsResult> {
+  const normalizedEvents = events.map(normalizeSelfReportEvent);
+  const encryptedEvents = await Promise.all(
+    normalizedEvents.map(encryptSelfReportEvent),
+  );
+  const recomputedDays = Array.from(
+    new Set(normalizedEvents.map((event) => event.local_day)),
+  ).sort();
+
+  const db = await openAthenaLocalDb();
+  const transaction = db.transaction(
+    [SELF_REPORT_STORE, SELF_REPORT_DAILY_AGGREGATES_STORE],
+    "readwrite",
+  );
+
+  await idbRequest(transaction.objectStore(SELF_REPORT_STORE).clear());
+  await idbRequest(
+    transaction.objectStore(SELF_REPORT_DAILY_AGGREGATES_STORE).clear(),
+  );
+
+  const selfReportStore = transaction.objectStore(SELF_REPORT_STORE);
+
+  for (const event of encryptedEvents) {
+    await idbRequest(selfReportStore.put(event));
+  }
+
+  const aggregateGroups = await Promise.all(
+    recomputedDays.map((localDay) => recomputeSelfReportDailyAggregates(localDay)),
+  );
+
+  return {
+    events: normalizedEvents,
+    aggregates: aggregateGroups.flat(),
+    recomputedDays,
+  };
+}
+
 export async function getSelfReportDailyAggregates(localDay: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(
@@ -166,6 +211,22 @@ export async function recomputeSelfReportDailyAggregates(localDay: string) {
   return nextAggregates;
 }
 
+export async function getAllSelfReportEvents() {
+  const db = await openAthenaLocalDb();
+  const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
+  const reports = await idbRequest<StoredSelfReportEventRecord[]>(
+    transaction.objectStore(SELF_REPORT_STORE).getAll(),
+  );
+
+  const decryptedReports = await Promise.all(
+    reports.map((report) => readStoredSelfReportEvent(report)),
+  );
+
+  return decryptedReports
+    .map(normalizeSelfReportEvent)
+    .sort((left, right) => left.created_at.localeCompare(right.created_at));
+}
+
 async function getSelfReportsForLocalDay(localDay: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
@@ -195,7 +256,7 @@ function buildAxisAggregate(
 ): SelfReportDailyAggregate | null {
   const values = reports
     .map((report) => report.values[axis])
-    .filter((value) => Number.isFinite(value));
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
   if (values.length === 0) return null;
 
@@ -251,8 +312,10 @@ function normalizeSelfReportValues(values: SelfReportValues): SelfReportValues {
   );
 }
 
-function clampSelfReportValue(value: number) {
-  if (!Number.isFinite(value)) return 5;
+function clampSelfReportValue(value: number | null | undefined) {
+  if (value === null || value === undefined) return null;
+  if (!Number.isFinite(value)) return null;
+
   return Math.max(0, Math.min(10, Math.round(value)));
 }
 

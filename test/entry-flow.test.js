@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import test from "node:test";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 import {
   createEntry,
   deleteEntry,
@@ -11,25 +8,8 @@ import {
   updateEntry,
 } from "../server/services/entry.service.js";
 import { ACTIVE_SCHEMA_VERSION } from "../server/config/versions.js";
+import { createTestDb } from "./helpers/createTestDb.js";
 import { state, validSignal } from "./signal-fixtures.js";
-
-async function createTestDb() {
-  const db = await open({
-    filename: ":memory:",
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA foreign_keys = ON;");
-  const files = (await fs.readdir("./migrations"))
-    .filter((filename) => filename.endsWith(".sql"))
-    .sort();
-
-  for (const filename of files) {
-    await db.exec(await fs.readFile(`./migrations/${filename}`, "utf8"));
-  }
-
-  return db;
-}
 
 test("entry create/read flow stores only textless metadata and signals", async () => {
   const db = await createTestDb();

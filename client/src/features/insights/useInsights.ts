@@ -4,7 +4,7 @@ import {
   deleteInsightSnapshot,
   loadCurrentInsights,
   loadInsightHistory,
-} from "../../lib/api";
+} from "./insightsApi";
 import { todayDateOnly } from "../../lib/dates";
 import {
   getSeenEditorInsightIds,

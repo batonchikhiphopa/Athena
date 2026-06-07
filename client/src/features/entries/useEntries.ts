@@ -4,7 +4,7 @@ import {
   deleteServerEntry,
   loadServerEntries,
   loadServerEntry,
-} from "../../lib/api";
+} from "./entriesApi";
 import {
   deleteLocalEntry,
   getAllLocalEntries,
@@ -183,6 +183,7 @@ export function useEntries() {
 
     entrySearchQuery: entrySearch.query,
     includedEntryTags: entrySearch.includedTags,
+    excludedEntryTags: entrySearch.excludedTags,
     availableEntryTags: entrySearch.availableTags,
     hasActiveEntryFilters: entrySearch.hasActiveFilters,
     isSearchingEntries: entrySearch.isSearching,
@@ -196,5 +197,6 @@ export function useEntries() {
     setEntrySearchQuery: entrySearch.setQuery,
     toggleEntryAnalysisEnabled,
     toggleIncludedEntryTag: entrySearch.toggleIncludedTag,
+    toggleExcludedEntryTag: entrySearch.toggleExcludedTag,
   };
 }

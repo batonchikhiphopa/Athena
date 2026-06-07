@@ -4,6 +4,7 @@ import { useI18n } from "../i18n/useI18n";
 import type { MessageKey } from "../i18n/messages";
 import { formatInsightText } from "../lib/insightText";
 import type { InsightSnapshot } from "../types";
+import { TooltipButton } from "./TooltipButton";
 
 type ObservationsProps = {
   insights: InsightSnapshot[];
@@ -77,14 +78,16 @@ export function Observations({
                         </div>
                       </div>
 
-                      <button
+                      <TooltipButton
                         aria-label={t("observations.action.delete")}
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 opacity-70 transition hover:bg-red-50 hover:text-red-700 group-hover:opacity-100"
                         onClick={() => onDeleteInsight(insight)}
+                        tooltip={t("observations.action.delete")}
+                        tooltipPlacement="left"
                         type="button"
                       >
                         ×
-                      </button>
+                      </TooltipButton>
                     </div>
                   </article>
                 ))}

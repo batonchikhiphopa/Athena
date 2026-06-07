@@ -1,6 +1,7 @@
 import express from "express";
 import { getDb } from "../db/sqlite.js";
 import { buildSummary } from "../services/analytics.service.js";
+import { asyncHandler } from "./http.js";
 
 type LatestEntryDateRow = {
   date: string | null;
@@ -8,8 +9,9 @@ type LatestEntryDateRow = {
 
 const router = express.Router();
 
-router.get("/analytics/summary", async (_req, res) => {
-  try {
+router.get(
+  "/analytics/summary",
+  asyncHandler(async (_req, res) => {
     const db = await getDb();
     const latest = await db.get<LatestEntryDateRow>(
       "SELECT MAX(entry_date) AS date FROM entries",
@@ -29,14 +31,8 @@ router.get("/analytics/summary", async (_req, res) => {
     ]);
 
     return res.json({ week, month });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Failed to build analytics summary",
-    });
-  }
-});
+  }),
+);
 
 export default router;
 

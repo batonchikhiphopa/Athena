@@ -29,6 +29,9 @@ export type QueueJobSummary = {
   reason: string | null;
   entity_id: string | null;
   updated_at: string;
+  run_after: string | null;
+  attempts: number;
+  max_attempts: number;
   last_error: string | null;
 };
 
@@ -81,4 +84,11 @@ export type EntryQueuePayload = {
   requested_schema_version?: string;
   requested_prompt_version?: string;
   queued_at?: string;
+};
+
+export type EntrySyncQueuePayload = {
+  entry_id: string;
+  source_text_hash: string;
+  local_revision: string;
+  queued_at: string;
 };

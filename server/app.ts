@@ -1,31 +1,24 @@
-import express, { type ErrorRequestHandler } from "express";
+import express from "express";
 import path from "path";
 import analyticsRouter from "./api/analytics.route.js";
 import authRouter from "./api/auth.route.js";
 import configRouter from "./api/config.route.js";
 import entriesRouter from "./api/entries.route.js";
+import exportsRouter from "./api/exports.route.js";
 import extractionsRouter from "./api/extractions.route.js";
 import insightsRouter from "./api/insights.route.js";
 import selfReportsRouter from "./api/self-reports.route.js";
-import { PROJECT_ROOT } from "./config/env.js";
+import { CLIENT_DIST_DIR } from "./config/env.js";
 import {
   requireProtectedApiAuth,
   requireProtectedApiCsrf,
 } from "./middleware/auth.middleware.js";
+import {
+  apiErrorHandler,
+  jsonErrorHandler,
+} from "./middleware/error.middleware.js";
 
-const CLIENT_DIR = path.join(PROJECT_ROOT, "client", "dist");
-
-const jsonErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
-  if (isEntityTooLargeError(error)) {
-    return res.status(413).json({ error: "Request body too large" });
-  }
-
-  if (error instanceof SyntaxError && "body" in error) {
-    return res.status(400).json({ error: "Invalid JSON" });
-  }
-
-  return next(error);
-};
+const CLIENT_DIR = CLIENT_DIST_DIR;
 
 export function createApp(): express.Express {
   const app = express();
@@ -39,9 +32,11 @@ export function createApp(): express.Express {
   app.use(requireProtectedApiCsrf);
   app.use(extractionsRouter);
   app.use(entriesRouter);
+  app.use(exportsRouter);
   app.use(analyticsRouter);
   app.use(insightsRouter);
   app.use(selfReportsRouter);
+  app.use(apiErrorHandler);
   app.use(express.static(CLIENT_DIR));
 
   app.get("*", (_req, res) => {
@@ -49,13 +44,4 @@ export function createApp(): express.Express {
   });
 
   return app;
-}
-
-function isEntityTooLargeError(error: unknown): error is { type: string } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "type" in error &&
-    error.type === "entity.too.large"
-  );
 }

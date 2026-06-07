@@ -16,7 +16,7 @@ import {
   unlockVaultKeyFromPasswordlessConfig,
   unlockVault,
   unlockVaultWithoutSecret,
-} from "../client/src/lib/vault.ts";
+} from "../client/src/features/vault/vaultApi.ts";
 
 const localStorageMock = new Map();
 

@@ -175,7 +175,7 @@ export function Editor({
       />
 
       <div
-        className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-zinc-200 bg-white shadow-sm"
+        className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-white/20 bg-white/40 backdrop-blur-[2px]"
         ref={editorCardRef}
       >
         <EditorActionButtons
@@ -196,7 +196,7 @@ export function Editor({
           onCommitSuggestion={commitSuggestion}
         />
 
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3 text-xs text-zinc-600">
+        <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 text-xs text-zinc-500">
           <span>{formatLongDate(entryDate || todayDateOnly(), language)}</span>
         </div>
 
@@ -209,6 +209,7 @@ export function Editor({
             outline-none
             placeholder:text-zinc-400
           "
+          data-testid="editor-textarea"
           onChange={(event) => {
             setCursorPosition(event.currentTarget.selectionStart);
             setDismissedTagInputKey(null);

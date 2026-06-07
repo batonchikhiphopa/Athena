@@ -5,43 +5,35 @@ import {
   getCurrentInsightSnapshots,
   listInsightSnapshots,
 } from "../services/insight.service.js";
+import { asyncHandler } from "./http.js";
 
 const router = express.Router();
 
-router.get("/insights/current", async (req, res) => {
-  try {
+router.get(
+  "/insights/current",
+  asyncHandler(async (req, res) => {
     const db = await getDb();
     const snapshots = await getCurrentInsightSnapshots(db, {
       today: typeof req.query.today === "string" ? req.query.today : undefined,
     });
 
     return res.json({ insights: snapshots });
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось загрузить текущие наблюдения",
-    });
-  }
-});
-
-router.get("/insights", async (_req, res) => {
-  try {
+router.get(
+  "/insights",
+  asyncHandler(async (_req, res) => {
     const db = await getDb();
     const snapshots = await listInsightSnapshots(db);
 
     return res.json({ insights: snapshots });
-  } catch (error) {
-    console.error(error);
+  }),
+);
 
-    return res.status(500).json({
-      error: "Не удалось загрузить историю наблюдений",
-    });
-  }
-});
-
-router.delete("/insights/:id", async (req, res) => {
-  try {
+router.delete(
+  "/insights/:id",
+  asyncHandler(async (req, res) => {
     const db = await getDb();
     const deleted = await deleteInsightSnapshot(db, req.params.id);
 
@@ -52,13 +44,7 @@ router.delete("/insights/:id", async (req, res) => {
     }
 
     return res.status(204).send();
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Не удалось удалить наблюдение",
-    });
-  }
-});
+  }),
+);
 
 export default router;

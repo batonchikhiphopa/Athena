@@ -2,7 +2,7 @@ import type {
   EntryReprocessReason,
   EntryQueuePayload,
   QueueJob,
-} from "../../lib/queueTypes";
+} from "./queueTypes";
 import {
   CLIENT_ACTIVE_PROMPT_VERSION,
   CLIENT_ACTIVE_SCHEMA_VERSION,

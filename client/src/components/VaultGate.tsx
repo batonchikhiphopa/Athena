@@ -44,7 +44,7 @@ export function VaultGate({
   }
 
   return (
-    <div className="athena-vault-gate fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-[#fafaf9]/92 px-4 py-4 text-zinc-950 [--lever-bg:#fafaf9]">
+    <div className="athena-vault-gate fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-[#f4efe6]/80 backdrop-blur-sm px-4 py-4 text-zinc-950 [--lever-bg:transparent]">
       <LanguageSelect className="absolute right-4 top-4 z-10" />
 
       <div

@@ -1,6 +1,6 @@
-import { syncSelfReportDailyAggregates } from "../../lib/api";
-import { enqueueQueueJob } from "../../lib/queue";
-import type { QueueJob } from "../../lib/queueTypes";
+import { enqueueQueueJob } from "../sync/queue";
+import type { QueueJob } from "../sync/queueTypes";
+import { syncSelfReportDailyAggregates } from "./selfReportApi";
 import { getSelfReportDailyAggregates } from "./selfReportStorage";
 
 export type SelfReportDailyAggregateQueuePayload = {

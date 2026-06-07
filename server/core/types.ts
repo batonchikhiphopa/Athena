@@ -1,62 +1,41 @@
-export type ExtractionProvider = "ollama" | "gemini" | "off";
+import type {
+  EntryStatus,
+  ExtractionProvider,
+  ExtractionResult,
+  InsightLayer,
+  InsightSnapshot,
+  SelfReportDailyAggregate,
+  Signal,
+  SignalMetadata,
+  SignalQuality,
+} from "../../shared/contracts/index.js";
 
-export type SignalQuality = "valid" | "sparse" | "fallback";
-export type SignalLevel = "low" | "medium" | "high";
-export type ConfidenceLevel = "low" | "medium" | "high";
-export type SignalAxis =
-  | "load"
-  | "fatigue"
-  | "focus"
-  | "distress"
-  | "anxiety"
-  | "mood"
-  | "energy"
-  | "sleep_quality"
-  | "self_attack"
-  | "shame_guilt"
-  | "rumination"
-  | "avoidance"
-  | "agency"
-  | "conflict"
-  | "social_connection"
-  | "recovery_need"
-  | "confidence";
-export type MetricName = "load" | "fatigue" | "focus";
-
-export type StateInferenceValue = {
-  level: SignalLevel;
-  confidence: ConfidenceLevel;
-  basis: string[];
-};
-
-export type StateInference = Partial<Record<SignalAxis, StateInferenceValue>>;
-
-export type MetricConfidence = Record<MetricName, ConfidenceLevel>;
-
-export type Signal = {
-  topics: string[];
-  activities: string[];
-  markers: string[];
-  state_inference: StateInference;
-  emotion_signals: Record<string, unknown>;
-  metric_confidence: MetricConfidence;
-  quality_reason: string;
-  load: number | null;
-  fatigue: number | null;
-  focus: number | null;
-  signal_quality: SignalQuality;
-};
-
-export type SignalMetadata = {
-  schema_version: string;
-  prompt_version: string;
-  provider: ExtractionProvider;
-  model: string;
-  error_code?: string | null;
-  created_at?: string;
-};
-
-export type EntryStatus = "extracted" | "fallback" | "failed";
+export type {
+  ConfidenceLevel,
+  EntryStatus,
+  EntryIntent,
+  EntryIntentSignal,
+  ExtractionProvider,
+  ExtractionResult,
+  InsightLayer,
+  InsightSnapshot,
+  MetricConfidence,
+  MetricName,
+  SelfReportAxis,
+  SelfReportDailyAggregate,
+  Signal,
+  SignalAxis,
+  SignalLevel,
+  SignalMetadata,
+  SignalQuality,
+  StructureDensity,
+  StructureSignal,
+  TemporalBucket,
+  TemporalContext,
+  TemporalContextSource,
+  StateInference,
+  StateInferenceValue,
+} from "../../shared/contracts/index.js";
 
 export type EntryRow = {
   id: number;
@@ -97,6 +76,9 @@ export type SignalRow = {
   state_inference: string;
   emotion_signals: string;
   metric_confidence: string;
+  entry_intent: string;
+  structure_signal: string;
+  temporal_context: string;
   quality_reason: string;
   load: number | null;
   fatigue: number | null;
@@ -120,6 +102,9 @@ export type EffectiveSignalRow = {
   state_inference: string;
   emotion_signals: string;
   metric_confidence: string;
+  entry_intent: string;
+  structure_signal: string;
+  temporal_context: string;
   quality_reason: string;
   load: number | null;
   fatigue: number | null;
@@ -130,42 +115,4 @@ export type EffectiveSignalRow = {
 
 export type AnalyticsWindow = "week" | "month";
 
-export type InsightLayer = "day" | "week" | "month";
-
-export type InsightSnapshot = {
-  id: number;
-  layer: InsightLayer;
-  period_start: string;
-  period_end: string;
-  topic: string | null;
-  text: string;
-  generated_at: string;
-  expires_at: string;
-};
-
-export type ExtractionResult = {
-  signal: Signal;
-  metadata: SignalMetadata;
-};
-
-export type SelfReportAxis =
-  | "mood"
-  | "stress"
-  | "energy"
-  | "sleep_quality"
-  | "function";
-
-export type SelfReportDailyAggregate = {
-  id?: number;
-  local_day: string;
-  axis: SelfReportAxis;
-  count: number;
-  sum: number;
-  sum_squares: number;
-  mean: number;
-  min: number;
-  max: number;
-  schema_version: string;
-  aggregate_version: string;
-  updated_at: string;
-};
+export type ServerSelfReportDailyAggregate = SelfReportDailyAggregate;
