@@ -15,7 +15,6 @@ type AthenaNavigationOptions = {
   };
   insights: {
     clearEditorInsight: () => void;
-    refreshObservationHistory: () => Promise<void>;
   };
   draftText: string;
 };
@@ -53,9 +52,6 @@ export function useAthenaNavigation({
       if (activeEntryId) entries.selectEntry(activeEntryId);
     }
 
-    if (nextPage === "observations") {
-      await insights.refreshObservationHistory();
-    }
   }
 
   return {

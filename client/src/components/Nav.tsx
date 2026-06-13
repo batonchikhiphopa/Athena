@@ -7,27 +7,30 @@ import { TooltipButton } from "./TooltipButton";
 type NavProps = {
   canLockAthena: boolean;
   currentPage: Page;
+  isSettingsOpen: boolean;
   onLockAthena: () => void;
   onNavigate: (page: Page) => void;
+  onOpenSettings: () => void;
 };
 
 const IconComponent = Icon;
 
 const navItems: Array<{
-  icon: "feather" | "list" | "observations";
+  icon: "feather" | "list";
   label: MessageKey;
-  page: Extract<Page, "editor" | "entries" | "observations">;
+  page: Extract<Page, "editor" | "entries">;
 }> = [
   { icon: "feather", label: "nav.editor", page: "editor" },
   { icon: "list", label: "nav.entries", page: "entries" },
-  { icon: "observations", label: "nav.observations", page: "observations" },
 ];
 
 export function Nav({
   canLockAthena,
   currentPage,
+  isSettingsOpen,
   onLockAthena,
   onNavigate,
+  onOpenSettings,
 }: NavProps) {
   const { t } = useI18n();
 
@@ -78,16 +81,17 @@ export function Nav({
         )}
 
         <TooltipButton
-          aria-current={currentPage === "settings" ? "page" : undefined}
+          aria-current={isSettingsOpen ? "page" : undefined}
+          aria-expanded={isSettingsOpen}
           aria-label={t("nav.settings")}
           className={[
             "flex h-9 w-9 items-center justify-center rounded-full text-sm transition",
-            currentPage === "settings"
+            isSettingsOpen
               ? "text-zinc-900"
               : "text-zinc-400 opacity-50 hover:text-zinc-700 hover:opacity-100",
           ].join(" ")}
           data-testid="nav-settings"
-          onClick={() => onNavigate("settings")}
+          onClick={onOpenSettings}
           tooltip={t("nav.settings")}
           tooltipPlacement="right"
           type="button"

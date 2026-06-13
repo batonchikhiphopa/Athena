@@ -51,17 +51,22 @@ test("editor flow saves a tagged entry with self-report and shows it in archive"
   await searchInput.fill(today);
   await expect(savedEntry).toBeVisible();
 
-  await searchInput.fill(`no-match-${entryId}`);
+  await searchInput.fill("1900-01-01");
   await expect(page.getByTestId("entries-empty-state")).toBeVisible();
 
   await page.getByTestId("entries-clear-filters").click();
   await expect(savedEntry).toBeVisible();
 
-  await page.getByTestId("entry-tag-include-portfolio").click();
+  await savedEntry.getByTestId("entry-tile-tag-portfolio").click();
+  await expect(page.getByTestId("entry-tag-include-portfolio")).toBeVisible();
   await expect(savedEntry).toBeVisible();
 
-  await page.getByTestId("entry-tag-exclude-portfolio").click();
+  await page.getByTestId("entries-clear-filters").click();
+  await expect(savedEntry).toBeVisible();
+
+  await searchInput.fill("-#portfolio");
   await expect(savedEntry).toHaveCount(0);
+  await expect(page.getByTestId("entries-empty-state")).toBeVisible();
 
   await page.getByTestId("entries-clear-filters").click();
   await expect(savedEntry).toBeVisible();

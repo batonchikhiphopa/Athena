@@ -14,6 +14,7 @@ Current documented contract versions:
 - Extraction prompt: `extraction.v5`
 - Self-report event schema: `self_report.v1`
 - Self-report daily aggregate schema: `self_report_daily_aggregate.v1`
+- Insight generation: `insight.v3`
 
 See [Contracts](CONTRACTS.md) for the versioning policy.
 
@@ -375,7 +376,36 @@ Response is a sanitized signal payload plus metadata:
 
 ## Insights
 
-Insights are text snapshots derived from deterministic analytics and sufficiency rules.
+Insights are text snapshots derived from deterministic analytics and sufficiency
+rules. New snapshots use Insight V3 input built from Analytics V2 summaries:
+baseline/trend signals, density, uncertainty flags, textless context, optional
+self-report agreement, and an explicit evidence-pack shape. Insight generation
+reads only textless aggregates and effective signals; it does not read raw diary
+text or raw self-report events.
+
+Insight V3 rendered text separates:
+
+- `Наблюдение` - the bounded observation;
+- `Поддержка` - measured signal, context, and quality evidence;
+- `Интерпретация` - a soft non-causal reading when evidence exists;
+- `Ограничение` - uncertainty and non-causal framing;
+- `Маленький шаг` - a tiny reversible next step.
+
+Browser-local RAG evidence packs over raw diary chunks are not sent to these
+backend endpoints.
+
+Stored snapshot text remains backward-compatible: old snapshots are returned as
+stored and are not reformatted.
+
+Current sufficiency rules:
+
+- `day`: yesterday has at least one valid signal day;
+- `week`: at least three distinct valid signal days in the last 7 calendar days;
+- `month`: at least fourteen distinct valid signal days in the last 30 calendar days.
+
+Sparse, fallback, parse-error, and duplicate same-day entries do not increase
+the valid-day count. Week and month snapshots may remain visible for their
+retention windows after current sufficiency is lost.
 
 ### `GET /insights/current?today=YYYY-MM-DD`
 
@@ -511,7 +541,7 @@ Response when no entries exist:
 }
 ```
 
-Response with data:
+Response excerpt with data:
 
 ```json
 {
@@ -528,3 +558,148 @@ Response with data:
   "month": {}
 }
 ```
+
+### `GET /analytics/v2/summary`
+
+Returns deterministic Analytics V2 week and month summaries. V2 is separate from
+`/analytics/summary` so older observation code can remain compatible while the
+new measurement layer grows.
+
+Analytics V2 reads textless data only:
+
+- `entries` metadata, dates, tags, status, and source hashes;
+- latest `effective_signals`;
+- synced `self_report_daily_aggregates`.
+
+It does not read raw diary text or raw self-report events.
+
+The current window is anchored to the latest `entries.entry_date`. Self-report
+aggregates enrich an entry-based window, but they do not create standalone
+analytics days. If an aggregate exists without a matching entry day, it is treated
+as orphaned sync data and cannot make `week` or `month` non-empty by itself.
+
+Response when no entries exist:
+
+```json
+{
+  "week": {
+    "reason": "no_data",
+    "summary": null
+  },
+  "month": {
+    "reason": "no_data",
+    "summary": null
+  }
+}
+```
+
+Response with data:
+
+```json
+{
+  "week": {
+    "reason": null,
+    "summary": {
+      "version": "analytics.v2",
+      "window": {
+        "kind": "week",
+        "start": "2026-04-29",
+        "end": "2026-05-05",
+        "days": 7
+      },
+      "baseline_window": {
+        "kind": "baseline",
+        "start": "2026-04-01",
+        "end": "2026-04-28",
+        "days": 28
+      },
+      "density": {
+        "entry_days": 7,
+        "valid_days": 7,
+        "sparse_days": 0,
+        "fallback_days": 0,
+        "no_entry_days": 0,
+        "entry_coverage": 1,
+        "valid_density": 1,
+        "fallback_density": 0,
+        "missingness": 0
+      },
+      "axes": {
+        "load": {
+          "source": "extracted",
+          "current_mean": 6.286,
+          "current_sample_days": 7,
+          "baseline_mean": 5,
+          "baseline_sd": 0,
+          "baseline_sample_days": 21,
+          "baseline_quality": "strong",
+          "delta_from_baseline": 1.286,
+          "z_delta": 1.286,
+          "direction": "up",
+          "slope": 0.643,
+          "trend_direction": "rising",
+          "volatility": 1.604,
+          "volatility_delta": 1.604,
+          "volatility_direction": "more_variable",
+          "sudden_delta": 3,
+          "sudden_change": true,
+          "uncertainty": []
+        }
+      },
+      "context": {
+        "topics": [],
+        "activities": [],
+        "markers": [],
+        "tags": [],
+        "recurrence": {
+          "topics": [],
+          "markers": [],
+          "tags": []
+        }
+      },
+      "quality": {
+        "grade": "strong",
+        "reason": "ok",
+        "flags": []
+      },
+      "versions": {
+        "current": {
+          "schema_versions": ["signal.v4"],
+          "prompt_versions": ["extraction.v5"],
+          "models": ["gpt-oss:20b"],
+          "self_report_aggregate_versions": ["self_report_daily_aggregate.v1"]
+        },
+        "baseline": {
+          "schema_versions": ["signal.v4"],
+          "prompt_versions": ["extraction.v5"],
+          "models": ["gpt-oss:20b"],
+          "self_report_aggregate_versions": ["self_report_daily_aggregate.v1"]
+        },
+        "version_boundary_blocks_comparison": false,
+        "mixed_model": false
+      },
+      "associations": []
+    }
+  },
+  "month": {
+    "reason": null,
+    "summary": {}
+  }
+}
+```
+
+Important V2 semantics:
+
+- extracted axes are `load`, `fatigue`, and `focus`;
+- self-report axes are `mood`, `stress`, `energy`, `sleep_quality`, and
+  `function`;
+- entry values are averaged per local day before window means are calculated;
+- fallback signals do not contribute to state or context;
+- sparse signals can contribute topics, markers, and activities, but not state;
+- baseline is the 28 calendar days before the current window;
+- schema or prompt boundaries between baseline and current windows block
+  extracted baseline deltas and z-deltas;
+- self-report axes remain separate from extracted axes and are never merged into
+  an overall score;
+- associations are correlation helpers only and include
+  `association_not_causation` when computed.

@@ -4,7 +4,7 @@ Athena keeps performance readiness practical: measured checks, conservative guar
 
 ## Current Build Snapshot
 
-Latest observed `npm run client:build` output from `npm run release:check` on 2026-06-07:
+Reference `npm run client:build` output from `npm run release:check` on 2026-06-07:
 
 - CSS bundle: about `36 kB` minified.
 - Main app chunk: about `604 kB` minified.
@@ -23,7 +23,9 @@ npm run release:check
 
 This runs unit/integration tests, server type-check, client lint, client/server build, Playwright smoke, and dependency audit.
 
-Latest local result: passed on 2026-06-07. The Vite large-chunk warning remains expected while the optional local emotion ONNX runtime is present.
+The Vite large-chunk warning remains expected while the optional local emotion
+ONNX runtime is present. Record a new dated snapshot here after running a fresh
+release check.
 
 ## API Smoke
 
@@ -32,13 +34,16 @@ Recommended self-hosted smoke:
 - `GET /config`
 - `GET /entries`
 - `GET /analytics/summary`
+- `GET /analytics/v2/summary`
+- `GET /insights`
 - `GET /exports/backend-metadata`
 
 The export endpoint is expected to scale with metadata size. It is a user/admin export action, not a high-frequency UI polling endpoint.
 
 ## Local Dataset Guardrails
 
-Current local search has a synthetic 1,000-entry guardrail in tests. Search is browser-local and avoids backend calls.
+Current local search has a synthetic 1,000-entry guardrail in tests. Hybrid
+keyword/date/tag and semantic search is browser-local and avoids backend calls.
 
 Import/export JSON generation is intentionally user-triggered. Large local export files may take noticeable time because they include raw local entries and self-report events.
 

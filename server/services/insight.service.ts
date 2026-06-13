@@ -9,9 +9,14 @@ import {
   listVisibleSnapshots,
   softDeleteSnapshot,
   getLatestVisibleSnapshot,
-  getTopTopic,
   upsertSnapshot,
 } from "../repositories/insight.repository.js";
+import { buildAnalyticsV2Summary } from "./analytics-v2.service.js";
+import {
+  buildInsightV3Input,
+  composeInsightV3Text,
+  insightV3Topic,
+} from "./insight-v3.service.js";
 
 type LayerConfig = {
   layer: InsightLayer;
@@ -32,7 +37,7 @@ const LAYERS: LayerConfig[] = [
   {
     layer: "week",
     days: 7,
-    minValidDays: 4,
+    minValidDays: 3,
     retainDays: 14,
   },
   {
@@ -118,12 +123,18 @@ async function createOrRefreshSnapshot(
     today: string;
   },
 ): Promise<InsightSnapshot | null | undefined> {
-  const topTopic = await getTopTopic(db, {
+  const analytics = await buildAnalyticsV2Summary(db, {
     from: periodStart,
+    kind: layer,
     to: periodEnd,
   });
-  const text = composeInsightText({ layer, topTopic });
+  if (!analytics.summary) return null;
+
+  const insightInput = buildInsightV3Input(analytics.summary, layer);
+  const text = composeInsightV3Text(insightInput);
   if (!text) return null;
+
+  const topic = insightV3Topic(insightInput);
   const generatedAt = new Date().toISOString();
   const expiresAt =
     layer === "day" ? today : addDays(periodEnd, retainDays);
@@ -133,7 +144,7 @@ async function createOrRefreshSnapshot(
       layer,
       periodStart,
       periodEnd,
-      topic: topTopic,
+      topic,
       text,
       generatedAt,
       expiresAt,
@@ -141,29 +152,6 @@ async function createOrRefreshSnapshot(
       promptVersion: ACTIVE_PROMPT_VERSION,
     }),
   );
-}
-
-function composeInsightText({
-  layer,
-  topTopic,
-}: {
-  layer: InsightLayer;
-  topTopic: string | null;
-}): string | null {
-  if (!topTopic) return null;
-
-  const subject = topicSubject(topTopic);
-  const advice = topicAdvice(topTopic);
-
-  if (layer === "day") {
-    return `Вчера снова возвращалась тема ${subject}. ${advice}`;
-  }
-
-  if (layer === "week") {
-    return `На этой неделе снова возвращалась тема ${subject}. ${advice}`;
-  }
-
-  return `За месяц тема ${subject} появлялась чаще других. ${advice}`;
 }
 
 function toPublicSnapshot(snapshot: InsightSnapshot): PublicInsightSnapshot {
@@ -177,88 +165,6 @@ function toPublicSnapshot(snapshot: InsightSnapshot): PublicInsightSnapshot {
     generated_at: snapshot.generated_at,
     expires_at: snapshot.expires_at,
   };
-}
-
-function topicSubject(topic: string): string {
-  const normalized = normalizeTopic(topic);
-  const knownSubjects: Record<string, string> = {
-    health: "самочувствия",
-    здоровье: "самочувствия",
-    самочувствие: "самочувствия",
-    wellbeing: "самочувствия",
-    "well-being": "самочувствия",
-    sleep: "сна",
-    сон: "сна",
-    rest: "отдыха",
-    отдых: "отдыха",
-    recovery: "восстановления",
-    восстановление: "восстановления",
-    work: "работы",
-    работа: "работы",
-    job: "работы",
-    career: "работы",
-    focus: "фокуса",
-    фокус: "фокуса",
-    productivity: "продуктивности",
-    продуктивность: "продуктивности",
-    learning: "обучения",
-    обучение: "обучения",
-    study: "обучения",
-    family: "семьи",
-    семья: "семьи",
-    home: "дома",
-    дом: "дома",
-    relationship: "отношений",
-    relationships: "отношений",
-    отношения: "отношений",
-    money: "денег",
-    деньги: "денег",
-    finance: "денег",
-    finances: "денег",
-  };
-
-  return knownSubjects[normalized] ?? `«${topic.trim()}»`;
-}
-
-function topicAdvice(topic: string): string {
-  const normalized = normalizeTopic(topic);
-
-  if (
-    ["health", "здоровье", "самочувствие", "wellbeing", "well-being"].includes(
-      normalized,
-    )
-  ) {
-    return "Не раскручивай это в тревогу: выбери один простой шаг заботы о себе сегодня.";
-  }
-
-  if (
-    ["sleep", "сон", "rest", "отдых", "recovery", "восстановление"].includes(
-      normalized,
-    )
-  ) {
-    return "Начни с базы: чуть меньше экрана, чуть больше тишины и нормальный вечер без перегруза.";
-  }
-
-  if (
-    [
-      "work",
-      "работа",
-      "job",
-      "career",
-      "focus",
-      "фокус",
-      "productivity",
-      "продуктивность",
-    ].includes(normalized)
-  ) {
-    return "Попробуй выбрать один следующий шаг, а не держать весь ком задач в голове.";
-  }
-
-  return "Выбери один маленький шаг, который сделает эту тему понятнее или легче.";
-}
-
-function normalizeTopic(topic: string): string {
-  return String(topic).trim().toLowerCase();
 }
 
 function isDateOnly(value: unknown): value is string {

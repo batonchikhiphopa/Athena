@@ -2,11 +2,18 @@
 
 This is the React/Vite browser client for Athena.
 
-The client is responsible for the writing surface, local raw-text storage, local entry state, insight presentation, settings UI, and the offline-capable app shell. It talks to the backend through relative API paths such as `/entries`, `/extractions`, and `/insights`.
+The client owns the light paper-like workspace, icon rail, editor-first writing
+surface, searchable Entries card grid, floating Observations and Settings
+panels, local raw-text storage, local entry state, browser-local hybrid search,
+and the offline-capable app shell. It talks to the backend through relative API
+paths such as `/entries`, `/extractions`, `/insights`, and `/analytics/v2`.
 
 ## Local Data
 
-Raw diary text is stored in the browser, not in the backend database. The client keeps local entries in IndexedDB and sends only textless metadata, hashes, and sanitized signal payloads to the server.
+Raw diary text is stored in the browser, not in the backend database. The client
+keeps local entries, drafts, raw self-report events, queue state, and optional
+vault envelopes in IndexedDB. It sends only textless metadata, hashes, sanitized
+signal payloads, and self-report daily aggregates to the server.
 
 The service worker in `public/sw.js` caches the app shell and static assets after the first successful online load. This keeps the app openable and useful for local writing when the network or backend is unavailable.
 

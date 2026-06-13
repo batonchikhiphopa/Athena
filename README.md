@@ -1,9 +1,5 @@
 # Athena
 
-<p align="center">
-  <img src="client/src/assets/logo-bg.jpg" alt="Athena" width="960">
-</p>
-
 Athena is a local-first daily reflection app with a calm writing surface and a
 strict analytical engine underneath.
 
@@ -22,21 +18,34 @@ The surface is calm. The engine is strict.
 
 ![Editor screen](client/assets/editor.png)
 
+Athena now presents a light, paper-like workspace with a narrow icon rail, a
+spacious writing surface, and floating panels for secondary views. The UI keeps
+the diary surface quiet while making archive search, observations, and settings
+reachable without leaving the current context.
+
 Athena currently has four visible work surfaces:
 
 - **Editor** - the primary writing surface. It has local autosave, tags, an
-  analysis toggle for the current entry, voluntary self-report scales, and a
-  quick way to start a new entry.
-- **Entries** - the local archive. It supports text, date, and tag search;
-  filtering; sorting; reading; editing; deletion; and per-entry analysis
-  control.
-- **Observations** - saved day, week, and month observations. They are derived
-  from deterministic analytics and shown only after sufficiency rules pass.
-- **Settings** - interface language, app protection, extraction settings,
-  processing queue state, reprocessing controls, debug mode, and local data
-  controls.
+  analysis toggle for the current entry, voluntary self-report scales in a
+  floating panel, and a quick way to start a new entry.
+- **Entries** - the local archive. It appears as a searchable card grid and
+  supports one hybrid local search across text, dates, tags, and semantic
+  similarity; filtering; sorting; reading; editing; deletion; and per-entry
+  analysis control.
+- **Observations** - a floating observation history panel for saved day, week,
+  and month observations. New snapshots are derived from deterministic analytics
+  and include explicit evidence-backed support text after sufficiency rules
+  pass: one valid day for yesterday, three distinct valid days in the current
+  7-day window, or fourteen valid days in the current 30-day window.
+- **Settings** - a floating settings panel for interface language, app
+  protection, extraction settings, processing queue state, reprocessing
+  controls, debug mode, and local data controls.
 
 ![Entries screen](client/assets/entries.png)
+
+![Observation history panel](client/assets/Observation.png)
+
+![Settings panel](client/assets/Settings.png)
 
 After the first successful load, Athena also behaves as an offline-capable
 browser app shell. The editor and local archive stay useful even when the
@@ -57,7 +66,9 @@ backend is temporarily unavailable.
   deterministic mapper;
 - keeps a durable browser-local queue for signal reprocessing;
 - syncs numeric daily self-report aggregates without raw self-report events;
-- shows detailed signal metadata only in debug mode.
+- keeps semantic search and RAG evidence packs browser-local by default;
+- shows detailed signal metadata and local self-report values only in debug
+  mode.
 
 Athena is not a diagnostic system and does not replace therapy or medical care.
 It is a private diary with a careful analytical layer.

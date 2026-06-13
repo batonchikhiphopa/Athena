@@ -10,14 +10,14 @@ export function SettingsTabList({ activeTab, onChange }: SettingsTabListProps) {
   const { t } = useI18n();
 
   return (
-    <div className="mb-4 flex flex-wrap gap-2 border-b border-zinc-200 pb-2">
+    <div className="flex gap-0 border-b border-zinc-100/80">
       {settingsTabs.map((tab) => (
         <button
           className={[
-            "rounded-md px-3 py-2 text-sm transition",
+            "px-3 pb-2.5 pt-0.5 text-xs transition",
             activeTab === tab.id
-              ? "bg-zinc-950 text-white"
-              : "text-zinc-500 hover:bg-white hover:text-zinc-950",
+              ? "border-b-2 border-zinc-900 font-medium text-zinc-900"
+              : "border-b-2 border-transparent text-zinc-400 hover:text-zinc-700",
           ].join(" ")}
           key={tab.id}
           data-testid={`settings-tab-${tab.id}`}

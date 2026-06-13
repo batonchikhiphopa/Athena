@@ -1,16 +1,18 @@
 import type { ExtractionSettings, LocalEntry } from "../../types";
-import { createEntry, updateServerEntry } from "../entries/entriesApi";
 import { extractSignalForText } from "../../lib/extraction";
 import {
   getAllLocalEntries,
+  getLocalEntry,
   getRemainingGeminiDailyExtractions,
   updateLocalEntry,
 } from "../../lib/storage";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
+import { enqueueEntrySyncJob } from "../sync/entrySyncJob";
 import {
   getSignalReprocessReason,
   isRetryableProviderErrorCode,
 } from "../sync/reprocessPolicy";
+import { syncLocalEntryToServer } from "../sync/entryServerSync";
 
 export async function reprocessLocalEntry(
   entry: LocalEntry,
@@ -45,28 +47,52 @@ export async function reprocessLocalEntry(
     };
   }
 
-  const payload = {
-    entry_date: entry.entry_date,
-    tags: entry.tags,
-    source_text_hash: entry.source_text_hash,
-    signal: extraction.signal,
+  const latestEntry = await getLocalEntry(entry.id);
+
+  if (
+    !latestEntry ||
+    latestEntry.source_text_hash !== entry.source_text_hash ||
+    latestEntry.analysis_enabled === false
+  ) {
+    return {
+      status: "processed",
+    };
+  }
+
+  const localRevision = extraction.metadata.created_at ?? new Date().toISOString();
+  const locallyUpdatedEntry = await updateLocalEntry(entry.id, {
+    signals: extraction.signal,
     metadata: extraction.metadata,
-  };
-
-  const serverEntry = entry.serverId
-    ? await updateServerEntry(entry.serverId, payload)
-    : await createEntry({
-        client_entry_id: entry.id,
-        ...payload,
-      });
-
-  await updateLocalEntry(entry.id, {
-    serverId: serverEntry.id,
-    signals: serverEntry.signal ?? extraction.signal,
-    metadata: serverEntry.metadata ?? extraction.metadata,
-    sync_status: "synced",
-    updatedAt: serverEntry.updated_at,
+    sync_status: "local_only",
+    updatedAt: localRevision,
   });
+
+  if (!locallyUpdatedEntry) {
+    return {
+      status: "processed",
+    };
+  }
+
+  try {
+    const serverEntry = await syncLocalEntryToServer(locallyUpdatedEntry);
+
+    await updateLocalEntry(entry.id, {
+      serverId: serverEntry.id,
+      signals: serverEntry.signal ?? extraction.signal,
+      metadata: serverEntry.metadata ?? extraction.metadata,
+      sync_status: "synced",
+      updatedAt: serverEntry.updated_at,
+    });
+  } catch (error) {
+    console.warn("[entry:reprocess-sync]", error);
+    await enqueueEntrySyncJob({
+      entryId: locallyUpdatedEntry.id,
+      sourceTextHash: locallyUpdatedEntry.source_text_hash,
+      localRevision,
+    }).catch((enqueueError) => {
+      console.warn("[entry:enqueue-sync-after-reprocess]", enqueueError);
+    });
+  }
 
   return {
     status: "processed",

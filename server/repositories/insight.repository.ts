@@ -34,10 +34,6 @@ type CountRow = {
   count: number;
 };
 
-type TopicRow = {
-  topics: string | null;
-};
-
 export async function countValidDays(
   db: AthenaDb,
   { from, to }: DateRange,
@@ -61,46 +57,6 @@ export async function countValidDays(
   );
 
   return row?.count ?? 0;
-}
-
-export async function getTopTopic(
-  db: AthenaDb,
-  { from, to }: DateRange,
-): Promise<string | null> {
-  const rows = await db.all<TopicRow[]>(
-    `
-    SELECT s.topics
-    FROM entries e
-    JOIN signals s
-      ON s.id = (
-        SELECT latest.id
-        FROM signals latest
-        WHERE latest.entry_id = e.id
-        ORDER BY latest.created_at DESC, latest.id DESC
-        LIMIT 1
-      )
-    WHERE e.entry_date BETWEEN ? AND ?
-      AND s.signal_quality = 'valid'
-    `,
-    [from, to],
-  );
-
-  const counts = new Map<string, number>();
-
-  for (const row of rows) {
-    const topics = parseStringArray(row.topics);
-    const uniqueTopics = new Set(topics);
-
-    for (const topic of uniqueTopics) {
-      counts.set(topic, (counts.get(topic) ?? 0) + 1);
-    }
-  }
-
-  return Array.from(counts.entries())
-    .sort(([leftName, leftCount], [rightName, rightCount]) =>
-      rightCount - leftCount || leftName.localeCompare(rightName),
-    )
-    .at(0)?.[0] ?? null;
 }
 
 export async function getSnapshot(
@@ -274,9 +230,4 @@ export async function upsertSnapshot(
   }
 
   return getSnapshot(db, { layer, periodStart, periodEnd });
-}
-
-function parseStringArray(value: string | null): string[] {
-  const parsed: unknown = JSON.parse(value || "[]");
-  return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
 }

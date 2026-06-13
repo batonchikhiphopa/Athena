@@ -19,6 +19,12 @@ const NON_TERMINAL_STATUSES = new Set<QueueJobStatus>([
   "blocked",
 ]);
 
+const SIGNAL_VALIDATION_JOB_TYPES = new Set([
+  "entry.sync",
+  "entry.append_signal",
+  "entry.reprocess_signal",
+]);
+
 function promisifyRequest<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -123,6 +129,32 @@ export async function recoverStaleRunningJobs(
   return recovered;
 }
 
+export async function recoverSignalValidationJobs(): Promise<QueueJob[]> {
+  const jobs = await getQueueJobs();
+  const recovered: QueueJob[] = [];
+
+  for (const job of jobs) {
+    if (job.status !== "blocked" && job.status !== "failed") continue;
+    if (!SIGNAL_VALIDATION_JOB_TYPES.has(job.type)) continue;
+    if (!isSignalValidationError(job.last_error)) continue;
+
+    const recoveredJob: QueueJob = {
+      ...job,
+      status: "queued",
+      run_after: null,
+      locked_at: null,
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+      last_error: null,
+    };
+
+    await updateQueueJob(recoveredJob);
+    recovered.push(recoveredJob);
+  }
+
+  return recovered;
+}
+
 export async function countQueueJobsByStatus(): Promise<
   Record<QueueJobStatus, number>
 > {
@@ -199,6 +231,20 @@ export async function deleteQueueJob(id: string): Promise<void> {
   const store = openTransaction(db, "readwrite");
 
   await promisifyRequest(store.delete(id));
+}
+
+export async function deleteQueueJobsByStatuses(
+  statuses: QueueJobStatus[],
+): Promise<number> {
+  const allowed = new Set(statuses);
+  const jobs = await getQueueJobs();
+  const removableJobs = jobs.filter((job) => allowed.has(job.status));
+
+  for (const job of removableJobs) {
+    await deleteQueueJob(job.id);
+  }
+
+  return removableJobs.length;
 }
 
 export async function compactQueueJobs(): Promise<void> {
@@ -289,4 +335,17 @@ function readQueueJobReason(payload: unknown): string | null {
   const reason = (payload as Record<string, unknown>).reason;
 
   return typeof reason === "string" && reason.trim() ? reason : null;
+}
+
+function isSignalValidationError(error: string | null): boolean {
+  if (!error) return false;
+
+  const normalized = error.toLowerCase();
+
+  return (
+    normalized.includes("http_400") &&
+    normalized.includes("signal") &&
+    (normalized.includes("invalid input") ||
+      normalized.includes("fielderrors"))
+  );
 }

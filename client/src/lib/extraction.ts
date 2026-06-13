@@ -8,6 +8,7 @@ import {
 } from "../../../shared/contracts/signalAnalysis.js";
 import {
   getLocalEmotionSpikeEnabled,
+  releaseGeminiDailyExtraction,
   reserveGeminiDailyExtraction,
 } from "./storage";
 import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY } from "../i18n/languages";
@@ -21,6 +22,14 @@ export async function extractSignalForText(
   if (signal?.aborted) {
     throw new Error("Job was cancelled.");
   }
+
+  let hasGeminiReservation = false;
+  const releaseGeminiReservation = () => {
+    if (!hasGeminiReservation) return;
+
+    releaseGeminiDailyExtraction();
+    hasGeminiReservation = false;
+  };
 
   const emotionModule = await loadLocalEmotionModuleIfAllowed();
   const emotionResult = emotionModule
@@ -46,8 +55,10 @@ export async function extractSignalForText(
     );
   }
 
+  hasGeminiReservation = settings.provider === "gemini";
+
   try {
-    return mergeEmotionIfAvailable(
+    const extraction = mergeEmotionIfAvailable(
       withSignalContext(
         await extractSignal({
           text: rawText,
@@ -62,7 +73,14 @@ export async function extractSignalForText(
       emotionResult,
       emotionModule?.mergeLocalEmotionSignals,
     );
+
+    if (hasExtractionError(extraction)) {
+      releaseGeminiReservation();
+    }
+
+    return extraction;
   } catch (error) {
+    releaseGeminiReservation();
     console.warn("[client-extraction] using fallback:", error);
 
     return mergeEmotionIfAvailable(
@@ -92,6 +110,12 @@ function withSignalContext(
       ...analyzeSignalContext(rawText, context),
     },
   };
+}
+
+function hasExtractionError(
+  extraction: Awaited<ReturnType<typeof extractSignal>>,
+) {
+  return Boolean(extraction.metadata.error_code);
 }
 
 function mergeEmotionIfAvailable(

@@ -8,7 +8,7 @@ import {
 } from "./entryFilters";
 import {
   createEntrySearchIndex,
-  searchIndexedEntries,
+  searchIndexedEntriesHybrid,
   type IndexedEntrySearchData,
 } from "./entrySearch";
 
@@ -93,22 +93,32 @@ export function useEntrySearch({
     setIsSearching(true);
 
     const timeoutId = window.setTimeout(() => {
-      const tagFilteredEntries = filterIndexedEntriesByTags(
-        indexedEntries,
-        includedTags,
+      void resolveVisibleEntries({
+        debouncedQuery,
         excludedTags,
-      );
+        includedTags,
+        indexedEntries,
+      })
+        .then((nextVisibleEntries) => {
+          if (searchRunIdRef.current === searchRunId) {
+            setVisibleEntries(nextVisibleEntries);
+            setIsSearching(false);
+          }
+        })
+        .catch((error) => {
+          console.warn("[entries:search]", error);
 
-      const nextVisibleEntries = debouncedQuery.trim()
-        ? searchIndexedEntries(tagFilteredEntries, debouncedQuery).map(
-            (result) => result.entry,
-          )
-        : tagFilteredEntries.map((item) => item.entry);
-
-      if (searchRunIdRef.current === searchRunId) {
-        setVisibleEntries(nextVisibleEntries);
-        setIsSearching(false);
-      }
+          if (searchRunIdRef.current === searchRunId) {
+            setVisibleEntries(
+              filterIndexedEntriesByTags(
+                indexedEntries,
+                includedTags,
+                excludedTags,
+              ).map((item) => item.entry),
+            );
+            setIsSearching(false);
+          }
+        });
     }, 0);
 
     return () => {
@@ -188,6 +198,35 @@ export function useEntrySearch({
     toggleExcludedTag,
     clearFilters,
   };
+}
+
+async function resolveVisibleEntries({
+  debouncedQuery,
+  excludedTags,
+  includedTags,
+  indexedEntries,
+}: {
+  debouncedQuery: string;
+  excludedTags: string[];
+  includedTags: string[];
+  indexedEntries: IndexedEntrySearchData[];
+}) {
+  const tagFilteredEntries = filterIndexedEntriesByTags(
+    indexedEntries,
+    includedTags,
+    excludedTags,
+  );
+
+  if (!debouncedQuery.trim()) {
+    return tagFilteredEntries.map((item) => item.entry);
+  }
+
+  const results = await searchIndexedEntriesHybrid(
+    tagFilteredEntries,
+    debouncedQuery,
+  );
+
+  return results.map((result) => result.entry);
 }
 
 function filterIndexedEntriesByTags(

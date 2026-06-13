@@ -15,18 +15,22 @@ browser local data
 
 ```text
 React client
-  - Editor and archive
-  - IndexedDB raw entries
+  - light paper-like workspace with icon rail
+  - editor-first writing surface
+  - searchable Entries card grid
+  - floating Observations and Settings panels
+  - IndexedDB raw entries, drafts, and self-report events
   - optional local vault encryption
   - durable operation queue
+  - browser-local hybrid search and semantic/RAG helpers
   - service worker app shell
 
 Express backend
   - Zod request validation
   - optional owner auth and CSRF
   - SQLite metadata and signals
-  - deterministic analytics
-  - insight snapshots
+  - deterministic analytics and Analytics V2 summaries
+  - Insight V3 snapshots
 
 Extraction providers
   - off fallback
@@ -47,7 +51,25 @@ Raw diary text stays in the browser. The backend stores:
 - insight snapshots;
 - auth/session metadata.
 
-The backend does not store raw diary text or raw self-report events.
+The backend does not store raw diary text, raw self-report events, search
+queries, semantic vectors, RAG excerpts, or hidden model memory.
+
+## Product Shape
+
+Athena opens into the editor, not a dashboard. The current visible product
+surfaces are:
+
+- **Editor**: the primary writing surface with tags, local autosave, per-entry
+  analysis control, voluntary self-report scales, and a quick new-entry action.
+- **Entries**: a card-grid archive with always-on local hybrid search across
+  text, dates, tags, excluded tags, and semantic similarity.
+- **Observations**: a floating history panel for saved day, week, and month
+  snapshots derived from deterministic analytics after sufficiency rules pass.
+- **Settings**: a floating panel for interface, access, records, and data
+  controls.
+
+The surface stays quiet; analytical detail appears only through bounded
+observations, settings, queue/status controls, or debug-only affordances.
 
 ## Current Project Shape
 
@@ -55,7 +77,7 @@ The backend does not store raw diary text or raw self-report events.
 client/
   src/
     app/                 app-level orchestration
-    components/          shared UI surfaces and compatibility exports
+    components/          shared UI surfaces, editor/archive panels, floating UI
     features/            feature logic, feature APIs, and owned screens
     i18n/                interface messages
     lib/                 low-level browser/runtime utilities
@@ -67,7 +89,7 @@ server/
   core/                  schemas, mappers, domain types
   middleware/            auth and request guards
   config/                runtime configuration
-    db/                    SQLite connection and migrations
+  db/                    SQLite connection and migrations
 
 shared/
   contracts/             client/server protocol types
@@ -86,6 +108,10 @@ docs/                    public project docs
 - Durable queue: retryable work survives reloads.
 - Deterministic mapper: final metrics are recomputed from structured evidence.
 - Snapshot observations: user-facing insights are persisted and bounded.
+- Local hybrid search: keyword/date/tag search and semantic retrieval stay in
+  the browser.
+- Local RAG evidence packs: private excerpts are inspectable in the browser and
+  are not backend inputs.
 
 ## Trade-Offs
 
@@ -101,3 +127,5 @@ Costs:
 
 - sync and recovery logic are more complex;
 - backend backups do not contain the user's full diary.
+- local semantic indexes and RAG evidence are rebuildable derived data, not
+  server-owned state.

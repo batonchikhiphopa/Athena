@@ -62,11 +62,15 @@ Current controls:
 - `local_export.v1` is explicit user-owned plaintext export.
 - `backend_metadata_export.v1` is textless.
 - Queue export uses whitelisted summaries and excludes payloads.
+- Semantic indexes, local embeddings, retrieved chunks, and RAG evidence packs
+  stay browser-local and are excluded from silent export/backend sync.
 
 Residual risk:
 
 - `source_text_hash` is fingerprint metadata and not anonymous.
 - Downloaded local export files are outside Athena's protection.
+- Local semantic/RAG derived data can reveal meaning even when it is not raw
+  text; future persistence or cloud use needs a privacy review.
 
 ## Logging
 

@@ -1,3 +1,5 @@
+import { getProfileScopedStorageKey } from "./vaultProfiles";
+
 const VAULT_CONFIG_KEY = "athena_vault_config";
 const VAULT_CONFIG_VERSION = 3;
 const LEGACY_VAULT_CONFIG_VERSION = 2;
@@ -117,7 +119,7 @@ export async function setupVault(
     profileId,
     "Основной",
   );
-  localStorage.setItem(VAULT_CONFIG_KEY, JSON.stringify(config));
+  localStorage.setItem(getVaultConfigKey(), JSON.stringify(config));
   vaultKey = key;
   emitVaultStatus();
 }
@@ -133,7 +135,7 @@ export async function setupVaultWithoutSecret(
     profileId,
     new Date().toISOString(),
   );
-  localStorage.setItem(VAULT_CONFIG_KEY, JSON.stringify(config));
+  localStorage.setItem(getVaultConfigKey(), JSON.stringify(config));
   vaultKey = key;
   emitVaultStatus();
 }
@@ -222,7 +224,7 @@ export async function rotateVaultSecret(input: {
     ],
   };
 
-  localStorage.setItem(VAULT_CONFIG_KEY, JSON.stringify(nextConfig));
+  localStorage.setItem(getVaultConfigKey(), JSON.stringify(nextConfig));
   vaultKey = currentKey;
   emitVaultStatus();
 }
@@ -261,7 +263,7 @@ export async function addVaultCredential(input: {
   });
 
   localStorage.setItem(
-    VAULT_CONFIG_KEY,
+    getVaultConfigKey(),
     JSON.stringify({
       ...config,
       credentials: [...config.credentials, credential],
@@ -329,7 +331,7 @@ export async function deleteVaultCredential(input: {
   }
 
   localStorage.setItem(
-    VAULT_CONFIG_KEY,
+    getVaultConfigKey(),
     JSON.stringify({
       ...config,
       credentials,
@@ -639,7 +641,8 @@ export function isVaultEncryptedPayload(
 }
 
 function readVaultConfig(): VaultConfig | null {
-  const raw = localStorage.getItem(VAULT_CONFIG_KEY);
+  const configKey = getVaultConfigKey();
+  const raw = localStorage.getItem(configKey);
   if (!raw) return null;
 
   try {
@@ -648,13 +651,17 @@ function readVaultConfig(): VaultConfig | null {
     assertValidVaultConfig(config);
 
     if (parsed.version !== VAULT_CONFIG_VERSION) {
-      localStorage.setItem(VAULT_CONFIG_KEY, JSON.stringify(config));
+      localStorage.setItem(configKey, JSON.stringify(config));
     }
 
     return config;
   } catch {
     return null;
   }
+}
+
+function getVaultConfigKey() {
+  return getProfileScopedStorageKey(VAULT_CONFIG_KEY);
 }
 
 function normalizeStoredVaultConfig(

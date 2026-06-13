@@ -1,10 +1,12 @@
+import { getProfileScopedStorageKey } from "./vaultProfiles";
+
 type Phrase = {
     id: string;
     text: string;
 };
 
 function getBagKey(group: string) {
-    return `athena_phrase_bag:${group}`;
+    return getProfileScopedStorageKey(`athena_phrase_bag:${group}`);
 }
 
 export function pickPhrase(group: string, phrases: Phrase[]): string {

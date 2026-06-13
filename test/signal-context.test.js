@@ -6,6 +6,8 @@ import {
   createDefaultSignalContext,
 } from "../shared/contracts/signalAnalysis.ts";
 import { extractSignal } from "../server/services/extraction.service.ts";
+import { createEntry } from "../server/services/entry.service.ts";
+import { createTestDb } from "./helpers/createTestDb.js";
 
 test("signal context is deterministic, bounded, and textless", () => {
   const rawText =
@@ -64,4 +66,31 @@ test("provider-off extraction still attaches deterministic signal context", asyn
   assert.equal(result.signal.temporal_context.time_bucket, "morning");
   assert.equal(result.metadata.schema_version, "signal.v4");
   assert.equal(result.metadata.prompt_version, "extraction.v5");
+});
+
+test("contextual fallback extraction can be persisted as an entry", async () => {
+  const db = await createTestDb();
+
+  try {
+    const result = await extractSignal({
+      text: "I am planning the next release tomorrow.",
+      provider: "off",
+      model: "fallback",
+      entry_date: "2026-06-07",
+      captured_at: "2026-06-07T08:15:00.000Z",
+    });
+
+    const entryId = await createEntry(db, {
+      client_entry_id: "client-entry-contextual-fallback",
+      entry_date: "2026-06-07",
+      tags: [],
+      source_text_hash: "f".repeat(64),
+      signal: result.signal,
+      metadata: result.metadata,
+    });
+
+    assert.equal(typeof entryId, "number");
+  } finally {
+    await db.close();
+  }
 });

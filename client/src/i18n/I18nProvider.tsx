@@ -7,6 +7,7 @@ import {
 } from "./languages";
 import { translateMessage, type MessageKey } from "./messages";
 import { I18nContext } from "./i18nContext";
+import { getProfileScopedStorageKey } from "../lib/vaultProfiles";
 
 type TranslateValues = Record<string, string | number>;
 
@@ -22,7 +23,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
   const setLanguage = useCallback((nextLanguage: Language) => {
     setLanguageState(nextLanguage);
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    localStorage.setItem(getLanguageStorageKey(), nextLanguage);
   }, []);
 
   const t = useCallback(
@@ -49,9 +50,13 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
 function readStoredLanguage() {
   try {
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const stored = localStorage.getItem(getLanguageStorageKey());
     return stored && isSupportedLanguage(stored) ? stored : null;
   } catch {
     return DEFAULT_LANGUAGE;
   }
+}
+
+function getLanguageStorageKey() {
+  return getProfileScopedStorageKey(LANGUAGE_STORAGE_KEY);
 }

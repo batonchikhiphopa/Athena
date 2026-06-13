@@ -12,6 +12,7 @@ This keeps the current API stable for the client while making payload evolution 
 | Extraction prompt | `extraction.v5` | signal metadata, config response, analytics version summaries |
 | Self-report event schema | `self_report.v1` | local aggregate inputs |
 | Self-report daily aggregate | `self_report_daily_aggregate.v1` | synced daily aggregate rows |
+| Insight generation | `insight.v3` | generated insight snapshot text |
 
 ## Policy
 

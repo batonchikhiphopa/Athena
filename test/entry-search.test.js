@@ -8,12 +8,17 @@ import {
   pruneUnavailableTags,
 } from "../client/src/features/entries/entryFilters.ts";
 import {
+  createEntrySearchIndex,
   createEntrySearchSnippet,
   normalizeSearchQuery,
   parseEntrySearchQuery,
   searchEntries,
+  searchEntriesHybrid,
+  searchIndexedEntriesHybrid,
   tokenizeSearchQuery,
 } from "../client/src/features/entries/entrySearch.ts";
+import { buildLocalRagEvidencePack } from "../client/src/features/rag/evidencePack.ts";
+import { interpretLocalEvidencePack } from "../client/src/features/rag/localInterpretation.ts";
 
 function entry(overrides = {}) {
   return {
@@ -225,4 +230,125 @@ test("entry search keeps deterministic order on larger local datasets", () => {
     ["entry-0010", "entry-0020", "entry-0040"],
   );
   assert.ok(elapsedMs < 800, `search took ${elapsedMs}ms`);
+});
+
+test("entry search index does not build semantic documents eagerly", () => {
+  const entries = Array.from({ length: 1000 }, (_, index) =>
+    entry({
+      id: `entry-${String(index).padStart(4, "0")}`,
+      entryDate: `2026-05-${String((index % 28) + 1).padStart(2, "0")}`,
+      text: Array.from(
+        { length: 8 },
+        (_, paragraph) =>
+          `Synthetic local search fixture ${index} paragraph ${paragraph} with focus, work, fatigue, and recovery notes.`,
+      ).join("\n\n"),
+      tags: index % 10 === 0 ? ["focus"] : ["notes"],
+    }),
+  );
+
+  const startedAt = performance.now();
+  const indexedEntries = createEntrySearchIndex(entries);
+  const elapsedMs = performance.now() - startedAt;
+
+  assert.equal(
+    Object.hasOwn(indexedEntries[0], "semanticDocument"),
+    false,
+  );
+  assert.ok(elapsedMs < 150, `index build took ${elapsedMs}ms`);
+});
+
+test("keyword-mode hybrid entry search does not build semantic documents", async () => {
+  const indexedEntries = createEntrySearchIndex([
+    entry({
+      id: "work",
+      text: "Deep work after bad sleep",
+      tags: ["work"],
+    }),
+  ]);
+
+  const results = await searchIndexedEntriesHybrid(indexedEntries, "work", "keyword");
+
+  assert.equal(results[0].entry.id, "work");
+  assert.equal(
+    Object.hasOwn(indexedEntries[0], "semanticDocument"),
+    false,
+  );
+});
+
+test("hybrid entry search finds local semantic matches without backend calls", async () => {
+  const entries = [
+    entry({
+      id: "drained",
+      entryDate: "2026-05-04",
+      text: "После созвонов батарейка села, сил почти не осталось.",
+      tags: ["work"],
+    }),
+    entry({
+      id: "groceries",
+      entryDate: "2026-05-05",
+      text: "Купил продукты и приготовил ужин.",
+      tags: ["home"],
+    }),
+  ];
+
+  const results = await searchEntriesHybrid(entries, "выгорание от работы");
+
+  assert.equal(results[0].entry.id, "drained");
+  assert.ok(results[0].matchedFields.includes("semantic"));
+  assert.equal(
+    (await searchEntriesHybrid(entries, "выгорание от работы -#work")).length,
+    0,
+  );
+});
+
+test("local RAG evidence packs are inspectable and interpretations cite evidence", async () => {
+  const entries = [
+    entry({
+      id: "drained",
+      entryDate: "2026-05-04",
+      text: "После созвонов батарейка села, сил почти не осталось.",
+      tags: ["work"],
+      signals: {
+        ...entry().signals,
+        fatigue: 8,
+        focus: 4,
+        load: 7,
+      },
+    }),
+    entry({
+      id: "steady",
+      entryDate: "2026-05-05",
+      text: "Тихий вечер без созвонов помог восстановиться.",
+      tags: ["rest"],
+      signals: {
+        ...entry().signals,
+        fatigue: 3,
+        focus: 6,
+        load: 2,
+      },
+    }),
+  ];
+
+  const pack = await buildLocalRagEvidencePack(
+    entries,
+    "работа и усталость",
+    {
+      createdAt: "2026-05-06T00:00:00.000Z",
+    },
+  );
+  const interpretation = interpretLocalEvidencePack(pack);
+
+  assert.equal(pack.version, "rag_evidence_pack.v1");
+  assert.equal(pack.privacy.scope, "browser_local");
+  assert.equal(pack.privacy.leavesDevice, false);
+  assert.ok(pack.retrievedSupport.length > 0);
+  assert.ok(pack.measuredSignals.length > 0);
+  assert.equal(interpretation.abstained, false);
+  assert.ok(
+    interpretation.observations.every(
+      (observation) =>
+        observation.kind === "uncertainty" ||
+        observation.evidenceIds.length > 0,
+    ),
+  );
 });

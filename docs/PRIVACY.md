@@ -106,3 +106,21 @@ Export/import must not include or restore:
 - semantic indexes, embeddings, RAG snippets, or hidden model memory.
 
 Import must validate the package schema and version before writing anything. Import preview must not write data and must not call the backend. The first implementation uses replace-local-data mode; merge-by-id is deferred until conflict semantics are designed and tested.
+
+## Semantic Search And Evidence Packs
+
+Semantic search is browser-local by default.
+
+The current implementation computes deterministic local hashed embeddings from
+entry chunks in memory. These embeddings and chunks are private derived data:
+they can reveal meaning even when they are not raw text. Athena does not send
+semantic vectors, search queries, retrieved chunks, or local RAG evidence packs
+to backend APIs.
+
+Local RAG evidence packs may include raw excerpts so the user can inspect why a
+result or interpretation was produced. Those packs are marked `browser_local`
+and `leavesDevice: false`; they are not persisted to the backend and are not
+included in `local_export.v1`.
+
+Cloud embeddings or cloud AI over diary history remain out of scope unless a
+future feature adds explicit opt-in and a provider exposure warning.

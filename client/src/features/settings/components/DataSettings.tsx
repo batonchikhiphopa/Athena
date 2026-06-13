@@ -22,6 +22,11 @@ import {
   type LocalImportPreview,
 } from "../../exportImport/importPackage";
 import type { AthenaLocalExportV1 } from "../../exportImport/exportTypes";
+import {
+  SettingsButton,
+  SettingsRow,
+  SettingsSection,
+} from "./settingsUi";
 
 type DataSettingsProps = {
   entries: EntryView[];
@@ -95,7 +100,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
     try {
       const extractionSettings = getExtractionSettings();
       const packageData = buildLocalExportPackage({
-        appVersion: "0.7.0",
+        appVersion: "0.8.0",
         entries: await getAllLocalEntries(),
         selfReportEvents: await getAllSelfReportEvents(),
         settings: {
@@ -217,114 +222,107 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="text-sm font-medium text-zinc-950">
-          {t("settings.data.exportTitle")}
-        </div>
-        <div className="mt-1 max-w-xl text-sm text-zinc-400">
-          {t("settings.data.exportDescription")}
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
-            data-testid="settings-data-export"
-            disabled={exportStatus.state === "running"}
-            onClick={() => void handleExportLocalData()}
-            type="button"
-          >
-            {exportStatus.state === "running"
-              ? t("common.wait")
-              : t("settings.data.exportAction")}
-          </button>
+    <div className="space-y-5">
+      <SettingsSection label={t("settings.tab.data")}>
+        <SettingsRow
+          action={
+            <SettingsButton
+              data-testid="settings-data-export"
+              disabled={exportStatus.state === "running"}
+              onClick={() => void handleExportLocalData()}
+            >
+              {exportStatus.state === "running"
+                ? t("common.wait")
+                : t("settings.data.exportAction")}
+            </SettingsButton>
+          }
+          description={t("settings.data.exportDescription")}
+          title={t("settings.data.exportTitle")}
+        >
           <div className="text-xs text-zinc-400">
             {t("settings.data.exportWarning")}
           </div>
-        </div>
-        {exportStatus.message ? (
-          <div
-            aria-live="polite"
-            className={`mt-4 rounded-md border px-3 py-2 text-xs ${
-              exportStatus.state === "error"
-                ? "border-red-100 bg-red-50 text-red-700"
-                : "border-emerald-100 bg-emerald-50 text-emerald-800"
-            }`}
-            data-testid="settings-data-export-status"
-          >
-            {exportStatus.message}
-          </div>
-        ) : null}
-      </div>
+          {exportStatus.message ? (
+            <div
+              aria-live="polite"
+              className={`mt-3 rounded-md border px-3 py-2 text-xs ${
+                exportStatus.state === "error"
+                  ? "border-red-100 bg-red-50 text-red-700"
+                  : "border-emerald-100 bg-emerald-50 text-emerald-800"
+              }`}
+              data-testid="settings-data-export-status"
+            >
+              {exportStatus.message}
+            </div>
+          ) : null}
+        </SettingsRow>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="text-sm font-medium text-zinc-950">
-        {t("settings.data.importTitle")}
-      </div>
-      <div className="mt-1 max-w-xl text-sm text-zinc-400">
-        {t("settings.data.importDescription")}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <label className="inline-flex cursor-pointer items-center rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950">
-          <span>
-            {isReading ? t("common.wait") : t("settings.data.chooseJson")}
-          </span>
-          <input
-            ref={inputRef}
-            accept="application/json,.json"
-            aria-label={t("settings.data.fileInputLabel")}
-            className="sr-only"
-            data-testid="settings-data-import-file"
-            disabled={isReading || previewState.status === "applying"}
-            onChange={handleImportFileChange}
-            type="file"
-          />
-        </label>
-
-        {previewState.fileName ? (
-          <div className="text-xs text-zinc-400">
-            {t("settings.data.selectedFile")}:{" "}
-            <span className="font-mono text-zinc-600">
-              {previewState.fileName}
-            </span>
-          </div>
-        ) : (
-          <div className="text-xs text-zinc-400">
-            {t("settings.data.noFileSelected")}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        {t("settings.data.importPreviewOnly")}
-      </div>
-
-      {previewState.status === "error" ? (
-        <div
-          aria-live="polite"
-          className="mt-4 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"
+        <SettingsRow
+          description={t("settings.data.importDescription")}
+          title={t("settings.data.importTitle")}
         >
-          <div className="font-medium">{t("settings.data.importError")}</div>
-          <div className="mt-1">{previewState.error}</div>
-          <div className="mt-1 text-red-500">
-            {t("settings.data.noDataChanged")}
-          </div>
-        </div>
-      ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950">
+              <span>
+                {isReading ? t("common.wait") : t("settings.data.chooseJson")}
+              </span>
+              <input
+                ref={inputRef}
+                accept="application/json,.json"
+                aria-label={t("settings.data.fileInputLabel")}
+                className="sr-only"
+                data-testid="settings-data-import-file"
+                disabled={isReading || previewState.status === "applying"}
+                onChange={handleImportFileChange}
+                type="file"
+              />
+            </label>
 
-      {previewState.status === "ready" ||
-      previewState.status === "applying" ||
-      previewState.status === "applied" ? (
-        <ImportPreviewCard
-          canApply={previewState.status === "ready"}
-          isApplying={previewState.status === "applying"}
-          preview={previewState.preview}
-          result={previewState.result}
-          onApply={handleApplyImport}
-          onClear={handleClearPreview}
-        />
-      ) : null}
-    </div>
+            {previewState.fileName ? (
+              <div className="text-xs text-zinc-400">
+                {t("settings.data.selectedFile")}:{" "}
+                <span className="font-mono text-zinc-600">
+                  {previewState.fileName}
+                </span>
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-400">
+                {t("settings.data.noFileSelected")}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {t("settings.data.importPreviewOnly")}
+          </div>
+
+          {previewState.status === "error" ? (
+            <div
+              aria-live="polite"
+              className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"
+            >
+              <div className="font-medium">{t("settings.data.importError")}</div>
+              <div className="mt-1">{previewState.error}</div>
+              <div className="mt-1 text-red-500">
+                {t("settings.data.noDataChanged")}
+              </div>
+            </div>
+          ) : null}
+
+          {previewState.status === "ready" ||
+          previewState.status === "applying" ||
+          previewState.status === "applied" ? (
+            <ImportPreviewCard
+              canApply={previewState.status === "ready"}
+              isApplying={previewState.status === "applying"}
+              preview={previewState.preview}
+              result={previewState.result}
+              onApply={handleApplyImport}
+              onClear={handleClearPreview}
+            />
+          ) : null}
+        </SettingsRow>
+      </SettingsSection>
     </div>
   );
 }
@@ -360,12 +358,12 @@ function ImportPreviewCard({
   return (
     <div
       aria-live="polite"
-      className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4"
+      className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50/70 p-4"
       data-testid="settings-data-import-preview"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-medium text-zinc-950">
+          <div className="text-sm text-zinc-800">
             {t("settings.data.previewTitle")}
           </div>
           <div className="mt-1 text-xs text-zinc-400">
@@ -373,14 +371,14 @@ function ImportPreviewCard({
           </div>
         </div>
 
-        <button
-          className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+        <SettingsButton
           disabled={isApplying}
           onClick={onClear}
-          type="button"
+          size="xs"
+          variant="quiet"
         >
           {t("common.close")}
-        </button>
+        </SettingsButton>
       </div>
 
       <dl className="mt-4 grid gap-2 text-xs text-zinc-500 sm:grid-cols-2">
@@ -444,17 +442,17 @@ function ImportPreviewCard({
 
       {!result ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+          <SettingsButton
             data-testid="settings-data-import-apply"
             disabled={!canApply || isApplying}
             onClick={onApply}
-            type="button"
+            size="xs"
+            variant="danger"
           >
             {isApplying
               ? t("settings.data.applying")
               : t("settings.data.confirmReplaceAction")}
-          </button>
+          </SettingsButton>
 
           <div className="text-xs text-zinc-400">
             {t("settings.data.replaceExplanation")}

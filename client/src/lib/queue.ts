@@ -7,10 +7,12 @@ import {
   getLastQueueError,
   getQueueJob,
   getRunnableQueueJobs,
+  recoverSignalValidationJobs,
   recoverStaleRunningJobs,
   updateQueueJob,
   getQueueJobsByStatuses,
   getLatestQueueJobSummary,
+  deleteQueueJobsByStatuses,
 } from "./queueStorage";
 import {
   classifyQueueError,
@@ -51,7 +53,7 @@ let snapshot: QueueSnapshot = {
   isProcessing: false,
 };
 
-let processorStarted = false;
+let processorStarted = true;
 let processorPaused = false;
 let activeAbortController: AbortController | null = null;
 let activeJobPromise: Promise<void> | null = null;
@@ -207,6 +209,7 @@ export async function enqueueQueueJob<TPayload>(
 
 export async function recoverStaleJobs(): Promise<void> {
   await recoverStaleRunningJobs();
+  await recoverSignalValidationJobs();
   await compactQueueJobs();
   await refreshQueueSnapshot();
 }
@@ -351,6 +354,14 @@ async function markJobSucceeded(job: QueueJob): Promise<void> {
 async function markJobFailedOrRetry(job: QueueJob, error: unknown): Promise<void> {
   const classified = classifyQueueError(error);
   const serializedError = serializeQueueError(error);
+
+if (
+    serializedError.startsWith("stale_local_revision") || 
+    serializedError.startsWith("source_hash_mismatch")
+  ) {
+    await markJobSucceeded(job);
+    return;
+  }
 
   if (classified.kind === "cancelled") {
     await updateQueueJob({
@@ -504,6 +515,20 @@ export async function retryRecoverableQueueJobs(): Promise<void> {
     });
   }
 
+  processorPaused = false;
+
   await refreshQueueSnapshot();
   void processQueue();
+}
+
+export async function clearQueueHistory(): Promise<number> {
+  const removed = await deleteQueueJobsByStatuses([
+    "succeeded",
+    "failed",
+    "cancelled",
+  ]);
+
+  await refreshQueueSnapshot();
+
+  return removed;
 }

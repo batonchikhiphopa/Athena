@@ -161,3 +161,66 @@ export function HeartIcon({ className = "h-4 w-4" }: { className?: string }) {
     </svg>
   );
 }
+
+export function UserCircleIcon({
+  className = "h-5 w-5",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle
+        cx="12"
+        cy="9"
+        r="2.75"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M7.35 17.15C8.24 15.55 9.82 14.78 12 14.78C14.18 14.78 15.76 15.55 16.65 17.15"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+export function GlobeIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M3.5 12h17"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.35"
+      />
+      <path
+        d="M12 3.1c2.25 2.25 3.55 5.46 3.55 8.9s-1.3 6.65-3.55 8.9"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.35"
+      />
+      <path
+        d="M12 3.1C9.75 5.35 8.45 8.56 8.45 12s1.3 6.65 3.55 8.9"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.35"
+      />
+    </svg>
+  );
+}

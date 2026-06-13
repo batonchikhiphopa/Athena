@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ExtractionSettings } from "../../types";
 import {
   cancelQueueJob,
+  clearQueueHistory,
   getQueueSnapshot,
   pauseQueue,
   recoverStaleJobs,
@@ -42,6 +43,7 @@ export function useSyncQueue({ extractionSettings }: UseSyncQueueInput) {
     });
 
     void recoverStaleJobs()
+      .then(() => clearQueueHistory())
       .then(() => {
         if (!cancelled) {
           setSnapshot(getQueueSnapshot());
@@ -63,6 +65,7 @@ export function useSyncQueue({ extractionSettings }: UseSyncQueueInput) {
     snapshot,
     retry: retryQueueJob,
     cancel: cancelQueueJob,
+    clearHistory: clearQueueHistory,
     pause: pauseQueue,
     start: startQueue,
     retryRecoverable: retryRecoverableQueueJobs,

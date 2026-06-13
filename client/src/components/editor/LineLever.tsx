@@ -21,11 +21,12 @@ export function LineLever({ label, testId, value, onChange }: LineLeverProps) {
         type="range"
         value={value}
       />
-      <span className="athena-line-lever-visual" aria-hidden="true">
-        <span
-          className="athena-line-lever-thumb"
-          style={{ "--lever-top": `${100 - value * 10}%` } as CSSProperties}
-        />
+      <span
+        className="athena-line-lever-visual"
+        aria-hidden="true"
+        style={{ "--lever-top": `${100 - value * 10}%` } as CSSProperties}
+      >
+        <span className="athena-line-lever-thumb" />
       </span>
     </span>
   );

@@ -1,30 +1,42 @@
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import type { EntrySortDirection, EntryView } from "../types";
-import { EntryDetail } from "./EntryDetail";
-import { excerpt } from "../lib/text";
+import type { Language } from "../i18n/languages";
 import { formatLongDate } from "../lib/dates";
 import { useI18n } from "../i18n/useI18n";
 import { normalizeTag } from "../features/entries/entryFilters";
-import { createEntrySearchSnippet } from "../features/entries/entrySearch";
-import { EyeClosedIcon, EyeOpenIcon } from "./icon";
+import { parseEntrySearchQuery } from "../features/entries/entrySearch";
+import {
+  EntryDebugTooltip,
+  EntryDebugWaitCue,
+} from "./EntryDebugTooltip";
+import { EyeClosedIcon, EyeOpenIcon, Icon } from "./icon";
 import { TooltipButton } from "./TooltipButton";
+import { useEntryDebugTooltip } from "./useEntryDebugTooltip";
 
 type EntriesPageProps = {
   debugMode: boolean;
   entries: EntryView[];
-  selectedEntry: EntryView | null;
   selectedEntryId: string | null;
   sortDirection: EntrySortDirection;
   searchQuery: string;
   includedTags: string[];
   excludedTags: string[];
-  availableTags: Array<{ tag: string; count: number }>;
   hasActiveFilters: boolean;
   isSearching: boolean;
   onChangeSortDirection: (direction: EntrySortDirection) => void;
   onClearFilters: () => void;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
-  onRefresh: () => void;
+  onOpenObservations: () => void;
   onSearchQueryChange: (query: string) => void;
   onSelectEntry: (id: string) => void;
   onToggleEntryAnalysis: (entry: EntryView) => void;
@@ -35,20 +47,16 @@ type EntriesPageProps = {
 export function EntriesPage({
   debugMode,
   entries,
-  selectedEntry,
   selectedEntryId,
-  sortDirection,
   searchQuery,
   includedTags,
   excludedTags,
-  availableTags,
   hasActiveFilters,
   isSearching,
-  onChangeSortDirection,
   onClearFilters,
   onDeleteEntry,
   onEditEntry,
-  onRefresh,
+  onOpenObservations,
   onSearchQueryChange,
   onSelectEntry,
   onToggleEntryAnalysis,
@@ -56,294 +64,648 @@ export function EntriesPage({
   onToggleTag,
 }: EntriesPageProps) {
   const { language, t } = useI18n();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+  const columnCount = useEntryColumnCount(gridRef, entries.length);
+  const entryColumns = useMemo(
+    () => distributeEntriesByColumn(entries, columnCount),
+    [columnCount, entries],
+  );
+  const entriesGridStyle = {
+    "--athena-entry-column-count": entryColumns.length || 1,
+  } as CSSProperties;
+
+  useEffect(() => {
+    if (!expandedEntryId) return;
+    if (entries.some((entry) => entry.id === expandedEntryId)) return;
+
+    setExpandedEntryId(null);
+  }, [entries, expandedEntryId]);
+
+  function handleSelectEntry(entryId: string) {
+    setExpandedEntryId(entryId);
+    onSelectEntry(entryId);
+  }
 
   return (
-    <section className="-mx-4 grid h-full min-h-0 w-[calc(100%+2rem)] grid-cols-[minmax(320px,420px)_minmax(0,1fr)] overflow-hidden">
-      <div className="grid h-screen min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] border-r border-zinc-200 bg-zinc-50 px-6 py-8">
-        <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-          <div>
-            <div className="text-xs uppercase text-zinc-400">
-              {t("entries.title")}
-            </div>
-          </div>
-
-          <button
-            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
-            onClick={onRefresh}
-            type="button"
-          >
-            {t("common.refresh")}
-          </button>
-        </div>
-
-        <div className="mb-4 inline-grid w-max grid-cols-2 rounded-md border border-zinc-200 bg-white p-1 text-sm">
-          <button
-            className={[
-              "rounded px-3 py-1.5 transition",
-              sortDirection === "desc"
-                ? "bg-zinc-950 text-white"
-                : "text-zinc-500 hover:text-zinc-950",
-            ].join(" ")}
-            onClick={() => onChangeSortDirection("desc")}
-            type="button"
-          >
-            {t("entries.sort.newest")}
-          </button>
-          <button
-            className={[
-              "rounded px-3 py-1.5 transition",
-              sortDirection === "asc"
-                ? "bg-zinc-950 text-white"
-                : "text-zinc-500 hover:text-zinc-950",
-            ].join(" ")}
-            onClick={() => onChangeSortDirection("asc")}
-            type="button"
-          >
-            {t("entries.sort.oldest")}
-          </button>
-        </div>
-
-        <div className="mb-4 space-y-3">
-          <div className="relative">
-            <input
-              aria-label={t("entries.searchAria")}
-              className="
-                h-10 w-full rounded-md border border-zinc-200 bg-white px-3 pr-10 text-sm
-                text-zinc-800 outline-none transition
-                placeholder:text-zinc-400
-                focus:border-zinc-400
-              "
-              data-testid="entries-search-input"
-              onChange={(event) => onSearchQueryChange(event.target.value)}
-              placeholder={t("entries.searchPlaceholder")}
-              type="search"
-              value={searchQuery}
-            />
-
-            {hasActiveFilters && (
-              <button
-                aria-label={t("entries.action.clearFilters")}
-                className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
-                data-testid="entries-clear-filters"
-                onClick={onClearFilters}
-                type="button"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
-          {availableTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {availableTags.map(({ tag, count }) => {
-                const normalizedTag = normalizeTag(tag);
-                const isIncluded = includedTags.some(
-                  (includedTag) => normalizeTag(includedTag) === normalizedTag,
-                );
-                const isExcluded = excludedTags.some(
-                  (excludedTag) => normalizeTag(excludedTag) === normalizedTag,
-                );
-                const testIdTag = tagTestIdValue(tag);
-
-                return (
-                  <span
-                    className={[
-                      "inline-grid grid-cols-[auto_1.5rem] overflow-hidden rounded-full border text-xs transition",
-                      isIncluded
-                        ? "border-zinc-950 bg-zinc-950 text-white"
-                        : isExcluded
-                          ? "border-zinc-300 bg-zinc-100 text-zinc-500"
-                          : "border-zinc-200 bg-white text-zinc-500",
-                    ].join(" ")}
-                    key={tag}
-                  >
-                    <button
-                      aria-label={`${t("entries.tag.include")} #${tag}`}
-                      aria-pressed={isIncluded}
-                      className={[
-                        "px-2.5 py-1 text-left transition",
-                        isIncluded
-                          ? "text-white"
-                          : "hover:bg-zinc-50 hover:text-zinc-950",
-                      ].join(" ")}
-                      data-testid={`entry-tag-include-${testIdTag}`}
-                      onClick={() => onToggleTag(tag)}
-                      type="button"
-                    >
-                      #{tag}
-                      <span className="ml-1 opacity-60">{count}</span>
-                    </button>
-                    <button
-                      aria-label={`${t("entries.tag.exclude")} #${tag}`}
-                      aria-pressed={isExcluded}
-                      className={[
-                        "border-l px-1.5 py-1 text-center transition",
-                        isExcluded
-                          ? "border-zinc-300 bg-zinc-200 text-zinc-700"
-                          : isIncluded
-                            ? "border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
-                            : "border-zinc-100 text-zinc-300 hover:bg-zinc-50 hover:text-zinc-700",
-                      ].join(" ")}
-                      data-testid={`entry-tag-exclude-${testIdTag}`}
-                      onClick={() => onToggleExcludedTag(tag)}
-                      type="button"
-                    >
-                      −
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-
-          {isSearching && (
-            <div className="text-xs text-zinc-400">
-              {t("entries.searching")}
-            </div>
-          )}
-        </div>
-
-        <div className="entries-feed-scroll min-h-0 space-y-2 overflow-y-auto pr-3">
-          {entries.map((entry) => {
-            const snippet = createEntrySearchSnippet(entry.text, searchQuery);
-
-            return (
-              <div
-                className={[
-                  "group relative rounded-lg border bg-white transition",
-                  selectedEntryId === entry.id
-                    ? "border-zinc-950 shadow-sm"
-                    : "border-zinc-200 hover:border-zinc-300",
-                ].join(" ")}
-                data-testid="entry-list-item"
-                key={entry.id}
-              >
-                <button
-                  className="block w-full p-4 pr-28 text-left"
-                  onClick={() => onSelectEntry(entry.id)}
-                  type="button"
-                >
-                  <div className="grid grid-flow-col auto-cols-max items-center justify-start gap-2 text-xs text-zinc-400">
-                    <span>{formatLongDate(entry.entryDate, language)}</span>
-                    {entry.isDraft && (
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-500">
-                        {t("entries.draft")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-800">
-                    {snippet ? (
-                      <EntrySearchSnippetView snippet={snippet} />
-                    ) : (
-                      excerpt(entry.text, 160)
-                    )}
-                  </div>
-                  {entry.tags.length > 0 && (
-                    <div className="mt-3 space-x-1.5 space-y-1.5">
-                      {entry.tags.map((tag) => (
-                        <span
-                          className="inline-block rounded-full bg-sky-50 px-2 py-1 text-xs text-sky-700"
-                          key={tag}
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </button>
-
-                <div className="absolute right-3 top-3 grid grid-flow-col auto-cols-[2rem] gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                  <TooltipButton
-                    aria-label={
-                      entry.analysisEnabled
-                        ? t("entries.action.excludeAnalysis")
-                        : t("entries.action.includeAnalysis")
-                    }
-                    aria-pressed={entry.analysisEnabled}
-                    className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleEntryAnalysis(entry);
-                    }}
-                    tooltip={
-                      entry.analysisEnabled
-                        ? t("entries.action.excludeAnalysis")
-                        : t("entries.action.includeAnalysis")
-                    }
-                    tooltipPlacement="top"
-                    type="button"
-                  >
-                    {entry.analysisEnabled ? <EyeOpenIcon /> : <EyeClosedIcon />}
-                  </TooltipButton>
-                  <TooltipButton
-                    aria-label={t("entries.action.edit")}
-                    className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEditEntry(entry);
-                    }}
-                    tooltip={t("entries.action.edit")}
-                    tooltipPlacement="top"
-                    type="button"
-                  >
-                    ✎
-                  </TooltipButton>
-                  <TooltipButton
-                    aria-label={t("entries.action.delete")}
-                    className="grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-red-50 hover:text-red-700"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDeleteEntry(entry);
-                    }}
-                    tooltip={t("entries.action.delete")}
-                    tooltipPlacement="top"
-                    type="button"
-                  >
-                    ×
-                  </TooltipButton>
-                </div>
-              </div>
-            );
-          })}
-
-          {entries.length === 0 && (
-            <div
-              className="rounded-lg border border-dashed border-zinc-200 bg-white p-5 text-sm text-zinc-400"
-              data-testid="entries-empty-state"
-            >
-              {hasActiveFilters
-                ? t("entries.emptyFiltered")
-                : t("entries.empty")}
-            </div>
-          )}
-        </div>
+    <section className="relative w-full max-w-6xl px-1.5 py-1.5 sm:py-2">
+  <div
+    className="
+      fixed left-1/2 top-1.5 z-30 w-full max-w-6xl
+      -translate-x-1/2 bg-transparent px-1.5
+      sm:top-2
+    "
+  >
+        <EntriesUtilityPanel
+          excludedTags={excludedTags}
+          hasActiveFilters={hasActiveFilters}
+          includedTags={includedTags}
+          isSearching={isSearching}
+          searchQuery={searchQuery}
+          onClearFilters={onClearFilters}
+          onOpenObservations={onOpenObservations}
+          onSearchQueryChange={onSearchQueryChange}
+          onToggleExcludedTag={onToggleExcludedTag}
+          onToggleTag={onToggleTag}
+        />
       </div>
 
-      <EntryDetail
-        debugMode={debugMode}
-        entry={selectedEntry}
-        onEditEntry={onEditEntry}
-      />
+      <div
+        className="
+          athena-entries-grid w-full pb-8 pt-20
+          transform-gpu
+        "
+        ref={gridRef}
+        style={entriesGridStyle}
+      >
+
+        {entries.length > 0 &&
+          entryColumns.map((columnEntries, columnIndex) => (
+            <div
+              className="athena-entries-column"
+              key={`entries-column-${columnIndex}`}
+            >
+              {columnEntries.map((entry) => (
+                <EntryTile
+                  debugMode={debugMode}
+                  entry={entry}
+                  isExpanded={expandedEntryId === entry.id}
+                  isSelected={selectedEntryId === entry.id}
+                  key={entry.id}
+                  language={language}
+                  searchQuery={searchQuery}
+                  onDeleteEntry={onDeleteEntry}
+                  onEditEntry={onEditEntry}
+                  onSelectEntry={handleSelectEntry}
+                  onToggleEntryAnalysis={onToggleEntryAnalysis}
+                  onToggleTag={onToggleTag}
+                />
+              ))}
+            </div>
+          ))}
+
+        {entries.length === 0 && (
+          <div
+            className="
+              col-span-full
+              rounded-lg border border-dashed border-white/50 bg-white/30 p-5
+              text-sm text-zinc-400 backdrop-blur-[1px]
+            "
+            data-testid="entries-empty-state"
+          >
+            {hasActiveFilters ? t("entries.emptyFiltered") : t("entries.empty")}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
-function EntrySearchSnippetView({
-  snippet,
+function EntriesUtilityPanel({
+  searchQuery,
+  includedTags,
+  excludedTags,
+  hasActiveFilters,
+  isSearching,
+  onClearFilters,
+  onOpenObservations,
+  onSearchQueryChange,
+  onToggleExcludedTag,
+  onToggleTag,
 }: {
-  snippet: { before: string; match: string; after: string };
+  searchQuery: string;
+  includedTags: string[];
+  excludedTags: string[];
+  hasActiveFilters: boolean;
+  isSearching: boolean;
+  onClearFilters: () => void;
+  onOpenObservations: () => void;
+  onSearchQueryChange: (query: string) => void;
+  onToggleExcludedTag: (tag: string) => void;
+  onToggleTag: (tag: string) => void;
 }) {
+  const { t } = useI18n();
+
+  return (
+    <aside
+      aria-label={t("entries.searchAria")}
+      className="
+        flex w-full shrink-0 flex-wrap items-start gap-2
+        bg-transparent
+        sm:flex-nowrap
+      "
+    >
+      <div className="relative min-w-0 flex-1 basis-[18rem] sm:max-w-[34.5rem]">
+        <input
+          aria-label={t("entries.searchAria")}
+          className="
+            h-9 w-full rounded-full border border-white/70 bg-white px-3.5 pr-9
+            text-sm text-zinc-800 shadow-sm shadow-zinc-900/5 outline-none
+            transition
+            placeholder:text-zinc-400
+            focus:border-white focus:bg-white focus:shadow-zinc-900/10
+          "
+          data-testid="entries-search-input"
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          placeholder={t("entries.searchPlaceholder")}
+          type="search"
+          value={searchQuery}
+        />
+
+        {hasActiveFilters && (
+          <button
+            aria-label={t("entries.action.clearFilters")}
+            className="
+              absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2
+              place-items-center rounded-full text-zinc-400 transition
+              hover:bg-white/60 hover:text-zinc-950
+            "
+            data-testid="entries-clear-filters"
+            onClick={onClearFilters}
+            type="button"
+          >
+            <CloseIcon />
+          </button>
+        )}
+      </div>
+
+      <ActiveTagFilters
+        excludedTags={excludedTags}
+        includedTags={includedTags}
+        onToggleExcludedTag={onToggleExcludedTag}
+        onToggleTag={onToggleTag}
+      />
+
+      {isSearching && (
+        <div className="flex h-9 items-center text-xs text-zinc-400">
+          {t("entries.searching")}
+        </div>
+      )}
+
+      <TooltipButton
+        aria-label={t("nav.observations")}
+        className="
+          -mr-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center
+          rounded-full text-zinc-500 transition
+          hover:bg-white/45 hover:text-zinc-950
+        "
+        data-testid="entries-open-observations"
+        onClick={onOpenObservations}
+        tooltip={t("nav.observations")}
+        tooltipPlacement="left"
+        type="button"
+      >
+        <Icon name="observations" className="h-5 w-5" />
+      </TooltipButton>
+    </aside>
+  );
+}
+
+function ActiveTagFilters({
+  includedTags,
+  excludedTags,
+  onToggleTag,
+  onToggleExcludedTag,
+}: {
+  includedTags: string[];
+  excludedTags: string[];
+  onToggleTag: (tag: string) => void;
+  onToggleExcludedTag: (tag: string) => void;
+}) {
+  const { t } = useI18n();
+
+  if (includedTags.length === 0 && excludedTags.length === 0) return null;
+
+  return (
+    <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-2">
+      {includedTags.map((tag) => (
+        <button
+          aria-label={`${t("entries.action.clearFilters")} #${tag}`}
+          className="
+            inline-flex h-9 items-center gap-2 rounded-full border border-white/45
+            bg-sky-50/70 px-3 text-sm text-sky-700 shadow-sm shadow-zinc-900/5
+            backdrop-blur-[2px] transition hover:bg-white/70 hover:text-sky-800
+          "
+          data-testid={`entry-tag-include-${tagTestIdValue(tag)}`}
+          key={`include-${tag}`}
+          onClick={() => onToggleTag(tag)}
+          type="button"
+        >
+          <span>#{tag}</span>
+          <CloseIcon />
+        </button>
+      ))}
+
+      {excludedTags.map((tag) => (
+        <button
+          aria-label={`${t("entries.action.clearFilters")} -#${tag}`}
+          className="
+            inline-flex h-9 items-center gap-2 rounded-full border border-white/45
+            bg-zinc-100/65 px-3 text-sm text-zinc-500 shadow-sm shadow-zinc-900/5
+            backdrop-blur-[2px] transition hover:bg-white/70 hover:text-zinc-800
+          "
+          data-testid={`entry-tag-exclude-${tagTestIdValue(tag)}`}
+          key={`exclude-${tag}`}
+          onClick={() => onToggleExcludedTag(tag)}
+          type="button"
+        >
+          <span>-#{tag}</span>
+          <CloseIcon />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EntryTile({
+  debugMode,
+  entry,
+  isExpanded,
+  isSelected,
+  language,
+  searchQuery,
+  onDeleteEntry,
+  onEditEntry,
+  onSelectEntry,
+  onToggleEntryAnalysis,
+  onToggleTag,
+}: {
+  debugMode: boolean;
+  entry: EntryView;
+  isExpanded: boolean;
+  isSelected: boolean;
+  language: Language;
+  searchQuery: string;
+  onDeleteEntry: (entry: EntryView) => void;
+  onEditEntry: (entry: EntryView) => void;
+  onSelectEntry: (id: string) => void;
+  onToggleEntryAnalysis: (entry: EntryView) => void;
+  onToggleTag: (tag: string) => void;
+}) {
+  const { t } = useI18n();
+  const {
+    anchorRef: debugAnchorRef,
+    isWaiting: isDebugTooltipWaiting,
+    onAnchorBlur,
+    onAnchorFocus,
+    onAnchorPointerEnter,
+    onAnchorPointerLeave,
+    onTooltipBlur,
+    onTooltipFocus,
+    onTooltipPointerEnter,
+    onTooltipPointerLeave,
+    position: debugTooltipPosition,
+    status: debugTooltipStatus,
+    tooltipRef,
+  } = useEntryDebugTooltip({ enabled: debugMode });
+
+  const debugTooltip =
+    debugMode &&
+    debugTooltipStatus === "open" &&
+    debugTooltipPosition &&
+    typeof document !== "undefined"
+      ? createPortal(
+          <EntryDebugTooltip
+            entry={entry}
+            maxHeight={debugTooltipPosition.maxHeight}
+            onBlur={onTooltipBlur}
+            onFocus={onTooltipFocus}
+            onPointerEnter={onTooltipPointerEnter}
+            onPointerLeave={onTooltipPointerLeave}
+            style={{
+              left: debugTooltipPosition.left,
+              maxHeight: debugTooltipPosition.maxHeight,
+              top: debugTooltipPosition.top,
+              width: debugTooltipPosition.width,
+            }}
+            tooltipRef={tooltipRef}
+          />,
+          document.body,
+        )
+      : null;
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onSelectEntry(entry.id);
+  };
+
+  return (
+    <article
+      aria-expanded={isExpanded}
+      aria-pressed={isSelected}
+      className={[
+        "athena-entry-tile group relative cursor-pointer",
+        "focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400/70",
+      ].join(" ")}
+      data-expanded={isExpanded ? "true" : "false"}
+      data-testid="entry-list-item"
+      onClick={() => onSelectEntry(entry.id)}
+      onBlurCapture={onAnchorBlur}
+      onFocusCapture={onAnchorFocus}
+      onKeyDown={handleKeyDown}
+      onPointerEnter={onAnchorPointerEnter}
+      onPointerLeave={onAnchorPointerLeave}
+      ref={debugAnchorRef}
+      role="button"
+      tabIndex={0}
+    >
+      <div
+        className={[
+          "relative flex flex-col overflow-hidden rounded-lg border border-white/15",
+          "bg-white/25 shadow-sm shadow-zinc-900/5 backdrop-blur-[1px]",
+          "transition duration-200",
+          isSelected
+            ? "border-zinc-400/60 bg-white/40"
+            : "hover:border-white/35 hover:bg-white/32",
+        ].join(" ")}
+      >
+        <div
+          className="
+            pointer-events-none absolute right-[4.5rem] top-1 z-20 opacity-0
+            transition
+            group-hover:pointer-events-auto group-hover:opacity-100
+            group-focus-within:pointer-events-auto group-focus-within:opacity-100
+          "
+        >
+          <TooltipButton
+            aria-label={
+              entry.analysisEnabled
+                ? t("entries.action.excludeAnalysis")
+                : t("entries.action.includeAnalysis")
+            }
+            aria-pressed={entry.analysisEnabled}
+            className="
+              flex h-6 w-6 items-center justify-center rounded-full
+              text-zinc-400 opacity-70 transition
+              hover:bg-zinc-200/40 hover:text-zinc-700 hover:opacity-100
+            "
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleEntryAnalysis(entry);
+            }}
+            tooltip={
+              entry.analysisEnabled
+                ? t("entries.action.excludeAnalysis")
+                : t("entries.action.includeAnalysis")
+            }
+            tooltipPlacement="left"
+            type="button"
+          >
+            {entry.analysisEnabled ? <EyeOpenIcon /> : <EyeClosedIcon />}
+          </TooltipButton>
+        </div>
+
+        <div
+          className="
+            pointer-events-none absolute right-10 top-1 z-20 opacity-0
+            transition
+            group-hover:pointer-events-auto group-hover:opacity-100
+            group-focus-within:pointer-events-auto group-focus-within:opacity-100
+          "
+        >
+          <TooltipButton
+            aria-label={t("entries.action.edit")}
+            className="
+              flex h-6 w-6 items-center justify-center rounded-full
+              text-zinc-400 opacity-70 transition
+              hover:bg-zinc-200/40 hover:text-zinc-700 hover:opacity-100
+            "
+            onClick={(event) => {
+              event.stopPropagation();
+              onEditEntry(entry);
+            }}
+            tooltip={t("entries.action.edit")}
+            tooltipPlacement="left"
+            type="button"
+          >
+            <EditIcon />
+          </TooltipButton>
+        </div>
+
+        <div
+          className="
+            pointer-events-none absolute right-2 top-1 z-20 opacity-0
+            transition
+            group-hover:pointer-events-auto group-hover:opacity-100
+            group-focus-within:pointer-events-auto group-focus-within:opacity-100
+          "
+        >
+          <TooltipButton
+            aria-label={t("entries.action.delete")}
+            className="
+              flex h-6 w-6 items-center justify-center rounded-full
+              text-zinc-400 opacity-70 transition
+              hover:bg-red-50 hover:text-red-700 hover:opacity-100
+            "
+            onClick={(event) => {
+              event.stopPropagation();
+              onDeleteEntry(entry);
+            }}
+            tooltip={t("entries.action.delete")}
+            tooltipPlacement="left"
+            type="button"
+          >
+            <CloseIcon />
+          </TooltipButton>
+        </div>
+
+        <div className="flex min-h-10 items-center justify-between border-b border-black/5 px-5 py-3 pr-28 text-xs text-zinc-500">
+          <span>{formatLongDate(entry.entryDate, language)}</span>
+          {entry.isDraft && (
+            <span className="rounded-full bg-white/45 px-2 py-0.5 text-[11px] text-zinc-500">
+              {t("entries.draft")}
+            </span>
+          )}
+        </div>
+
+        <div className="athena-entry-tile-body px-5 py-4">
+          <div className="athena-entry-tile-body-content whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-zinc-900">
+            <EntryText text={entry.text} query={searchQuery} />
+          </div>
+        </div>
+
+        {entry.tags.length > 0 && (
+          <div className="px-5 pb-4">
+            <div className="flex max-h-8 flex-wrap items-start gap-1.5 overflow-hidden">
+              {entry.tags.map((tag) => (
+                <button
+                  className="
+                    inline-grid items-center rounded-full bg-sky-50 px-2 py-1
+                    text-xs text-sky-700 transition
+                    hover:bg-white hover:text-zinc-950
+                  "
+                  data-testid={`entry-tile-tag-${tagTestIdValue(tag)}`}
+                  key={tag}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleTag(tag);
+                  }}
+                  type="button"
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isDebugTooltipWaiting && <EntryDebugWaitCue />}
+      </div>
+
+      {debugTooltip}
+    </article>
+  );
+}
+
+function EntryText({ text, query }: { text: string; query: string }) {
+  const range = findSearchHighlightRange(text, query);
+
+  if (!range) return <>{text}</>;
+
   return (
     <>
-      {snippet.before}
-      <mark className="rounded bg-zinc-100 px-0.5 text-zinc-950">
-        {snippet.match}
+      {text.slice(0, range.start)}
+      <mark className="rounded bg-white/75 px-0.5 text-zinc-950">
+        {text.slice(range.start, range.end)}
       </mark>
-      {snippet.after}
+      {text.slice(range.end)}
     </>
+  );
+}
+
+function findSearchHighlightRange(
+  text: string,
+  query: string,
+): { start: number; end: number } | null {
+  const { textTerms } = parseEntrySearchQuery(query);
+  const phrase = textTerms.join(" ");
+  const terms = [phrase, ...textTerms].filter(Boolean);
+
+  for (const term of terms) {
+    const range = findCaseInsensitiveRange(text, term);
+    if (range) return range;
+  }
+
+  return null;
+}
+
+function findCaseInsensitiveRange(
+  text: string,
+  term: string,
+): { start: number; end: number } | null {
+  const normalizedText = text.toLocaleLowerCase();
+  const normalizedTerm = term.toLocaleLowerCase();
+  const start = normalizedText.indexOf(normalizedTerm);
+
+  if (start < 0) return null;
+
+  return {
+    start,
+    end: start + normalizedTerm.length,
+  };
+}
+
+function EditIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M5 18.5h3.2L18.7 8a2.26 2.26 0 0 0-3.2-3.2L5 15.3v3.2Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="m14.5 5.8 3.7 3.7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="m7 7 10 10M17 7 7 17"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+      />
+    </svg>
   );
 }
 
 function tagTestIdValue(tag: string) {
   return normalizeTag(tag).replace(/[^\p{L}\p{N}]+/gu, "-") || "tag";
+}
+
+function useEntryColumnCount(
+  containerRef: RefObject<HTMLElement | null>,
+  itemCount: number,
+) {
+  const [columnCount, setColumnCount] = useState(1);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const updateColumnCount = () => {
+      const nextColumnCount = getEntryColumnCount(element.clientWidth, itemCount);
+      setColumnCount((currentColumnCount) =>
+        currentColumnCount === nextColumnCount
+          ? currentColumnCount
+          : nextColumnCount,
+      );
+    };
+
+    updateColumnCount();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateColumnCount);
+      return () => window.removeEventListener("resize", updateColumnCount);
+    }
+
+    const resizeObserver = new ResizeObserver(updateColumnCount);
+    resizeObserver.observe(element);
+
+    return () => resizeObserver.disconnect();
+  }, [containerRef, itemCount]);
+
+  return columnCount;
+}
+
+function getEntryColumnCount(containerWidth: number, itemCount: number) {
+  if (itemCount <= 1) return 1;
+
+  const rootFontSize =
+    typeof document === "undefined"
+      ? 16
+      : Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+        16;
+  const minColumnWidth = 18.5 * rootFontSize;
+  const columnGap = 0.75 * rootFontSize;
+  const availableColumnCount = Math.max(
+    1,
+    Math.floor((containerWidth + columnGap) / (minColumnWidth + columnGap)),
+  );
+
+  return Math.min(itemCount, availableColumnCount);
+}
+
+function distributeEntriesByColumn(entries: EntryView[], columnCount: number) {
+  const columns = Array.from(
+    { length: Math.max(1, Math.min(entries.length || 1, columnCount)) },
+    () => [] as EntryView[],
+  );
+
+  entries.forEach((entry, index) => {
+    columns[index % columns.length].push(entry);
+  });
+
+  return columns;
 }

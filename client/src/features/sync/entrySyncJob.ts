@@ -1,4 +1,3 @@
-import { createEntry, updateServerEntry } from "../entries/entriesApi";
 import { enqueueQueueJob } from "../../lib/queue";
 import {
   queueBlocked,
@@ -8,6 +7,7 @@ import {
 import { getLocalEntry, updateLocalEntry } from "../../lib/storage";
 import type { EntrySyncQueuePayload, QueueJob } from "../../lib/queueTypes";
 import type { LocalEntry } from "../../types";
+import { syncLocalEntryToServer } from "./entryServerSync";
 import { planEntrySyncJob } from "./entrySyncPolicy";
 
 type EnqueueEntrySyncJobInput = {
@@ -155,9 +155,7 @@ export async function handleEntrySyncJob(
 
   throwIfAborted(signal);
 
-  const syncedEntry = entry.serverId
-    ? await updateServerEntry(entry.serverId, buildUpdatePayload(entry))
-    : await createEntry(buildCreatePayload(entry));
+  const syncedEntry = await syncLocalEntryToServer(entry);
 
   throwIfAborted(signal);
 
@@ -189,27 +187,6 @@ async function persistSyncResultIfStillCurrent(
     serverId,
     updatedAt: latestEntry.updatedAt,
   });
-}
-
-function buildCreatePayload(entry: LocalEntry) {
-  return {
-    client_entry_id: entry.id,
-    entry_date: entry.entry_date,
-    tags: entry.tags,
-    source_text_hash: entry.source_text_hash,
-    signal: entry.signals,
-    metadata: entry.metadata,
-  };
-}
-
-function buildUpdatePayload(entry: LocalEntry) {
-  return {
-    entry_date: entry.entry_date,
-    tags: entry.tags,
-    source_text_hash: entry.source_text_hash,
-    signal: entry.signals,
-    metadata: entry.metadata,
-  };
 }
 
 function throwIfAborted(signal: AbortSignal) {

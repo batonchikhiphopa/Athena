@@ -6,6 +6,13 @@ import {
   isVaultEncryptedPayload,
   type VaultEncryptedPayload,
 } from "./vault";
+import {
+  getProfileScopedDatabaseName,
+  getProfileScopedStorageKey,
+  getVaultProfiles,
+  isDefaultVaultProfile,
+} from "./vaultProfiles";
+import { LANGUAGE_STORAGE_KEY } from "../i18n/languages";
 
 const ATHENA_LOCAL_DB_NAME = "athena-private-v1";
 const ATHENA_LOCAL_DB_VERSION = 3;
@@ -25,6 +32,25 @@ const GEMINI_DAILY_EXTRACTION_USAGE_KEY = "athena_gemini_daily_extraction_usage"
 const LOCAL_EMOTION_SPIKE_ENABLED_KEY = "athena_local_emotion_spike_enabled";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
+const VAULT_CONFIG_KEY = "athena_vault_config";
+
+const PROFILE_LOCAL_STORAGE_KEYS = [
+  DEBUG_MODE_KEY,
+  ENTRY_SORT_DIRECTION_KEY,
+  EXTRACTION_SETTINGS_KEY,
+  GEMINI_DAILY_EXTRACTION_USAGE_KEY,
+  LANGUAGE_STORAGE_KEY,
+  LOCAL_EMOTION_SPIKE_ENABLED_KEY,
+  PERSONA_TEXT_ENABLED_KEY,
+  SEEN_EDITOR_INSIGHT_IDS_KEY,
+  VAULT_CONFIG_KEY,
+];
+
+const PROFILE_LOCAL_STORAGE_PREFIXES = [
+  "athena_insight_bag:",
+  "athena_insight_choice:",
+  "athena_phrase_bag:",
+];
 
 export const GEMINI_DAILY_EXTRACTION_LIMIT = 20;
 
@@ -59,25 +85,26 @@ type GeminiDailyExtractionUsage = {
 };
 
 let athenaDbPromise: Promise<IDBDatabase> | null = null;
+let athenaDbName: string | null = null;
 
 export function getDebugMode() {
-  return localStorage.getItem(DEBUG_MODE_KEY) === "true";
+  return localStorage.getItem(getStorageKey(DEBUG_MODE_KEY)) === "true";
 }
 
 export function setDebugMode(value: boolean) {
-  localStorage.setItem(DEBUG_MODE_KEY, String(value));
+  localStorage.setItem(getStorageKey(DEBUG_MODE_KEY), String(value));
 }
 
 export function getPersonaTextEnabled() {
-  return localStorage.getItem(PERSONA_TEXT_ENABLED_KEY) !== "false";
+  return localStorage.getItem(getStorageKey(PERSONA_TEXT_ENABLED_KEY)) !== "false";
 }
 
 export function setPersonaTextEnabled(value: boolean) {
-  localStorage.setItem(PERSONA_TEXT_ENABLED_KEY, String(value));
+  localStorage.setItem(getStorageKey(PERSONA_TEXT_ENABLED_KEY), String(value));
 }
 
 export function getExtractionSettings(): ExtractionSettings | null {
-  const raw = localStorage.getItem(EXTRACTION_SETTINGS_KEY);
+  const raw = localStorage.getItem(getStorageKey(EXTRACTION_SETTINGS_KEY));
 
   if (!raw) return null;
 
@@ -96,30 +123,41 @@ export function getExtractionSettings(): ExtractionSettings | null {
 }
 
 export function setExtractionSettings(value: ExtractionSettings) {
-  localStorage.setItem(EXTRACTION_SETTINGS_KEY, JSON.stringify(value));
+  localStorage.setItem(
+    getStorageKey(EXTRACTION_SETTINGS_KEY),
+    JSON.stringify(value),
+  );
 }
 
 export function getEntrySortDirection(): EntrySortDirection {
-  return localStorage.getItem(ENTRY_SORT_DIRECTION_KEY) === "asc"
+  return localStorage.getItem(getStorageKey(ENTRY_SORT_DIRECTION_KEY)) === "asc"
     ? "asc"
     : "desc";
 }
 
 export function setEntrySortDirection(value: EntrySortDirection) {
-  localStorage.setItem(ENTRY_SORT_DIRECTION_KEY, value);
+  localStorage.setItem(getStorageKey(ENTRY_SORT_DIRECTION_KEY), value);
 }
 
 export function getLocalEmotionSpikeEnabled() {
-  return localStorage.getItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY) === "true";
+  return (
+    localStorage.getItem(getStorageKey(LOCAL_EMOTION_SPIKE_ENABLED_KEY)) ===
+    "true"
+  );
 }
 
 export function setLocalEmotionSpikeEnabled(value: boolean) {
-  localStorage.setItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY, String(value));
+  localStorage.setItem(
+    getStorageKey(LOCAL_EMOTION_SPIKE_ENABLED_KEY),
+    String(value),
+  );
 }
 
 export function getGeminiDailyExtractionUsage(): GeminiDailyExtractionUsage {
   const today = localDateKey();
-  const raw = localStorage.getItem(GEMINI_DAILY_EXTRACTION_USAGE_KEY);
+  const raw = localStorage.getItem(
+    getStorageKey(GEMINI_DAILY_EXTRACTION_USAGE_KEY),
+  );
 
   if (!raw) return { date: today, count: 0 };
 
@@ -155,7 +193,7 @@ export function reserveGeminiDailyExtraction() {
   if (usage.count >= GEMINI_DAILY_EXTRACTION_LIMIT) return false;
 
   localStorage.setItem(
-    GEMINI_DAILY_EXTRACTION_USAGE_KEY,
+    getStorageKey(GEMINI_DAILY_EXTRACTION_USAGE_KEY),
     JSON.stringify({
       date: usage.date,
       count: usage.count + 1,
@@ -165,8 +203,22 @@ export function reserveGeminiDailyExtraction() {
   return true;
 }
 
+export function releaseGeminiDailyExtraction() {
+  const usage = getGeminiDailyExtractionUsage();
+
+  if (usage.count <= 0) return;
+
+  localStorage.setItem(
+    getStorageKey(GEMINI_DAILY_EXTRACTION_USAGE_KEY),
+    JSON.stringify({
+      date: usage.date,
+      count: usage.count - 1,
+    } satisfies GeminiDailyExtractionUsage),
+  );
+}
+
 export function getSeenEditorInsightIds() {
-  const raw = localStorage.getItem(SEEN_EDITOR_INSIGHT_IDS_KEY);
+  const raw = localStorage.getItem(getStorageKey(SEEN_EDITOR_INSIGHT_IDS_KEY));
 
   if (!raw) return new Set<number>();
 
@@ -190,7 +242,7 @@ export function markEditorInsightSeen(id: number) {
   seenIds.add(id);
 
   localStorage.setItem(
-    SEEN_EDITOR_INSIGHT_IDS_KEY,
+    getStorageKey(SEEN_EDITOR_INSIGHT_IDS_KEY),
     JSON.stringify(Array.from(seenIds).slice(-100)),
   );
 }
@@ -298,19 +350,20 @@ export async function deleteAthenaLocalData() {
     const existingDb = await athenaDbPromise.catch(() => null);
     existingDb?.close();
     athenaDbPromise = null;
+    athenaDbName = null;
   }
 
   localStorage.removeItem("athenaDraft");
-  localStorage.removeItem(DEBUG_MODE_KEY);
-  localStorage.removeItem(EXTRACTION_SETTINGS_KEY);
-  localStorage.removeItem(ENTRY_SORT_DIRECTION_KEY);
-  localStorage.removeItem(GEMINI_DAILY_EXTRACTION_USAGE_KEY);
-  localStorage.removeItem(LOCAL_EMOTION_SPIKE_ENABLED_KEY);
-  localStorage.removeItem(PERSONA_TEXT_ENABLED_KEY);
-  localStorage.removeItem(SEEN_EDITOR_INSIGHT_IDS_KEY);
+  localStorage.removeItem(getStorageKey(DEBUG_MODE_KEY));
+  localStorage.removeItem(getStorageKey(EXTRACTION_SETTINGS_KEY));
+  localStorage.removeItem(getStorageKey(ENTRY_SORT_DIRECTION_KEY));
+  localStorage.removeItem(getStorageKey(GEMINI_DAILY_EXTRACTION_USAGE_KEY));
+  localStorage.removeItem(getStorageKey(LOCAL_EMOTION_SPIKE_ENABLED_KEY));
+  localStorage.removeItem(getStorageKey(PERSONA_TEXT_ENABLED_KEY));
+  localStorage.removeItem(getStorageKey(SEEN_EDITOR_INSIGHT_IDS_KEY));
 
   await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(ATHENA_LOCAL_DB_NAME);
+    const request = indexedDB.deleteDatabase(getAthenaLocalDbName());
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -319,6 +372,12 @@ export async function deleteAthenaLocalData() {
   });
 
   athenaDbPromise = null;
+  athenaDbName = null;
+}
+
+export async function deleteAthenaProfileData(profileId: string) {
+  await deleteAthenaLocalDatabase(profileId);
+  deleteProfileLocalStorage(profileId);
 }
 
 export function createClientEntryId() {
@@ -338,8 +397,10 @@ export async function createTextHash(text: string) {
 export function openAthenaLocalDb(): Promise<IDBDatabase> {
   if (athenaDbPromise) return athenaDbPromise;
 
+  const databaseName = getAthenaLocalDbName();
+  athenaDbName = databaseName;
   athenaDbPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open(ATHENA_LOCAL_DB_NAME, ATHENA_LOCAL_DB_VERSION);
+    const request = indexedDB.open(databaseName, ATHENA_LOCAL_DB_VERSION);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -398,6 +459,78 @@ export function openAthenaLocalDb(): Promise<IDBDatabase> {
   });
 
   return athenaDbPromise;
+}
+
+async function deleteAthenaLocalDatabase(profileId: string) {
+  if (typeof indexedDB === "undefined") return;
+
+  const databaseName = getProfileScopedDatabaseName(
+    ATHENA_LOCAL_DB_NAME,
+    profileId,
+  );
+
+  if (athenaDbName === databaseName && athenaDbPromise) {
+    const existingDb = await athenaDbPromise.catch(() => null);
+    existingDb?.close();
+    athenaDbPromise = null;
+    athenaDbName = null;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(databaseName);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () =>
+      reject(new Error("Local database deletion was blocked"));
+  });
+}
+
+function deleteProfileLocalStorage(profileId: string) {
+  if (typeof localStorage === "undefined") return;
+
+  if (isDefaultVaultProfile(profileId)) {
+    deleteDefaultProfileLocalStorage(profileId);
+    return;
+  }
+
+  const suffix = `:${profileId}`;
+
+  for (const key of getLocalStorageKeys()) {
+    if (key.endsWith(suffix)) {
+      localStorage.removeItem(key);
+    }
+  }
+}
+
+function deleteDefaultProfileLocalStorage(profileId: string) {
+  for (const key of PROFILE_LOCAL_STORAGE_KEYS) {
+    localStorage.removeItem(getProfileScopedStorageKey(key, profileId));
+  }
+
+  localStorage.removeItem("athenaDraft");
+
+  const otherProfileSuffixes = getVaultProfiles()
+    .filter((profile) => profile.id !== profileId)
+    .map((profile) => `:${profile.id}`);
+
+  for (const key of getLocalStorageKeys()) {
+    if (!PROFILE_LOCAL_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+      continue;
+    }
+
+    if (otherProfileSuffixes.some((suffix) => key.endsWith(suffix))) {
+      continue;
+    }
+
+    localStorage.removeItem(key);
+  }
+}
+
+function getLocalStorageKeys() {
+  return Array.from({ length: localStorage.length }, (_, index) =>
+    localStorage.key(index),
+  ).filter((key): key is string => Boolean(key));
 }
 
 function idbRequest<T = unknown>(request: IDBRequest) {
@@ -532,4 +665,12 @@ function localDateKey() {
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getStorageKey(key: string) {
+  return getProfileScopedStorageKey(key);
+}
+
+function getAthenaLocalDbName() {
+  return getProfileScopedDatabaseName(ATHENA_LOCAL_DB_NAME);
 }

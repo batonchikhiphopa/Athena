@@ -1,6 +1,7 @@
 import express from "express";
 import { getDb } from "../db/sqlite.js";
 import { buildSummary } from "../services/analytics.service.js";
+import { buildAnalyticsV2Overview } from "../services/analytics-v2.service.js";
 import { asyncHandler } from "./http.js";
 
 type LatestEntryDateRow = {
@@ -31,6 +32,15 @@ router.get(
     ]);
 
     return res.json({ week, month });
+  }),
+);
+
+router.get(
+  "/analytics/v2/summary",
+  asyncHandler(async (_req, res) => {
+    const summary = await buildAnalyticsV2Overview(await getDb());
+
+    return res.json(summary);
   }),
 );
 

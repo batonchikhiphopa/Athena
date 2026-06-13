@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { EntrySortDirection, EntryView, ServerEntry } from "../../types";
 import {
   deleteServerEntry,
@@ -13,6 +13,7 @@ import {
   updateLocalEntry,
 } from "../../lib/storage";
 import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
+import { getAllSelfReportEvents } from "../selfReports/selfReportStorage";
 import { mergeEntryState, mergeServerEntryIntoView } from "./entryState";
 import { useEntrySearch } from "./useEntrySearch";
 
@@ -27,11 +28,6 @@ export function useEntries() {
     entries,
     sortDirection: entrySortDirection,
   });
-
-  const selectedEntry = useMemo(
-    () => entries.find((entry) => entry.id === selectedEntryId) ?? null,
-    [entries, selectedEntryId],
-  );
 
   useEffect(() => {
     selectedEntryIdRef.current = selectedEntryId;
@@ -58,6 +54,10 @@ export function useEntries() {
 
   const refreshEntries = useCallback(async () => {
     const localEntries = await getAllLocalEntries();
+    const selfReports = await getAllSelfReportEvents().catch((error) => {
+      console.warn("[entries:self-reports]", error);
+      return [];
+    });
     let serverEntries: ServerEntry[] = [];
 
     try {
@@ -87,12 +87,16 @@ export function useEntries() {
       );
     }
 
-    const merged = localEntries.map((localEntry) =>
-      mergeEntryState(
+    const selfReportByEntryId = new Map(
+      selfReports.map((report) => [report.entry_id, report]),
+    );
+    const merged = localEntries.map((localEntry) => ({
+      ...mergeEntryState(
         localEntry,
         visibleServerByClientId.get(localEntry.id) ?? null,
       ),
-    );
+      selfReport: selfReportByEntryId.get(localEntry.id) ?? null,
+    }));
 
     const currentSelectedId = selectedEntryIdRef.current;
     const nextSelectedId =
@@ -177,7 +181,6 @@ export function useEntries() {
   return {
     entries,
     entrySortDirection,
-    selectedEntry,
     selectedEntryId,
     visibleEntries: entrySearch.visibleEntries,
 

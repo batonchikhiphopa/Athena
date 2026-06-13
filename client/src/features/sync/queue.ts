@@ -1,5 +1,6 @@
 export {
   cancelQueueJob,
+  clearQueueHistory,
   enqueueQueueJob,
   getQueueSnapshot,
   pauseQueue,

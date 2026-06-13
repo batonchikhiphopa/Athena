@@ -10,7 +10,14 @@ import type {
   QueueJobStatus,
   QueueSnapshot,
 } from "../../../lib/queueTypes";
-import { QueueStat } from "./settingsUi";
+import {
+  QueueStat,
+  SettingsButton,
+  SettingsRow,
+  SettingsSection,
+  SettingsSelect,
+  SettingsLineLever
+} from "./settingsUi";
 
 type EntriesSettingsProps = {
   canReprocess: boolean;
@@ -27,6 +34,7 @@ type EntriesSettingsProps = {
   selectedProvider: ExtractionConfig["providers"][number];
   onChangeExtractionSettings: (value: ExtractionSettings) => void;
   onClearLocalData: () => void;
+  onClearQueueHistory: () => void;
   onPauseQueue: () => void;
   onRefreshExtractionStatus: () => void;
   onReprocessFallbackEntries: () => void;
@@ -58,6 +66,7 @@ export function EntriesSettings({
   selectedProvider,
   onChangeExtractionSettings,
   onClearLocalData,
+  onClearQueueHistory,
   onPauseQueue,
   onRefreshExtractionStatus,
   onReprocessFallbackEntries,
@@ -77,297 +86,265 @@ export function EntriesSettings({
     : null;
 
   return (
-    <>
-      <label className="flex cursor-pointer items-center justify-between rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div>
-          <div className="text-sm font-medium text-zinc-950">
-            {t("settings.records.debugMode")}
-          </div>
-          <div className="mt-1 text-sm text-zinc-400">
-            {t("settings.records.debugDescription")}
-          </div>
-        </div>
-
-        <input
-          checked={debugMode}
-          className="h-5 w-5 accent-zinc-950"
-          onChange={(event) => onToggleDebugMode(event.target.checked)}
-          type="checkbox"
+    <div className="space-y-5">
+      <SettingsSection label={t("settings.tab.records")}>
+        <SettingsRow
+          action={
+          <SettingsLineLever
+            checked={debugMode}
+            label={t("settings.records.debugMode")}
+            onChange={onToggleDebugMode}
+          />
+          }
+          description={t("settings.records.debugDescription")}
+          title={t("settings.records.debugMode")}
         />
-      </label>
+      </SettingsSection>
 
       {debugMode && localEmotionSpikeAvailable ? (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-medium text-zinc-950">
-                {t("settings.records.localEmotionTitle")}
+        <SettingsSection>
+          <SettingsRow
+            action={
+<SettingsLineLever
+  checked={localEmotionSpikeEnabled}
+  label={t("settings.records.localEmotionTitle")}
+  onChange={onToggleLocalEmotionSpike}
+/>
+            }
+            description={t("settings.records.localEmotionDescription")}
+            title={t("settings.records.localEmotionTitle")}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <SettingsButton
+                disabled={localEmotionSpikeStatus === "running"}
+                onClick={onRunLocalEmotionSpikeDemo}
+                size="xs"
+              >
+                {t("settings.records.runDemo")}
+              </SettingsButton>
+              <div className="text-xs text-zinc-400">
+                {t("common.status")}: {formatRunStatus(localEmotionSpikeStatus, t)}
               </div>
-              <div className="mt-1 text-sm text-zinc-400">
-                {t("settings.records.localEmotionDescription")}
+            </div>
+
+            {localEmotionSpikeResult ? (
+              <div className="mt-3 rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600">
+                {formatEmotionSpikeResult(localEmotionSpikeResult)}
               </div>
-            </div>
-
-            <input
-              checked={localEmotionSpikeEnabled}
-              className="h-5 w-5 accent-zinc-950"
-              onChange={(event) =>
-                onToggleLocalEmotionSpike(event.target.checked)
-              }
-              type="checkbox"
-            />
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={localEmotionSpikeStatus === "running"}
-              onClick={onRunLocalEmotionSpikeDemo}
-              type="button"
-            >
-              {t("settings.records.runDemo")}
-            </button>
-            <div className="text-xs text-zinc-400">
-              {t("common.status")}: {formatRunStatus(localEmotionSpikeStatus, t)}
-            </div>
-          </div>
-
-          {localEmotionSpikeResult ? (
-            <div className="mt-3 rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600">
-              {formatEmotionSpikeResult(localEmotionSpikeResult)}
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+          </SettingsRow>
+        </SettingsSection>
       ) : null}
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <div className="text-sm font-medium text-zinc-950">
-              {t("settings.records.analysis")}
-            </div>
-            <div className="mt-1 text-sm text-zinc-400">
-              {formatStatus(extractionStatus, t)}
-            </div>
-          </div>
+      <SettingsSection label={t("settings.records.analysis")}>
+        <SettingsRow
+          action={
+            <SettingsButton onClick={onRefreshExtractionStatus}>
+              {t("settings.records.refreshStatus")}
+            </SettingsButton>
+          }
+          description={formatStatus(extractionStatus, t)}
+          title={t("settings.records.analysis")}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-zinc-400">
+                {t("settings.records.analysisSource")}
+              </span>
+              <SettingsSelect
+                className="mt-2 w-full px-3 py-2 text-sm"
+                onChange={(event) => {
+                  const provider = event.target
+                    .value as ExtractionSettings["provider"];
+                  const option = providers.find((item) => item.id === provider);
 
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
-            onClick={onRefreshExtractionStatus}
-            type="button"
-          >
-            {t("settings.records.refreshStatus")}
-          </button>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-xs uppercase text-zinc-400">
-              {t("settings.records.analysisSource")}
-            </span>
-            <select
-              className="mt-2 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-zinc-400"
-              onChange={(event) => {
-                const provider = event.target
-                  .value as ExtractionSettings["provider"];
-                const option = providers.find((item) => item.id === provider);
-
-                onChangeExtractionSettings({
-                  provider,
-                  model: option?.defaultModel ?? extractionSettings.model,
-                });
-              }}
-              value={extractionSettings.provider}
-            >
-              {providers.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {formatProviderLabel(provider, t)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-xs uppercase text-zinc-400">
-              {t("settings.records.model")}
-            </span>
-            <select
-              className="mt-2 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-zinc-400"
-              onChange={(event) =>
-                onChangeExtractionSettings({
-                  ...extractionSettings,
-                  model: event.target.value,
-                })
-              }
-              value={extractionSettings.model}
-            >
-              {(selectedProvider?.models ?? [extractionSettings.model]).map(
-                (model) => (
-                  <option key={model} value={model}>
-                    {model}
+                  onChangeExtractionSettings({
+                    provider,
+                    model: option?.defaultModel ?? extractionSettings.model,
+                  });
+                }}
+                value={extractionSettings.provider}
+              >
+                {providers.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {formatProviderLabel(provider, t)}
                   </option>
-                ),
-              )}
-            </select>
-          </label>
-        </div>
+                ))}
+              </SettingsSelect>
+            </label>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4">
-          <div className="text-sm text-zinc-400">
-            {t("settings.records.reprocessCount", {
-              count: reprocessCandidates,
-            })}
-            {reprocessMessage ? ` · ${reprocessMessage}` : ""}
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-zinc-400">
+                {t("settings.records.model")}
+              </span>
+              <SettingsSelect
+                className="mt-2 w-full px-3 py-2 text-sm"
+                onChange={(event) =>
+                  onChangeExtractionSettings({
+                    ...extractionSettings,
+                    model: event.target.value,
+                  })
+                }
+                value={extractionSettings.model}
+              >
+                {(selectedProvider?.models ?? [extractionSettings.model]).map(
+                  (model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ),
+                )}
+              </SettingsSelect>
+            </label>
           </div>
 
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!canReprocess}
-            onClick={onReprocessFallbackEntries}
-            type="button"
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4">
+            <div className="text-sm text-zinc-400">
+              {t("settings.records.reprocessCount", {
+                count: reprocessCandidates,
+              })}
+              {reprocessMessage ? ` · ${reprocessMessage}` : ""}
+            </div>
+
+            <SettingsButton
+              disabled={!canReprocess}
+              onClick={onReprocessFallbackEntries}
+            >
+              {t("settings.records.reprocess")}
+            </SettingsButton>
+          </div>
+        </SettingsRow>
+      </SettingsSection>
+
+      {debugMode ? (
+        <SettingsSection label={t("settings.records.queue")}>
+          <SettingsRow
+            description={t("settings.records.queueDescription")}
+            title={t("settings.records.queue")}
           >
-            {t("settings.records.reprocess")}
-          </button>
-        </div>
-      </div>
+            <div className="grid grid-cols-2 gap-x-5 text-xs text-zinc-500 sm:grid-cols-3">
+              <QueueStat
+                label={t("settings.records.queueQueued")}
+                value={queueSnapshot.queued}
+              />
+              <QueueStat
+                label={t("settings.records.queueRunning")}
+                value={queueSnapshot.running}
+              />
+              <QueueStat
+                label={t("settings.records.queueFailed")}
+                value={queueSnapshot.failed}
+              />
+              <QueueStat
+                label={t("settings.records.queueBlocked")}
+                value={queueSnapshot.blocked}
+              />
+              <QueueStat
+                label={t("settings.records.queueCancelled")}
+                value={queueSnapshot.cancelled}
+              />
+              <QueueStat
+                label={t("settings.records.queueSucceeded")}
+                value={queueSnapshot.succeeded}
+              />
+            </div>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="text-sm font-medium text-zinc-950">
-          {t("settings.records.queue")}
-        </div>
-        <div className="mt-1 text-sm text-zinc-400">
-          {t("settings.records.queueDescription")}
-        </div>
+          <div className="mt-3 text-xs text-zinc-400">
+            {t("settings.records.queueProcessing")}:{" "}
+            {queueSnapshot.isProcessing ? t("state.running") : t("state.paused")}
+          </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-500 sm:grid-cols-3">
-          <QueueStat
-            label={t("settings.records.queueQueued")}
-            value={queueSnapshot.queued}
-          />
-          <QueueStat
-            label={t("settings.records.queueRunning")}
-            value={queueSnapshot.running}
-          />
-          <QueueStat
-            label={t("settings.records.queueFailed")}
-            value={queueSnapshot.failed}
-          />
-          <QueueStat
-            label={t("settings.records.queueBlocked")}
-            value={queueSnapshot.blocked}
-          />
-          <QueueStat
-            label={t("settings.records.queueCancelled")}
-            value={queueSnapshot.cancelled}
-          />
-          <QueueStat
-            label={t("settings.records.queueSucceeded")}
-            value={queueSnapshot.succeeded}
-          />
-        </div>
+          {latestJob ? (
+            <div className="mt-3 rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs text-zinc-500">
+              <div className="flex flex-wrap items-center gap-2">
+                <span>{t("settings.records.queueLatest")}:</span>
+                <span className="font-mono text-zinc-700">{latestJob.type}</span>
+                <QueueStatusBadge status={latestJob.status} />
+                {latestJob.reason ? (
+                  <span className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[11px] text-zinc-500">
+                    {latestJob.reason}
+                  </span>
+                ) : null}
+              </div>
 
-        <div className="mt-3 text-xs text-zinc-400">
-          {t("settings.records.queueProcessing")}:{" "}
-          {queueSnapshot.isProcessing ? t("state.running") : t("state.paused")}
-        </div>
+              <div className="mt-2 grid gap-1 text-[11px] text-zinc-400 sm:grid-cols-2">
+                <div>
+                  entity:{" "}
+                  <span className="font-mono text-zinc-500">
+                    {latestJob.entity_id ?? "-"}
+                  </span>
+                </div>
+                <div>
+                  attempts:{" "}
+                  <span className="font-mono text-zinc-500">
+                    {latestJob.attempts}/{latestJob.max_attempts}
+                  </span>
+                </div>
+                <div>
+                  updated:{" "}
+                  <span className="font-mono text-zinc-500">
+                    {formatDateTime(latestJob.updated_at)}
+                  </span>
+                </div>
+                <div>
+                  next retry:{" "}
+                  <span className="font-mono text-zinc-500">
+                    {latestJob.run_after ? formatDateTime(latestJob.run_after) : "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
-        {latestJob ? (
-          <div className="mt-3 rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs text-zinc-500">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>{t("settings.records.queueLatest")}:</span>
-              <span className="font-mono text-zinc-700">{latestJob.type}</span>
-              <QueueStatusBadge status={latestJob.status} />
-              {latestJob.reason ? (
-                <span className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[11px] text-zinc-500">
-                  {latestJob.reason}
+          {queueErrorDetails ? (
+            <div className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-red-200 bg-white/70 px-2 py-0.5 font-mono text-[11px]">
+                  {queueErrorDetails.kind}
                 </span>
+                <span className="font-mono">{queueErrorDetails.code}</span>
+              </div>
+              <div className="mt-1 text-red-800">{queueErrorDetails.message}</div>
+              {queueHint ? (
+                <div className="mt-1 text-red-500">{queueHint}</div>
               ) : null}
             </div>
+          ) : null}
 
-            <div className="mt-2 grid gap-1 text-[11px] text-zinc-400 sm:grid-cols-2">
-              <div>
-                entity:{" "}
-                <span className="font-mono text-zinc-500">
-                  {latestJob.entity_id ?? "-"}
-                </span>
-              </div>
-              <div>
-                attempts:{" "}
-                <span className="font-mono text-zinc-500">
-                  {latestJob.attempts}/{latestJob.max_attempts}
-                </span>
-              </div>
-              <div>
-                updated:{" "}
-                <span className="font-mono text-zinc-500">
-                  {formatDateTime(latestJob.updated_at)}
-                </span>
-              </div>
-              <div>
-                next retry:{" "}
-                <span className="font-mono text-zinc-500">
-                  {latestJob.run_after ? formatDateTime(latestJob.run_after) : "-"}
-                </span>
-              </div>
-            </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SettingsButton onClick={onStartQueue} size="xs">
+              {t("common.start")}
+            </SettingsButton>
+            <SettingsButton onClick={onPauseQueue} size="xs">
+              {t("common.pause")}
+            </SettingsButton>
+            <SettingsButton
+              disabled={queueSnapshot.failed + queueSnapshot.blocked === 0}
+              onClick={onRetryRecoverableQueueJobs}
+              size="xs"
+            >
+              {t("settings.records.queueRetryFailed")}
+            </SettingsButton>
+            <SettingsButton onClick={onClearQueueHistory} size="xs" variant="quiet">
+              {t("settings.records.queueClearHistory")}
+            </SettingsButton>
           </div>
-        ) : null}
+          </SettingsRow>
+        </SettingsSection>
+      ) : null}
 
-        {queueErrorDetails ? (
-          <div className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-red-200 bg-white/70 px-2 py-0.5 font-mono text-[11px]">
-                {queueErrorDetails.kind}
-              </span>
-              <span className="font-mono">{queueErrorDetails.code}</span>
-            </div>
-            <div className="mt-1 text-red-800">{queueErrorDetails.message}</div>
-            {queueHint ? (
-              <div className="mt-1 text-red-500">{queueHint}</div>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
-            onClick={onStartQueue}
-            type="button"
-          >
-            {t("common.start")}
-          </button>
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950"
-            onClick={onPauseQueue}
-            type="button"
-          >
-            {t("common.pause")}
-          </button>
-          <button
-            className="rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={queueSnapshot.failed + queueSnapshot.blocked === 0}
-            onClick={onRetryRecoverableQueueJobs}
-            type="button"
-          >
-            {t("settings.records.queueRetryFailed")}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="text-sm font-medium text-zinc-950">
-          {t("settings.records.localData")}
-        </div>
-
-        <button
-          className="mt-4 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 transition hover:border-red-300 hover:bg-red-50"
-          onClick={onClearLocalData}
-          type="button"
-        >
-          {t("settings.records.deleteLocalData")}
-        </button>
-      </div>
-    </>
+      <SettingsSection>
+        <SettingsRow
+          action={
+            <SettingsButton onClick={onClearLocalData} variant="danger">
+              {t("settings.records.deleteLocalData")}
+            </SettingsButton>
+          }
+          title={t("settings.records.localData")}
+          tone="danger"
+        />
+      </SettingsSection>
+    </div>
   );
 }
 

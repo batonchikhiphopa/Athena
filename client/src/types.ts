@@ -2,6 +2,7 @@ import type {
   Signal,
   SignalMetadata,
 } from "../../shared/contracts/index.js";
+import type { SelfReportEvent } from "./features/selfReports/selfReportTypes";
 
 export type {
   ConfidenceLevel,
@@ -35,7 +36,7 @@ export type {
   StateInferenceValue,
 } from "../../shared/contracts/index.js";
 
-export type Page = "editor" | "entries" | "observations" | "settings";
+export type Page = "editor" | "entries";
 export type EntrySortDirection = "desc" | "asc";
 
 export type LocalEntry = {
@@ -68,4 +69,5 @@ export type EntryView = {
   createdAt: string;
   updatedAt: string;
   isDraft?: boolean;
+  selfReport?: SelfReportEvent | null;
 };

@@ -22,6 +22,10 @@ Raw diary text is browser-local. Backend entry payloads must remain textless.
 
 Local app protection can encrypt browser-local records through the vault.
 
+Browser-local semantic indexes, retrieved chunks, and RAG evidence packs are
+private derived data. They must not be sent to backend APIs, exported silently,
+or treated as anonymous.
+
 The backend stores:
 
 - hashes;
@@ -29,6 +33,10 @@ The backend stores:
 - sanitized signals;
 - self-report daily aggregates;
 - snapshots.
+
+Local export files may contain raw diary text and raw self-report events after
+explicit user action. Once downloaded, they are outside Athena's vault and app
+lock protection.
 
 ## Provider Exposure
 

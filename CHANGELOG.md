@@ -2,6 +2,28 @@
 
 All notable changes to Athena are documented here.
 
+## v0.8.0 - 2026-06-13
+
+### Added
+
+- Added always-on hybrid Entries search with local semantic retrieval through deterministic hashed embeddings.
+- Added browser-local RAG evidence packs and constrained local interpretation with explicit evidence ids.
+- Added Insight V3 evidence-backed observation rendering over Analytics V2 summaries.
+- Added self-report values to the contextual Entries debug tooltip.
+- Added test coverage for the week observation sufficiency threshold.
+
+### Changed
+
+- Bumped root and client package versions to `0.8.0`.
+- Made Entries search hybrid by default and removed the user-facing search-mode switch.
+- Lowered week observation sufficiency from 4 to 3 distinct valid days in the last 7 calendar days.
+- Updated README, public docs, and production canon notes for hybrid search, local evidence packs, Insight V3, and current observation rules.
+
+### Fixed
+
+- Fixed an observability gap where per-entry raw self-report values were attached locally but not visible in debug mode.
+- Fixed the current-week observation gate that stayed silent for three supported days even though that is enough for a lightweight weekly observation.
+
 ## v0.7.0 - 2026-06-07
 
 ### Added

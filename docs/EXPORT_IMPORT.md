@@ -195,7 +195,11 @@ Reason: queue jobs are durable processing state. The export contract must not ex
 - RAG snippets or evidence packs;
 - hidden model memory.
 
-Semantic indexes and embeddings are sensitive derived data. They require a separate future export option and privacy review.
+Semantic indexes, local hashed embeddings, retrieved chunks, and RAG evidence
+packs are sensitive derived data. The current semantic search implementation
+keeps them browser-local and rebuildable from imported entries; export still
+excludes them. A future export option would need an explicit privacy review and
+separate user action.
 
 ## Exported File Security Limitation
 
@@ -415,7 +419,7 @@ Raw diary CSV requires a separate explicit local-only option, warning copy, and 
 
 Integrations are deferred future work.
 
-Out of scope for Phase 9:
+Out of scope for the current export/import contract:
 
 - iCal;
 - webhooks;

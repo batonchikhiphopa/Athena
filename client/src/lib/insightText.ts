@@ -5,6 +5,7 @@ import {
   type AthenaInsightLanguage,
 } from "./athenaInsightPhraseLibraries";
 import { getPlainInsightTopics } from "./plainInsightPhraseLibraries";
+import { getProfileScopedStorageKey } from "./vaultProfiles";
 
 type InsightTextOptions = {
   language?: AthenaInsightLanguage;
@@ -290,14 +291,14 @@ function getChoiceKey(
   },
   itemCount: number,
 ) {
-  return [
+  return getProfileScopedStorageKey([
     "athena_insight_choice",
     scope.tone,
     scope.kind,
     scope.topicKey,
     scope.insightId,
     itemCount,
-  ].join(":");
+  ].join(":"));
 }
 
 function getBagKey(
@@ -308,13 +309,13 @@ function getBagKey(
   },
   itemCount: number,
 ) {
-  return [
+  return getProfileScopedStorageKey([
     "athena_insight_bag",
     scope.tone,
     scope.kind,
     scope.topicKey,
     itemCount,
-  ].join(":");
+  ].join(":"));
 }
 
 function readIndex(raw: string | null, itemCount: number) {

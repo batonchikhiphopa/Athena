@@ -128,7 +128,6 @@ export function useAthenaApp() {
     reprocessMessage: settings.reprocessMessage,
     reprocessStatus: settings.reprocessStatus,
     saveStatus: editor.saveStatus,
-    selectedEntry: entries.selectedEntry,
     selectedEntryId: entries.selectedEntryId,
     visibleEntries: entries.visibleEntries,
 
@@ -161,6 +160,7 @@ export function useAthenaApp() {
 
       retryQueueJob: syncQueue.retry,
       cancelQueueJob: syncQueue.cancel,
+      clearQueueHistory: syncQueue.clearHistory,
       pauseQueue: syncQueue.pause,
       prepareForVaultLock,
       startQueue: syncQueue.start,

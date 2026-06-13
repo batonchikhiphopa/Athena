@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useI18n } from "../i18n/useI18n";
 import { formatLongDate, todayDateOnly } from "../lib/dates";
 import type { InsightSnapshot } from "../types";
@@ -16,6 +22,7 @@ import {
 import { EditorActionButtons } from "./editor/EditorActionButtons";
 import { EditorTagChips } from "./editor/EditorTagChips";
 import { EditorTagMenu } from "./editor/EditorTagMenu";
+import { useFloatingTextOcclusion } from "./floating";
 
 type EditorProps = {
   analysisEnabled: boolean;
@@ -85,6 +92,9 @@ export function Editor({
     onChangeTags,
     onChangeText,
   });
+
+  const textOcclusion = useFloatingTextOcclusion(textareaRef);
+  const editorTextPlaceholder = visibleTags.length > 0 ? "" : athenaPlaceholder;
 
   const persistSelfReport = useCallback(
     async (entryId: string, valuesToSave: SelfReportValues) => {
@@ -175,7 +185,7 @@ export function Editor({
       />
 
       <div
-        className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-white/20 bg-white/40 backdrop-blur-[2px]"
+        className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-white/15 bg-white/25 backdrop-blur-[1px]"
         ref={editorCardRef}
       >
         <EditorActionButtons
@@ -200,35 +210,58 @@ export function Editor({
           <span>{formatLongDate(entryDate || todayDateOnly(), language)}</span>
         </div>
 
-        <textarea
-          ref={textareaRef}
-          className="
-            min-h-0 flex-1 resize-none bg-transparent px-5 py-5
-            font-serif text-[20px] leading-9
-            text-zinc-900
-            outline-none
-            placeholder:text-zinc-400
-          "
-          data-testid="editor-textarea"
-          onChange={(event) => {
-            setCursorPosition(event.currentTarget.selectionStart);
-            setDismissedTagInputKey(null);
-            setSelfReportCloseSignal((current) => current + 1);
-            onChangeText(event.currentTarget.value);
-          }}
-          onClick={(event) => {
-            setCursorPosition(event.currentTarget.selectionStart);
-          }}
-          onKeyDown={handleTextareaKeyDown}
-          onKeyUp={(event) => {
-            setCursorPosition(event.currentTarget.selectionStart);
-          }}
-          onSelect={(event) => {
-            setCursorPosition(event.currentTarget.selectionStart);
-          }}
-          placeholder={visibleTags.length > 0 ? "" : athenaPlaceholder}
-          value={text}
-        />
+        <div className="relative min-h-0 flex-1">
+          {textOcclusion.blurMirrorStyles.map((blurMirrorStyle, index) => (
+            <textarea
+              aria-hidden="true"
+              className="
+                pointer-events-none absolute inset-0 z-0 h-full w-full
+                resize-none overflow-hidden bg-transparent px-5 py-5
+                font-serif text-[20px] leading-9 outline-none
+                placeholder:text-zinc-400
+              "
+              key={`floating-text-blur-${index}`}
+              placeholder={editorTextPlaceholder}
+              readOnly
+              ref={textOcclusion.registerBlurMirror(index)}
+              style={blurMirrorStyle}
+              tabIndex={-1}
+              value={text}
+            />
+          ))}
+
+          <textarea
+            ref={textareaRef}
+            className="
+              relative z-10 h-full w-full resize-none bg-transparent px-5 py-5
+              font-serif text-[20px] leading-9
+              text-zinc-900
+              outline-none
+              placeholder:text-zinc-400
+            "
+            data-testid="editor-textarea"
+            style={textOcclusion.textStyle}
+            onChange={(event) => {
+              setCursorPosition(event.currentTarget.selectionStart);
+              setDismissedTagInputKey(null);
+              setSelfReportCloseSignal((current) => current + 1);
+              onChangeText(event.currentTarget.value);
+            }}
+            onClick={(event) => {
+              setCursorPosition(event.currentTarget.selectionStart);
+            }}
+            onKeyDown={handleTextareaKeyDown}
+            onKeyUp={(event) => {
+              setCursorPosition(event.currentTarget.selectionStart);
+            }}
+            onScroll={textOcclusion.handleTargetScroll}
+            onSelect={(event) => {
+              setCursorPosition(event.currentTarget.selectionStart);
+            }}
+            placeholder={editorTextPlaceholder}
+            value={text}
+          />
+        </div>
       </div>
     </section>
   );

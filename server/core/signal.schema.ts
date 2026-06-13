@@ -195,9 +195,9 @@ export const clientFallbackSignalSchema = z.object({
   state_inference: emptyStateInferenceSchema,
   emotion_signals: emptyEmotionSignalsSchema,
   metric_confidence: fallbackMetricConfidenceSchema,
-  entry_intent: defaultEntryIntentSignalSchema,
-  structure_signal: defaultStructureSignalSchema,
-  temporal_context: defaultTemporalContextSchema,
+  entry_intent: entryIntentSignalSchema,
+  structure_signal: structureSignalSchema,
+  temporal_context: temporalContextSchema,
   quality_reason: z.literal("fallback"),
 
   load: z.null(),
