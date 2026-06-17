@@ -5,7 +5,7 @@ import {
 import type { InsightLayer, InsightSnapshot } from "../core/types.js";
 import { withDbWriteTransaction, type AthenaDb } from "../db/sqlite.js";
 import {
-  countValidDays,
+  countInsightEvidenceDays,
   listVisibleSnapshots,
   softDeleteSnapshot,
   getLatestVisibleSnapshot,
@@ -59,12 +59,12 @@ export async function getCurrentInsightSnapshots(
     const periodEnd =
       config.layer === "day" ? addDays(safeToday, -1) : safeToday;
     const periodStart = addDays(periodEnd, -(config.days - 1));
-    const validDays = await countValidDays(db, {
+    const evidenceDays = await countInsightEvidenceDays(db, {
       from: periodStart,
       to: periodEnd,
     });
 
-    if (validDays >= config.minValidDays) {
+    if (evidenceDays >= config.minValidDays) {
       const snapshot = await createOrRefreshSnapshot(db, {
         ...config,
         periodStart,

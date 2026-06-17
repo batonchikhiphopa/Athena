@@ -7,7 +7,7 @@ type AthenaLifecycleOptions = {
   initializeExtractionSettings: () => Promise<ExtractionSettings>;
   refreshEntries: () => Promise<unknown>;
   refreshInsights: () => Promise<void>;
-  refreshObservationHistory: () => Promise<void>;
+  refreshObservationHistory: () => Promise<unknown>;
   setPage: (page: Page) => void;
 };
 

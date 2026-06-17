@@ -140,6 +140,39 @@ test("reprocess covers retryable provider failures and metric-empty sparse signa
   );
 });
 
+test("current parse-error fallbacks do not loop through repeated reprocess", () => {
+  assert.equal(
+    isSignalReprocessCandidate(
+      fallbackSignal(),
+      metadata({ provider: "gemini", error_code: "parse_error" }),
+    ),
+    false,
+  );
+  assert.equal(
+    isSignalReprocessCandidate(
+      fallbackSignal(),
+      metadata({
+        error_code: "parse_error",
+        prompt_version: "extraction.v-previous",
+      }),
+    ),
+    true,
+  );
+});
+
+test("current sparse no-metrics signals do not loop after successful reprocess", () => {
+  assert.equal(isSignalReprocessCandidate(sparseSignal(), metadata()), false);
+  assert.equal(
+    isSignalReprocessCandidate(
+      sparseSignal(),
+      metadata({
+        prompt_version: "extraction.v-previous",
+      }),
+    ),
+    true,
+  );
+});
+
 test("reprocess payload is inspectable and does not carry raw text", () => {
   const payload = createEntryReprocessPayload({
     entryId: "entry-1",

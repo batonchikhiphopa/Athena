@@ -31,6 +31,7 @@ type EntriesPageProps = {
   includedTags: string[];
   excludedTags: string[];
   hasActiveFilters: boolean;
+  hasUnreadInsights: boolean;
   isSearching: boolean;
   onChangeSortDirection: (direction: EntrySortDirection) => void;
   onClearFilters: () => void;
@@ -52,6 +53,7 @@ export function EntriesPage({
   includedTags,
   excludedTags,
   hasActiveFilters,
+  hasUnreadInsights,
   isSearching,
   onClearFilters,
   onDeleteEntry,
@@ -99,6 +101,7 @@ export function EntriesPage({
         <EntriesUtilityPanel
           excludedTags={excludedTags}
           hasActiveFilters={hasActiveFilters}
+          hasUnreadInsights={hasUnreadInsights}
           includedTags={includedTags}
           isSearching={isSearching}
           searchQuery={searchQuery}
@@ -166,6 +169,7 @@ function EntriesUtilityPanel({
   includedTags,
   excludedTags,
   hasActiveFilters,
+  hasUnreadInsights,
   isSearching,
   onClearFilters,
   onOpenObservations,
@@ -177,6 +181,7 @@ function EntriesUtilityPanel({
   includedTags: string[];
   excludedTags: string[];
   hasActiveFilters: boolean;
+  hasUnreadInsights: boolean;
   isSearching: boolean;
   onClearFilters: () => void;
   onOpenObservations: () => void;
@@ -185,6 +190,8 @@ function EntriesUtilityPanel({
   onToggleTag: (tag: string) => void;
 }) {
   const { t } = useI18n();
+  const forceInsightGlowForReview = true;
+  const showInsightGlow = forceInsightGlowForReview || hasUnreadInsights;
 
   return (
     <aside
@@ -244,18 +251,27 @@ function EntriesUtilityPanel({
 
       <TooltipButton
         aria-label={t("nav.observations")}
-        className="
-          -mr-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center
-          rounded-full text-zinc-500 transition
-          hover:bg-white/45 hover:text-zinc-950
-        "
+        className={[
+          "-mr-1 ml-auto relative flex h-9 w-9 shrink-0 items-center justify-center overflow-visible rounded-full bg-transparent transition hover:bg-transparent",
+          showInsightGlow
+            ? "text-zinc-700 hover:text-zinc-900"
+            : "text-zinc-400 opacity-50 hover:text-zinc-700 hover:opacity-100",
+        ].join(" ")}
         data-testid="entries-open-observations"
         onClick={onOpenObservations}
         tooltip={t("nav.observations")}
         tooltipPlacement="left"
         type="button"
       >
-        <Icon name="observations" className="h-5 w-5" />
+        <Icon
+          name="observations"
+          className={[
+            "relative h-5 w-5",
+            showInsightGlow
+              ? "z-10 text-zinc-700 motion-safe:animate-[observation-stars-glow_2.8s_ease-in-out_infinite]"
+              : "z-10",
+          ].join(" ")}
+        />
       </TooltipButton>
     </aside>
   );

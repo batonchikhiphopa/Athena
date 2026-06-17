@@ -1,7 +1,10 @@
 import { enqueueQueueJob } from "../sync/queue";
 import type { QueueJob } from "../sync/queueTypes";
 import { syncSelfReportDailyAggregates } from "./selfReportApi";
-import { getSelfReportDailyAggregates } from "./selfReportStorage";
+import {
+  getSelfReportDailyAggregates,
+  markSelfReportsForLocalDaySynced,
+} from "./selfReportStorage";
 
 export type SelfReportDailyAggregateQueuePayload = {
   local_day: string;
@@ -38,4 +41,5 @@ export async function handleSelfReportAggregateSyncJob(
   if (signal.aborted) throw new Error("Job was cancelled.");
 
   await syncSelfReportDailyAggregates(localDay, aggregates);
+  await markSelfReportsForLocalDaySynced(localDay, job.payload.queued_at);
 }

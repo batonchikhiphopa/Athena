@@ -10,6 +10,7 @@ import {
 } from "../server/services/insight.service.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import {
+  fallbackSignal,
   sparseSignal as baseSparseSignal,
   state,
   validSignal as baseValidSignal,
@@ -149,6 +150,28 @@ test("week insight sufficiency starts at three distinct valid days", async () =>
       sufficient.some((insight) => insight.layer === "week"),
       true,
     );
+  } finally {
+    await db.close();
+  }
+});
+
+test("self-report evidence can produce insights when extraction falls back", async () => {
+  const db = await createTestDb();
+
+  try {
+    for (const [index, date] of eachDateInRange("2026-06-08", "2026-06-10").entries()) {
+      await addEntry(db, `fallback-${date}`, date, fallbackSignal());
+      await addSelfReportAggregate(db, date, "function", 8 + index);
+    }
+
+    const insights = await getCurrentInsightSnapshots(db, {
+      today: "2026-06-14",
+    });
+    const week = insights.find((insight) => insight.layer === "week");
+
+    assert.ok(week);
+    assert.match(week.text, /повседневная функциональность/);
+    assert.match(week.text, /опора здесь на самооценку/);
   } finally {
     await db.close();
   }

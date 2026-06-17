@@ -178,6 +178,37 @@ export async function getSelfReportDailyAggregates(localDay: string) {
     .sort((left, right) => left.axis.localeCompare(right.axis));
 }
 
+export async function markSelfReportsForLocalDaySynced(
+  localDay: string,
+  syncedThrough = new Date().toISOString(),
+) {
+  const reports = await getSelfReportsForLocalDay(localDay);
+  const reportsToUpdate = reports.filter(
+    (report) =>
+      report.sync_status !== "synced" && report.updated_at <= syncedThrough,
+  );
+
+  if (reportsToUpdate.length === 0) return 0;
+
+  const encryptedReports = await Promise.all(
+    reportsToUpdate.map((report) =>
+      encryptSelfReportEvent({
+        ...report,
+        sync_status: "synced",
+      }),
+    ),
+  );
+  const db = await openAthenaLocalDb();
+  const transaction = db.transaction(SELF_REPORT_STORE, "readwrite");
+  const store = transaction.objectStore(SELF_REPORT_STORE);
+
+  for (const encryptedReport of encryptedReports) {
+    await idbRequest(store.put(encryptedReport));
+  }
+
+  return encryptedReports.length;
+}
+
 export async function recomputeSelfReportDailyAggregates(localDay: string) {
   const reports = await getSelfReportsForLocalDay(localDay);
   const nextAggregates = SELF_REPORT_AXES.map((axis) =>

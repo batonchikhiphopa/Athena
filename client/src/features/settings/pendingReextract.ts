@@ -11,6 +11,7 @@ import { enqueueEntrySyncJob } from "../sync/entrySyncJob";
 import {
   getSignalReprocessReason,
   isRetryableProviderErrorCode,
+  isSignalReprocessCandidate,
 } from "../sync/reprocessPolicy";
 import { syncLocalEntryToServer } from "../sync/entryServerSync";
 
@@ -107,11 +108,21 @@ export async function processPendingReextractEntries(
       entry.sync_status === "pending_reextract" &&
       entry.analysis_enabled !== false,
   );
+  const reprocessableEntries: LocalEntry[] = [];
+
+  for (const entry of pendingEntries) {
+    if (isSignalReprocessCandidate(entry.signals, entry.metadata)) {
+      reprocessableEntries.push(entry);
+      continue;
+    }
+
+    await releaseTerminalPendingReextractEntry(entry);
+  }
 
   const processableEntries =
     settings.provider === "gemini"
-      ? pendingEntries.slice(0, getRemainingGeminiDailyExtractions())
-      : pendingEntries;
+      ? reprocessableEntries.slice(0, getRemainingGeminiDailyExtractions())
+      : reprocessableEntries;
 
   for (const entry of processableEntries) {
     try {
@@ -125,4 +136,20 @@ export async function processPendingReextractEntries(
       console.warn("[entry:enqueue-reprocess]", error);
     }
   }
+}
+
+async function releaseTerminalPendingReextractEntry(entry: LocalEntry) {
+  const releasedEntry = await updateLocalEntry(entry.id, {
+    sync_status: "local_only",
+  });
+
+  if (!releasedEntry) return;
+
+  await enqueueEntrySyncJob({
+    entryId: releasedEntry.id,
+    sourceTextHash: releasedEntry.source_text_hash,
+    localRevision: releasedEntry.updatedAt,
+  }).catch((error) => {
+    console.warn("[entry:release-pending-reextract-sync]", error);
+  });
 }

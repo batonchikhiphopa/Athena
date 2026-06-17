@@ -224,6 +224,10 @@ function selectTrackedLayer(
 
 function composeObservation(input: InsightV2Input): string | null {
   if (input.quality.grade === "insufficient") {
+    if (input.primaryAxis?.source === "self_report") {
+      return composeAxisObservation(input, input.primaryAxis);
+    }
+
     const context = describeContext(input);
     return context
       ? `Наблюдение: данных пока мало, но в окне заметен контекст: ${context}.`
@@ -287,6 +291,13 @@ function composeUncertainty(input: InsightV2Input): string {
 
   if (flags.has("version_boundary_blocks_comparison")) {
     return "Ограничение: окно пересекает границу версии, поэтому сравнение с обычным уровнем отключено.";
+  }
+
+  if (
+    input.primaryAxis?.source === "self_report" &&
+    flags.has("no_valid_signals")
+  ) {
+    return "Ограничение: текстовый анализ не дал валидных сигналов, поэтому опора здесь на самооценку.";
   }
 
   if (input.density.validDensity < 0.5 || flags.has("low_valid_density")) {

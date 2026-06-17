@@ -37,7 +37,7 @@ export type ReprocessStatus = "idle" | "running" | "done" | "error";
 type ReprocessCallbacks = {
   refreshEntries: () => Promise<EntryView[]>;
   refreshInsights: () => Promise<void>;
-  refreshObservationHistory: () => Promise<void>;
+  refreshObservationHistory: () => Promise<unknown>;
 };
 
 export function useSettingsState(language: Language) {

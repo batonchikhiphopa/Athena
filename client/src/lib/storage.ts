@@ -32,6 +32,8 @@ const GEMINI_DAILY_EXTRACTION_USAGE_KEY = "athena_gemini_daily_extraction_usage"
 const LOCAL_EMOTION_SPIKE_ENABLED_KEY = "athena_local_emotion_spike_enabled";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
+const SEEN_OBSERVATION_INSIGHT_IDS_KEY =
+  "athena_seen_observation_insight_ids";
 const VAULT_CONFIG_KEY = "athena_vault_config";
 
 const PROFILE_LOCAL_STORAGE_KEYS = [
@@ -43,6 +45,7 @@ const PROFILE_LOCAL_STORAGE_KEYS = [
   LOCAL_EMOTION_SPIKE_ENABLED_KEY,
   PERSONA_TEXT_ENABLED_KEY,
   SEEN_EDITOR_INSIGHT_IDS_KEY,
+  SEEN_OBSERVATION_INSIGHT_IDS_KEY,
   VAULT_CONFIG_KEY,
 ];
 
@@ -247,6 +250,43 @@ export function markEditorInsightSeen(id: number) {
   );
 }
 
+export function getSeenObservationInsightIds() {
+  const raw = localStorage.getItem(
+    getStorageKey(SEEN_OBSERVATION_INSIGHT_IDS_KEY),
+  );
+
+  if (!raw) return new Set<number>();
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set<number>();
+
+    return new Set(
+      parsed.filter(
+        (value): value is number =>
+          typeof value === "number" && Number.isInteger(value),
+      ),
+    );
+  } catch {
+    return new Set<number>();
+  }
+}
+
+export function markObservationInsightsSeen(ids: number[]) {
+  if (ids.length === 0) return;
+
+  const seenIds = getSeenObservationInsightIds();
+
+  for (const id of ids) {
+    seenIds.add(id);
+  }
+
+  localStorage.setItem(
+    getStorageKey(SEEN_OBSERVATION_INSIGHT_IDS_KEY),
+    JSON.stringify(Array.from(seenIds).slice(-200)),
+  );
+}
+
 export async function getAllLocalEntries() {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
@@ -361,6 +401,7 @@ export async function deleteAthenaLocalData() {
   localStorage.removeItem(getStorageKey(LOCAL_EMOTION_SPIKE_ENABLED_KEY));
   localStorage.removeItem(getStorageKey(PERSONA_TEXT_ENABLED_KEY));
   localStorage.removeItem(getStorageKey(SEEN_EDITOR_INSIGHT_IDS_KEY));
+  localStorage.removeItem(getStorageKey(SEEN_OBSERVATION_INSIGHT_IDS_KEY));
 
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(getAthenaLocalDbName());

@@ -84,6 +84,7 @@ export function EntriesSettings({
   const queueHint = queueErrorDetails
     ? formatQueueErrorHint(queueErrorDetails, language)
     : null;
+  const queueProcessingState = formatQueueProcessingState(queueSnapshot, t);
 
   return (
     <div className="space-y-5">
@@ -251,7 +252,7 @@ export function EntriesSettings({
 
           <div className="mt-3 text-xs text-zinc-400">
             {t("settings.records.queueProcessing")}:{" "}
-            {queueSnapshot.isProcessing ? t("state.running") : t("state.paused")}
+            {queueProcessingState}
           </div>
 
           {latestJob ? (
@@ -358,6 +359,16 @@ function QueueStatusBadge({ status }: { status: QueueJobStatus }) {
       {status}
     </span>
   );
+}
+
+function formatQueueProcessingState(
+  queueSnapshot: QueueSnapshot,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
+) {
+  if (queueSnapshot.isProcessing) return t("state.running");
+  if (queueSnapshot.queued > 0 || queueSnapshot.running > 0) return t("state.paused");
+
+  return t("state.idle");
 }
 
 function formatQueueStatusClass(status: QueueJobStatus) {

@@ -34,26 +34,36 @@ type CountRow = {
   count: number;
 };
 
-export async function countValidDays(
+export async function countInsightEvidenceDays(
   db: AthenaDb,
   { from, to }: DateRange,
 ): Promise<number> {
   const row = await db.get<CountRow>(
     `
-    SELECT COUNT(DISTINCT e.entry_date) AS count
-    FROM entries e
-    JOIN signals s
-      ON s.id = (
-        SELECT latest.id
-        FROM signals latest
-        WHERE latest.entry_id = e.id
-        ORDER BY latest.created_at DESC, latest.id DESC
-        LIMIT 1
-      )
-    WHERE e.entry_date BETWEEN ? AND ?
-      AND s.signal_quality = 'valid'
+    SELECT COUNT(DISTINCT day) AS count
+    FROM (
+      SELECT e.entry_date AS day
+      FROM entries e
+      JOIN signals s
+        ON s.id = (
+          SELECT latest.id
+          FROM signals latest
+          WHERE latest.entry_id = e.id
+          ORDER BY latest.created_at DESC, latest.id DESC
+          LIMIT 1
+        )
+      WHERE e.entry_date BETWEEN ? AND ?
+        AND s.signal_quality = 'valid'
+
+      UNION
+
+      SELECT local_day AS day
+      FROM self_report_daily_aggregates
+      WHERE local_day BETWEEN ? AND ?
+        AND count > 0
+    ) evidence_days
     `,
-    [from, to],
+    [from, to, from, to],
   );
 
   return row?.count ?? 0;
