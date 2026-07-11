@@ -8,9 +8,7 @@ import {
 import { todayDateOnly } from "../../lib/dates";
 import {
   getSeenEditorInsightIds,
-  getSeenObservationInsightIds,
   markEditorInsightSeen,
-  markObservationInsightsSeen as persistObservationInsightsSeen,
 } from "../../lib/storage";
 import { pickLatestUnseenEditorInsight } from "../editor/editorInsight";
 
@@ -32,15 +30,11 @@ export function useInsights({
   const [observationHistory, setObservationHistory] = useState<
     InsightSnapshot[]
   >([]);
-  const [hasUnreadInsights, setHasUnreadInsights] = useState(false);
 
   const refreshInsights = useCallback(async () => {
     try {
       const currentInsights = await loadCurrentInsights(todayDateOnly());
       setInsights(currentInsights);
-      if (hasUnseenObservationInsight(currentInsights)) {
-        setHasUnreadInsights(true);
-      }
     } catch (error) {
       console.warn("[insights] unavailable:", error);
       setInsights([]);
@@ -51,9 +45,6 @@ export function useInsights({
     try {
       const history = await loadInsightHistory();
       setObservationHistory(history);
-      setHasUnreadInsights(
-        (hasUnread) => hasUnread || hasUnseenObservationInsight(history),
-      );
       return history;
     } catch (error) {
       console.warn("[insights:history] unavailable:", error);
@@ -100,32 +91,13 @@ export function useInsights({
     setEditorInsight(null);
   }
 
-  function markObservationInsightsSeen(
-    nextInsights: InsightSnapshot[] = observationHistory,
-  ) {
-    const ids = new Set([
-      ...nextInsights.map((insight) => insight.id),
-      ...insights.map((insight) => insight.id),
-    ]);
-    persistObservationInsightsSeen(Array.from(ids));
-    setHasUnreadInsights(false);
-  }
-
   return {
     editorInsight,
-    hasUnreadInsights,
     insights,
     observationHistory,
     clearEditorInsight,
     deleteInsight,
-    markObservationInsightsSeen,
     refreshInsights,
     refreshObservationHistory,
   };
-}
-
-function hasUnseenObservationInsight(insights: InsightSnapshot[]) {
-  const seenIds = getSeenObservationInsightIds();
-
-  return insights.some((insight) => !seenIds.has(insight.id));
 }

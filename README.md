@@ -113,6 +113,7 @@ Athena has two independent access rings:
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Code map](docs/CODEMAP.md)
 - [Privacy model](docs/PRIVACY.md)
 - [API reference](docs/API.md)
 - [Contracts and versioning](docs/CONTRACTS.md)

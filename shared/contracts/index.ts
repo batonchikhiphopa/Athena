@@ -1,3 +1,7 @@
+/**
+ * Single public import surface for client/server protocol types. Keep domain
+ * implementation details out of this barrel and version breaking payloads.
+ */
 export type {
   EntryStatus,
   ServerEntry,

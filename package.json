@@ -18,6 +18,7 @@
     "client:build": "npm --workspace athena-client run build",
     "client:dev": "npm --workspace athena-client run dev",
     "dev": "tsx server/server.ts",
+    "docs:codemap": "node scripts/generate-code-map.mjs",
     "lint": "npm --workspace athena-client run lint",
     "migrate": "tsx server/db/migrate.ts",
     "release:check": "npm test && npm run server:check && npm run lint && npm run build && npm run test:e2e && npm run audit",

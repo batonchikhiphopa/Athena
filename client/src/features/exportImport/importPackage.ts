@@ -1,3 +1,8 @@
+/**
+ * Treats imported JSON as hostile input. Validation is exact and recursive so
+ * prototype keys, unknown fields, invalid dates, and incompatible versions do
+ * not reach IndexedDB or local settings.
+ */
 import {
   ATHENA_EXPORT_APP_ID,
   EXPORT_PROMPT_VERSION,

@@ -20,6 +20,7 @@ The current product canon is:
 ## Read First
 
 - [Architecture](./ARCHITECTURE.md) - system shape, project structure, and major trade-offs.
+- [Code map](./CODEMAP.md) - generated file catalog with responsibilities, functions, exports, and HTTP routes.
 - [Privacy](./PRIVACY.md) - raw-data boundary, extraction boundary, self-report storage, and export/import privacy rules.
 - [Export/import](./EXPORT_IMPORT.md) - local_export.v1, backend_metadata_export.v1, validation, and excluded data.
 - [Search](./SEARCH.md) - local keyword/semantic search, evidence packs, and privacy boundaries.

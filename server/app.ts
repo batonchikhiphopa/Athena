@@ -26,8 +26,10 @@ export function createApp(): express.Express {
   app.disable("x-powered-by");
   app.use(express.json({ limit: "64kb" }));
   app.use(jsonErrorHandler);
+  // Config and login/setup must be reachable before the optional auth ring.
   app.use(configRouter);
   app.use(authRouter);
+  // Everything registered below this point is owner-protected when auth is on.
   app.use(requireProtectedApiAuth);
   app.use(requireProtectedApiCsrf);
   app.use(extractionsRouter);

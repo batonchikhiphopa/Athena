@@ -1,3 +1,8 @@
+/**
+ * Owns the editor's persistence boundary. Text and tags are saved locally first;
+ * queue jobs then synchronize textless entry metadata and request extraction.
+ * The run counter prevents an older autosave from overwriting a newer edit.
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EntryView, LocalEntry } from "../../types";
 import { deleteServerEntry } from "../entries/entriesApi";

@@ -1,3 +1,8 @@
+/**
+ * Provider boundary for signal extraction. Raw entry text exists here only for
+ * the duration of one Ollama/Gemini request and is never persisted by this
+ * service; every provider result still passes strict sanitization and mapping.
+ */
 import {
   ACTIVE_PROMPT_VERSION,
   ACTIVE_SCHEMA_VERSION,

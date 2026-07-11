@@ -290,23 +290,6 @@ input {
   }
 }
 
-@keyframes observation-stars-glow {
-  0%,
-  100% {
-    filter:
-      drop-shadow(0 0 2px rgba(255, 254, 250, 0.62))
-      drop-shadow(0 0 5px rgba(250, 204, 21, 0.34));
-    opacity: 0.78;
-  }
-
-  50% {
-    filter:
-      drop-shadow(0 0 3px rgba(255, 254, 250, 0.92))
-      drop-shadow(0 0 9px rgba(250, 204, 21, 0.68));
-    opacity: 1;
-  }
-}
-
 .athena-vault-gate input:-webkit-autofill,
 .athena-vault-gate input:-webkit-autofill:hover,
 .athena-vault-gate input:-webkit-autofill:focus,

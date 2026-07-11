@@ -1,3 +1,8 @@
+/**
+ * Local vault cryptography. A credential unlocks the encrypted data key; the
+ * data key encrypts records and stays in memory only while the vault is open.
+ * Stored configuration never contains the plaintext credential or data key.
+ */
 import { getProfileScopedStorageKey } from "./vaultProfiles";
 
 const VAULT_CONFIG_KEY = "athena_vault_config";

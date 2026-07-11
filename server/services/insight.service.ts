@@ -1,3 +1,8 @@
+/**
+ * Snapshot application service. It enforces evidence-day sufficiency, asks the
+ * deterministic analytics/Insight V3 layers for content, and persists bounded
+ * day/week/month history with retention rules.
+ */
 import {
   ACTIVE_PROMPT_VERSION,
   ACTIVE_SCHEMA_VERSION,

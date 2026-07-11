@@ -1,3 +1,7 @@
+/**
+ * Connects persisted queue job types to their feature handlers. Registration is
+ * process-wide and idempotent, while the latest extraction settings stay mutable.
+ */
 import type { ExtractionSettings } from "../../types";
 import { getLocalEntry } from "../../lib/storage";
 import {

@@ -1,3 +1,8 @@
+/**
+ * Pure deterministic analytics over textless entry signals and daily self-report
+ * aggregates. This module computes evidence and uncertainty; it does not compose
+ * user-facing observation prose.
+ */
 import {
   ANALYTICS_V2_VERSION,
   EXTRACTED_ANALYTICS_AXES,

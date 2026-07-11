@@ -123,17 +123,11 @@ export function AthenaWorkspace({
 
   function handleOpenObservations() {
     setIsObservationsOpen(true);
-    void (async () => {
-      const latestHistory = await handlers.refreshObservationHistory();
-      handlers.markObservationInsightsSeen(latestHistory);
-    })();
+    void handlers.refreshObservationHistory();
   }
 
   function handleRefreshObservations() {
-    void (async () => {
-      const latestHistory = await handlers.refreshObservationHistory();
-      handlers.markObservationInsightsSeen(latestHistory);
-    })();
+    void handlers.refreshObservationHistory();
   }
 
   return (
@@ -199,7 +193,6 @@ export function AthenaWorkspace({
                   includedTags={app.includedEntryTags}
                   excludedTags={app.excludedEntryTags}
                   hasActiveFilters={app.hasActiveEntryFilters}
-                  hasUnreadInsights={app.hasUnreadInsights}
                   isSearching={app.isSearchingEntries}
                   onChangeSortDirection={handlers.changeEntrySortDirection}
                   onClearFilters={handlers.clearEntryFilters}
