@@ -6,7 +6,7 @@ import {
   getEntryById,
   listEntries,
   updateEntry,
-} from "../server/services/entry.service.js";
+} from "../server/modules/entries/entry.service.js";
 import { ACTIVE_SCHEMA_VERSION } from "../server/config/versions.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import { state, validSignal } from "./signal-fixtures.js";

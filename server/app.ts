@@ -1,22 +1,22 @@
 import express from "express";
 import path from "path";
-import analyticsRouter from "./api/analytics.route.js";
-import authRouter from "./api/auth.route.js";
-import configRouter from "./api/config.route.js";
-import entriesRouter from "./api/entries.route.js";
-import exportsRouter from "./api/exports.route.js";
-import extractionsRouter from "./api/extractions.route.js";
-import insightsRouter from "./api/insights.route.js";
-import selfReportsRouter from "./api/self-reports.route.js";
+import analyticsRouter from "./modules/analytics/analytics.route.js";
+import authRouter from "./modules/auth/auth.route.js";
+import configRouter from "./platform/http/config.route.js";
+import entriesRouter from "./modules/entries/entries.route.js";
+import exportsRouter from "./modules/exports/exports.route.js";
+import extractionsRouter from "./modules/extraction/extractions.route.js";
+import insightsRouter from "./modules/insights/insights.route.js";
+import selfReportsRouter from "./modules/selfReports/selfReports.route.js";
 import { CLIENT_DIST_DIR } from "./config/env.js";
 import {
   requireProtectedApiAuth,
   requireProtectedApiCsrf,
-} from "./middleware/auth.middleware.js";
+} from "./modules/auth/auth.middleware.js";
 import {
   apiErrorHandler,
   jsonErrorHandler,
-} from "./middleware/error.middleware.js";
+} from "./platform/http/error.middleware.js";
 
 const CLIENT_DIR = CLIENT_DIST_DIR;
 

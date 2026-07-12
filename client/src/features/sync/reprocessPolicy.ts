@@ -6,8 +6,9 @@ import type {
 import {
   CLIENT_ACTIVE_PROMPT_VERSION,
   CLIENT_ACTIVE_SCHEMA_VERSION,
-} from "../../lib/signalVersions";
-import type { LocalEntry, Signal, SignalMetadata } from "../../types";
+} from "../extraction/signalVersions";
+import type { Signal, SignalMetadata } from "../../shared/contracts";
+import type { LocalEntry } from "../entries/entryTypes";
 
 const RETRYABLE_PROVIDER_ERROR_CODES = new Set([
   "backend_unavailable",

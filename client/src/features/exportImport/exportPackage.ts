@@ -1,6 +1,6 @@
-import type { LocalEntry } from "../../types";
+import type { LocalEntry } from "../entries/entryTypes";
 import type { SelfReportEvent } from "../selfReports/selfReportTypes";
-import type { QueueJob, QueueJobType } from "../../lib/queueTypes";
+import type { QueueJob, QueueJobType } from "../sync/queueTypes";
 import {
   ATHENA_EXPORT_APP_ID,
   EXPORT_PROMPT_VERSION,

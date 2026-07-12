@@ -1,11 +1,10 @@
+import type { ServerEntry, SignalMetadata } from "../../shared/contracts";
 import type {
   EntrySortDirection,
   EntryView,
   LocalEntry,
-  ServerEntry,
-  SignalMetadata,
-} from "../../types";
-import { normalizeSignal } from "../../lib/signals";
+} from "./entryTypes";
+import { normalizeSignal } from "../extraction/signals";
 
 export function mergeEntryState(
   localEntry: LocalEntry,

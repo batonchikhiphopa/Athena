@@ -11,7 +11,7 @@ import {
 import {
   CLIENT_ACTIVE_PROMPT_VERSION,
   CLIENT_ACTIVE_SCHEMA_VERSION,
-} from "../client/src/lib/signalVersions.ts";
+} from "../client/src/features/extraction/signalVersions.ts";
 import { fallbackSignal, sparseSignal, validSignal } from "./signal-fixtures.js";
 
 function metadata(overrides = {}) {

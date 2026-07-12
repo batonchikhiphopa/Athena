@@ -6,7 +6,7 @@ import {
   createEntrySyncQueuePayload,
   validateEntrySyncQueuePayload,
 } from "../client/src/features/sync/entrySyncJob.ts";
-import { QueueJobError } from "../client/src/lib/queueErrors.ts";
+import { QueueJobError } from "../client/src/features/sync/queueErrors.ts";
 
 const RAW_TEXT = "this is private diary text that must not enter queue payload";
 

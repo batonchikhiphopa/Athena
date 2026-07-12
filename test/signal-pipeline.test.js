@@ -11,11 +11,11 @@ import {
   createEntry,
   getEntryById,
   listEntries,
-} from "../server/services/entry.service.js";
+} from "../server/modules/entries/entry.service.js";
 import {
   createFallbackSignal,
   sanitizeSignalCandidate,
-} from "../server/services/sanitization.service.js";
+} from "../server/modules/extraction/sanitization.service.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import { fallbackSignal, state, validSignal } from "./signal-fixtures.js";
 

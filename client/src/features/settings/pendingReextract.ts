@@ -1,11 +1,12 @@
-import type { ExtractionSettings, LocalEntry } from "../../types";
-import { extractSignalForText } from "../../lib/extraction";
+import type { ExtractionSettings } from "../../shared/contracts";
+import type { LocalEntry } from "../entries/entryTypes";
+import { extractSignalForText } from "../extraction/extractSignalForText";
 import {
   getAllLocalEntries,
   getLocalEntry,
-  getRemainingGeminiDailyExtractions,
   updateLocalEntry,
-} from "../../lib/storage";
+} from "../entries/localEntryRepository";
+import { getRemainingGeminiDailyExtractions } from "../extraction/geminiQuota";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 import { enqueueEntrySyncJob } from "../sync/entrySyncJob";
 import {

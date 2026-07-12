@@ -5,7 +5,7 @@ import {
   getAppLockAutoLockPreference,
   setAppLockAutoLockPreference,
   type AppLockAutoLockPreference,
-} from "../lib/appLock";
+} from "../features/vault/appLock";
 
 export function useAppAutoLockPreference() {
   const [autoLockPreference, setAutoLockPreferenceState] = useState(() =>

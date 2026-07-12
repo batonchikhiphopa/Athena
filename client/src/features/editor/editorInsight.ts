@@ -1,4 +1,4 @@
-import type { InsightSnapshot } from "../../types";
+import type { InsightSnapshot } from "../../shared/contracts";
 
 export function pickLatestUnseenEditorInsight(
   insights: InsightSnapshot[],

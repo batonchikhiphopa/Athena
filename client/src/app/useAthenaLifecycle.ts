@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
-import type { ExtractionSettings, Page } from "../types";
+import type { ExtractionSettings } from "../shared/contracts";
+import type { Page } from "./navigationTypes";
 import { processPendingReextractEntries } from "../features/settings/pendingReextract";
 
 type AthenaLifecycleOptions = {

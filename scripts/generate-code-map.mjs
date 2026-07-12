@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 
@@ -7,6 +7,14 @@ const projectRoot = path.resolve(import.meta.dirname, "..");
 const outputPath = path.join(projectRoot, "docs", "CODEMAP.md");
 
 const PURPOSES = {
+  "client/src/platform/storage/athenaDb.ts": "Единственная точка владения IndexedDB schema, object stores и profile-scoped соединением.",
+  "client/src/features/entries/localEntryRepository.ts": "Локальный зашифрованный repository записей и их browser-only текста.",
+  "client/src/features/editor/draftRepository.ts": "Локальный зашифрованный repository текущего editor draft.",
+  "client/src/features/sync/queue.ts": "Исполнитель durable queue: handlers, retries, recovery и lifecycle processor.",
+  "client/src/features/vault/vaultCrypto.ts": "Низкоуровневые Web Crypto primitives без React и продуктовой оркестрации.",
+  "client/src/shared/http/httpClient.ts": "Общие HTTP-механизмы: CSRF, auth-required event и типизированные ошибки.",
+  "server/modules/analytics/analyticsV2.service.ts": "Композиция Analytics V2 поверх отдельных date, statistics, collection и repository модулей.",
+  "shared/signal/signalMapper.ts": "Единый pure Signal mapper для клиентского и серверного runtime.",
   "client/src/main.tsx": "Точка запуска React-клиента: подключает стили, i18n, корневой App и service worker.",
   "client/src/App.tsx": "Верхняя граница клиентского приложения: серверная авторизация, локальный vault, профили и допуск в рабочую область.",
   "client/src/app/AthenaWorkspace.tsx": "Компонует видимые поверхности Athena и связывает состояние приложения с UI-обработчиками.",
@@ -83,6 +91,8 @@ const FUNCTION_PURPOSES = {
 };
 
 const DIRECTORY_PURPOSES = {
+  "client/src/platform/": "Клиентская platform infrastructure без продуктового UI",
+  "client/src/shared/": "Действительно общая клиентская инфраструктура и примитивы",
   "client/src/app/": "Клиентская оркестрация приложения и lifecycle hook",
   "client/src/components/editor/": "UI-компонент редактора",
   "client/src/components/floating/": "Инфраструктура плавающих панелей и их геометрии",
@@ -109,6 +119,14 @@ const DIRECTORY_PURPOSES = {
   "server/middleware/": "Express middleware",
   "server/repositories/": "SQL repository без продуктовой оркестрации",
   "server/services/": "Backend service с бизнес-оркестрацией",
+  "server/modules/analytics/": "Вертикальный backend-модуль analytics",
+  "server/modules/auth/": "Вертикальный backend-модуль owner auth",
+  "server/modules/entries/": "Вертикальный backend-модуль entries и signal persistence",
+  "server/modules/exports/": "Вертикальный backend-модуль metadata export",
+  "server/modules/extraction/": "Вертикальный backend-модуль extraction и signal contracts",
+  "server/modules/insights/": "Вертикальный backend-модуль insight snapshots",
+  "server/modules/selfReports/": "Вертикальный backend-модуль self-report aggregates",
+  "server/platform/": "Общая backend platform infrastructure",
   "shared/contracts/": "Общий runtime/type контракт клиента и сервера",
   "test/e2e/": "Playwright end-to-end проверка",
   "test/helpers/": "Тестовая инфраструктура",
@@ -134,6 +152,7 @@ function listProjectFiles() {
 
   return [...new Set(output.split(/\r?\n/u).filter(Boolean).map(normalizePath))]
     .filter((file) => !IGNORED_PATHS.has(file))
+    .filter((file) => existsSync(path.join(projectRoot, file)))
     .sort((left, right) => left.localeCompare(right));
 }
 

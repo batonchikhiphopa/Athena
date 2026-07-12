@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { I18nProvider } from "./i18n/I18nProvider";
-import { registerServiceWorker } from "./lib/serviceWorker";
+import { registerServiceWorker } from "./shared/lib/serviceWorker";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

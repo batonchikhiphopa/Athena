@@ -1,15 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { extractSignalForText } from "../client/src/lib/extraction.ts";
+import { extractSignalForText } from "../client/src/features/extraction/extractSignalForText.ts";
 import {
   GEMINI_DAILY_EXTRACTION_LIMIT,
   getRemainingGeminiDailyExtractions,
-} from "../client/src/lib/storage.ts";
+} from "../client/src/features/extraction/geminiQuota.ts";
 import {
   CLIENT_ACTIVE_PROMPT_VERSION,
   CLIENT_ACTIVE_SCHEMA_VERSION,
-} from "../client/src/lib/signalVersions.ts";
+} from "../client/src/features/extraction/signalVersions.ts";
 import { validSignal } from "./signal-fixtures.js";
 
 function createLocalStorageMock() {

@@ -14,7 +14,7 @@ import {
   type VaultStatus,
   type VaultCredentialSummary,
 } from "./vaultApi";
-import { migrateLocalDataToVault } from "../../lib/vaultMigration";
+import { migrateLocalDataToVault } from "./vaultMigration";
 
 export type LocalVaultPhase = VaultStatus;
 export type LocalVaultError =

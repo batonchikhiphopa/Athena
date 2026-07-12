@@ -76,23 +76,31 @@ observations, settings, queue/status controls, or debug-only affordances.
 ```text
 client/
   src/
-    app/                 app-level orchestration
-    components/          shared UI surfaces, editor/archive panels, floating UI
-    features/            feature logic, feature APIs, and owned screens
-    i18n/                interface messages
-    lib/                 low-level browser/runtime utilities
+    app/                 composition, navigation, lifecycle, cross-feature cleanup
+    features/            vertical product modules with API, state, storage, UI, content
+    components/          genuinely shared UI primitives only
+    platform/storage/    IndexedDB bootstrap and object-store ownership
+    shared/http/         CSRF, auth signalling, and HTTP error mechanics
+    shared/lib/          small reusable browser/date/text utilities
+    i18n/                interface messages and language selection
 
 server/
-  api/                   Express routes
-  services/              business logic
-  repositories/          SQLite access
-  core/                  schemas, mappers, domain types
-  middleware/            auth and request guards
+  modules/               vertical route/schema/service/repository modules
+    analytics/
+    auth/
+    entries/
+    exports/
+    extraction/
+    insights/
+    selfReports/
+  platform/http/         shared Express mechanics and error handling
+  core/                  cross-module backend types only
   config/                runtime configuration
   db/                    SQLite connection and migrations
 
 shared/
   contracts/             client/server protocol types
+  signal/                pure deterministic rules used by client and server
 
 migrations/              SQL migration files
 test/                    node:test coverage
@@ -100,6 +108,18 @@ docs/                    public project docs
 ```
 
 ## Key Patterns
+
+- Vertical ownership: a feature's API, persistence, state, UI, and content live
+  together instead of being distributed across global `api`, `lib`, `services`,
+  and `components` folders.
+- Composition root: `client/src/app` and `server/app.ts` connect modules; domain
+  files do not become hidden application orchestrators.
+- Shared means shared: only code with multiple real consumers belongs in
+  `client/src/shared` or repository-level `shared`.
+- One deterministic rule: the Signal mapper lives in `shared/signal` and is
+  consumed by both runtimes.
+- Infrastructure boundaries: IndexedDB schema belongs to `platform/storage`;
+  feature repositories own their records and encryption envelopes.
 
 - Local-first storage: writing remains useful without the backend.
 - Privacy boundary: raw data and textless analytics are separated.

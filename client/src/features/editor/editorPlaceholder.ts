@@ -1,7 +1,7 @@
-import type { InsightSnapshot } from "../../types";
+import type { InsightSnapshot } from "../../shared/contracts";
 import type { Language } from "../../i18n/languages";
-import { generateAthenaPlaceholder } from "../../lib/athenaPlaceholder";
-import { formatInsightText } from "../../lib/insightText";
+import { generateAthenaPlaceholder } from "./content/athenaPlaceholder";
+import { formatInsightText } from "../insights/content/insightText";
 
 export function buildAthenaPlaceholder(
   editorInsight: InsightSnapshot | null,

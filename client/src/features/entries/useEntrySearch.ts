@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { EntrySortDirection, EntryView } from "../../types";
+import type { EntrySortDirection, EntryView } from "./entryTypes";
 import { sortEntries } from "./entryState";
 import {
   getAvailableTags,

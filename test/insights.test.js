@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 
-import { createEntry } from "../server/services/entry.service.js";
+import { createEntry } from "../server/modules/entries/entry.service.js";
 import {
   deleteInsightSnapshot,
   getCurrentInsightSnapshots,
   listInsightSnapshots,
-} from "../server/services/insight.service.js";
+} from "../server/modules/insights/insight.service.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import {
   fallbackSignal,

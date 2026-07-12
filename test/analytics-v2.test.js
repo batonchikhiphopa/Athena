@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 
-import { createEntry } from "../server/services/entry.service.js";
+import { createEntry } from "../server/modules/entries/entry.service.js";
 import {
   buildAnalyticsV2Overview,
   buildAnalyticsV2Summary,
-} from "../server/services/analytics-v2.service.js";
-import { ANALYTICS_V2_ENTRY_SIGNAL_ROWS_IN_RANGE_SQL } from "../server/repositories/analytics-v2.repository.js";
+} from "../server/modules/analytics/analyticsV2.service.js";
+import { ANALYTICS_V2_ENTRY_SIGNAL_ROWS_IN_RANGE_SQL } from "../server/modules/analytics/analyticsV2.repository.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import {
   fallbackSignal,

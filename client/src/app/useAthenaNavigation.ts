@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { EntryView, Page } from "../types";
+import type { EntryView } from "../features/entries/entryTypes";
+import type { Page } from "./navigationTypes";
 
 type AthenaNavigationOptions = {
   editor: {

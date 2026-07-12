@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { AthenaWorkspace } from "./app/AthenaWorkspace";
 import { useAppAutoLockPreference } from "./app/useAppAutoLock";
-import { ServerAuthGate } from "./components/ServerAuthGate";
+import { ServerAuthGate } from "./features/auth/ui/ServerAuthGate";
 import { useServerAuth } from "./features/auth/useServerAuth";
-import { VaultGate } from "./components/VaultGate";
+import { VaultGate } from "./features/vault/ui/VaultGate";
 import { useLocalVault } from "./features/vault/useLocalVault";
 import { useI18n } from "./i18n/useI18n";
 import {
   isAppProtectionEnabled,
-} from "./lib/appLock";
-import { deleteAthenaProfileData } from "./lib/storage";
+} from "./features/vault/appLock";
+import { deleteAthenaProfileData } from "./app/localData";
 import {
   addVaultProfile,
   deleteVaultProfile,
@@ -18,7 +18,7 @@ import {
   renameVaultProfile,
   setActiveVaultProfileId,
   type VaultProfile,
-} from "./lib/vaultProfiles";
+} from "./features/vault/vaultProfiles";
 
 export default function App() {
   const { t } = useI18n();

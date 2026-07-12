@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { ACTIVE_PROMPT_VERSION, ACTIVE_SCHEMA_VERSION } from "../server/config/versions.js";
-import { buildBackendMetadataExport } from "../server/services/export.service.js";
-import { createEntry } from "../server/services/entry.service.js";
+import { buildBackendMetadataExport } from "../server/modules/exports/export.service.js";
+import { createEntry } from "../server/modules/entries/entry.service.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import { validSignal } from "./signal-fixtures.js";
 

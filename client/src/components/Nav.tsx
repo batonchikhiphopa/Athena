@@ -1,4 +1,4 @@
-import type { Page } from "../types";
+import type { Page } from "../app/navigationTypes";
 import type { MessageKey } from "../i18n/messages";
 import { useI18n } from "../i18n/useI18n";
 import { Icon } from "./icon";

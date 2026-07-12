@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { wakeQueue } from "../../lib/queue";
+import { wakeQueue } from "./queue";
 
 type UseQueueWakeupsInput = {
   enabled: boolean;

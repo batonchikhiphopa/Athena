@@ -1,6 +1,6 @@
 {
   "name": "athena",
-  "version": "0.8.0",
+  "version": "0.8.3",
   "type": "module",
   "author": "batonchikhiphopa",
   "packageManager": "npm@11.11.0",

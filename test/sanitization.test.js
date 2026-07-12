@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { mapSignalCandidate } from "../server/core/signal.mapper.js";
-import { sanitizeSignalCandidate } from "../server/services/sanitization.service.js";
+import { mapSignalCandidate } from "../shared/signal/signalMapper.js";
+import { sanitizeSignalCandidate } from "../server/modules/extraction/sanitization.service.js";
 import { metricConfidence, sparseSignal, state, validSignal } from "./signal-fixtures.js";
 
 test("accepts valid Signal v4 candidate", () => {

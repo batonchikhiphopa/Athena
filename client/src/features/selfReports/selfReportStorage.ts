@@ -2,7 +2,7 @@ import {
   openAthenaLocalDb,
   SELF_REPORT_DAILY_AGGREGATES_STORE,
   SELF_REPORT_STORE,
-} from "../../lib/storage";
+} from "../../platform/storage/athenaDb";
 import {
   decryptVaultJson,
   encryptVaultJson,

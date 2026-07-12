@@ -1,4 +1,4 @@
-import type { EntryView } from "../../types";
+import type { EntryView } from "./entryTypes";
 import type {
   LocalSemanticEntryDocument,
 } from "../semantic/semanticIndex";

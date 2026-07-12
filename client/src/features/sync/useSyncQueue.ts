@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ExtractionSettings } from "../../types";
+import type { ExtractionSettings } from "../../shared/contracts";
 import {
   cancelQueueJob,
   clearQueueHistory,
@@ -12,8 +12,8 @@ import {
   subscribeToQueue,
   retryRecoverableQueueJobs,
   wakeQueue,
-} from "../../lib/queue";
-import type { QueueSnapshot } from "../../lib/queueTypes";
+} from "./queue";
+import type { QueueSnapshot } from "./queueTypes";
 import { registerSyncQueueHandlers } from "./syncQueue";
 import { useQueueWakeups } from "./useQueueWakeups";
 

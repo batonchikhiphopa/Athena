@@ -41,6 +41,8 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 | --- | --- |
 | `client/src/App.tsx` | Верхняя граница клиентского приложения: серверная авторизация, локальный vault, профили и допуск в рабочую область. |
 | `client/src/app/AthenaWorkspace.tsx` | Компонует видимые поверхности Athena и связывает состояние приложения с UI-обработчиками. |
+| `client/src/app/localData.ts` | Клиентская оркестрация приложения и lifecycle hook: local data. |
+| `client/src/app/navigationTypes.ts` | Клиентская оркестрация приложения и lifecycle hook: navigation types. |
 | `client/src/app/useAppAutoLock.ts` | Клиентская оркестрация приложения и lifecycle hook: use app auto lock. |
 | `client/src/app/useAthenaApp.ts` | Главный composition hook клиента; собирает editor, entries, insights, settings, queue и lifecycle в один фасад. |
 | `client/src/app/useAthenaLifecycle.ts` | Клиентская оркестрация приложения и lifecycle hook: use athena lifecycle. |
@@ -48,15 +50,6 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 | `client/src/app/useVaultLockPreparation.ts` | Клиентская оркестрация приложения и lifecycle hook: use vault lock preparation. |
 | `client/src/assets/logo-bg.jpg` | Статический визуальный asset; функций не содержит. |
 | `client/src/components/desktop.ini` | Пользовательский UI-компонент: desktop. |
-| `client/src/components/Editor.tsx` | Пользовательский UI-компонент: editor. |
-| `client/src/components/editor/EditorActionButtons.tsx` | UI-компонент редактора: editor action buttons. |
-| `client/src/components/editor/EditorTagChips.tsx` | UI-компонент редактора: editor tag chips. |
-| `client/src/components/editor/EditorTagMenu.tsx` | UI-компонент редактора: editor tag menu. |
-| `client/src/components/editor/LineLever.tsx` | UI-компонент редактора: line lever. |
-| `client/src/components/editor/SelfReportMenu.tsx` | UI-компонент редактора: self report menu. |
-| `client/src/components/EntriesPage.tsx` | Пользовательский UI-компонент: entries page. |
-| `client/src/components/entryDebugBlocks.ts` | Пользовательский UI-компонент: entry debug blocks. |
-| `client/src/components/EntryDebugTooltip.tsx` | Пользовательский UI-компонент: entry debug tooltip. |
 | `client/src/components/floating/FloatingLayerContext.ts` | Инфраструктура плавающих панелей и их геометрии: floating layer context. |
 | `client/src/components/floating/FloatingLayerProvider.tsx` | Инфраструктура плавающих панелей и их геометрии: floating layer provider. |
 | `client/src/components/floating/FloatingPanel.tsx` | Инфраструктура плавающих панелей и их геометрии: floating panel. |
@@ -64,35 +57,75 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 | `client/src/components/floating/useFloatingLayer.ts` | Инфраструктура плавающих панелей и их геометрии: use floating layer. |
 | `client/src/components/floating/useFloatingTextOcclusion.ts` | Инфраструктура плавающих панелей и их геометрии: use floating text occlusion. |
 | `client/src/components/icon.tsx` | Пользовательский UI-компонент: icon. |
-| `client/src/components/InsightStrip.tsx` | Пользовательский UI-компонент: insight strip. |
 | `client/src/components/LanguageSelect.tsx` | Пользовательский UI-компонент: language select. |
 | `client/src/components/Nav.tsx` | Пользовательский UI-компонент: nav. |
-| `client/src/components/Observations.tsx` | Пользовательский UI-компонент: observations. |
-| `client/src/components/ServerAuthGate.tsx` | Пользовательский UI-компонент: server auth gate. |
-| `client/src/components/Settings.tsx` | Пользовательский UI-компонент: settings. |
 | `client/src/components/TooltipButton.tsx` | Пользовательский UI-компонент: tooltip button. |
-| `client/src/components/useEntryDebugTooltip.ts` | Пользовательский UI-компонент: use entry debug tooltip. |
-| `client/src/components/VaultGate.tsx` | Пользовательский UI-компонент: vault gate. |
 | `client/src/features/auth/authApi.ts` | Клиентская feature server-auth: auth api. |
+| `client/src/features/auth/ui/ServerAuthGate.tsx` | Клиентская feature server-auth: server auth gate. |
 | `client/src/features/auth/useServerAuth.ts` | Клиентская feature server-auth: use server auth. |
+| `client/src/features/editor/content/athenaPhraseLibraries.ts` | Клиентская feature редактора: athena phrase libraries. |
+| `client/src/features/editor/content/athenaPhrasesDe.ts` | Клиентская feature редактора: athena phrases de. |
+| `client/src/features/editor/content/athenaPhrasesEn.ts` | Клиентская feature редактора: athena phrases en. |
+| `client/src/features/editor/content/athenaPhrasesRu.ts` | Клиентская feature редактора: athena phrases ru. |
+| `client/src/features/editor/content/athenaPhrasesTypes.ts` | Клиентская feature редактора: athena phrases types. |
+| `client/src/features/editor/content/athenaPhrasesUk.ts` | Клиентская feature редактора: athena phrases uk. |
+| `client/src/features/editor/content/athenaPlaceholder.ts` | Клиентская feature редактора: athena placeholder. |
+| `client/src/features/editor/content/phrasePicker.ts` | Клиентская feature редактора: phrase picker. |
+| `client/src/features/editor/draftRepository.ts` | Локальный зашифрованный repository текущего editor draft. |
 | `client/src/features/editor/editorInsight.ts` | Клиентская feature редактора: editor insight. |
 | `client/src/features/editor/editorPlaceholder.ts` | Клиентская feature редактора: editor placeholder. |
 | `client/src/features/editor/editorTagUtils.ts` | Клиентская feature редактора: editor tag utils. |
+| `client/src/features/editor/ui/Editor.tsx` | Клиентская feature редактора: editor. |
+| `client/src/features/editor/ui/EditorActionButtons.tsx` | Клиентская feature редактора: editor action buttons. |
+| `client/src/features/editor/ui/EditorTagChips.tsx` | Клиентская feature редактора: editor tag chips. |
+| `client/src/features/editor/ui/EditorTagMenu.tsx` | Клиентская feature редактора: editor tag menu. |
+| `client/src/features/editor/ui/LineLever.tsx` | Клиентская feature редактора: line lever. |
+| `client/src/features/editor/ui/SelfReportMenu.tsx` | Клиентская feature редактора: self report menu. |
 | `client/src/features/editor/useEditorDraft.ts` | Владеет жизненным циклом черновика и записи: автосохранение, локальная запись, удаление пустых записей и постановка sync/extraction jobs. |
 | `client/src/features/editor/useEditorTagControls.ts` | Клиентская feature редактора: use editor tag controls. |
 | `client/src/features/emotion/localEmotion.ts` | Локальный эксперимент извлечения emotion evidence: local emotion. |
 | `client/src/features/entries/entriesApi.ts` | Клиентская feature архива записей: entries api. |
 | `client/src/features/entries/entryFilters.ts` | Клиентская feature архива записей: entry filters. |
+| `client/src/features/entries/entryPreferences.ts` | Клиентская feature архива записей: entry preferences. |
 | `client/src/features/entries/entrySearch.ts` | Чистый поисковый движок архива: разбор запроса, индексирование, lexical/semantic scoring и построение snippets. |
 | `client/src/features/entries/entryState.ts` | Клиентская feature архива записей: entry state. |
+| `client/src/features/entries/entryTypes.ts` | Клиентская feature архива записей: entry types. |
+| `client/src/features/entries/localEntryRepository.ts` | Локальный зашифрованный repository записей и их browser-only текста. |
+| `client/src/features/entries/ui/EntriesPage.tsx` | Клиентская feature архива записей: entries page. |
+| `client/src/features/entries/ui/EntriesUtilityPanel.tsx` | Клиентская feature архива записей: entries utility panel. |
+| `client/src/features/entries/ui/entryDebugBlocks.ts` | Клиентская feature архива записей: entry debug blocks. |
+| `client/src/features/entries/ui/EntryDebugTooltip.tsx` | Клиентская feature архива записей: entry debug tooltip. |
+| `client/src/features/entries/ui/entryGrid.ts` | Клиентская feature архива записей: entry grid. |
+| `client/src/features/entries/ui/entryTagId.ts` | Клиентская feature архива записей: entry tag id. |
+| `client/src/features/entries/ui/EntryTile.tsx` | Клиентская feature архива записей: entry tile. |
+| `client/src/features/entries/ui/entryUiHelpers.tsx` | Клиентская feature архива записей: entry ui helpers. |
+| `client/src/features/entries/ui/useEntryDebugTooltip.ts` | Клиентская feature архива записей: use entry debug tooltip. |
 | `client/src/features/entries/useEntries.ts` | Клиентская feature архива записей: use entries. |
 | `client/src/features/entries/useEntrySearch.ts` | Клиентская feature архива записей: use entry search. |
 | `client/src/features/exportImport/exportPackage.ts` | Локальный export/import: export package. |
 | `client/src/features/exportImport/exportTypes.ts` | Локальный export/import: export types. |
 | `client/src/features/exportImport/importApply.ts` | Локальный export/import: import apply. |
-| `client/src/features/exportImport/importPackage.ts` | Строгая недоверенная граница импорта: разбирает JSON, запрещает лишние поля и строит безопасный preview. |
+| `client/src/features/exportImport/importPreview.ts` | Локальный export/import: import preview. |
+| `client/src/features/exportImport/importReaders.ts` | Локальный export/import: import readers. |
+| `client/src/features/exportImport/importValidation.ts` | Локальный export/import: import validation. |
 | `client/src/features/extraction/extractionApi.ts` | Клиентский адаптер extraction API: extraction api. |
+| `client/src/features/extraction/extractSignalForText.ts` | Клиентский адаптер extraction API: extract signal for text. |
+| `client/src/features/extraction/geminiQuota.ts` | Клиентский адаптер extraction API: gemini quota. |
+| `client/src/features/extraction/signals.ts` | Клиентский адаптер extraction API: signals. |
+| `client/src/features/extraction/signalVersions.ts` | Клиентский адаптер extraction API: signal versions. |
+| `client/src/features/insights/content/athenaInsightPhraseLibraries.ts` | Клиентская feature observations/insights: athena insight phrase libraries. |
+| `client/src/features/insights/content/athenaInsightPhrasesDe.ts` | Клиентская feature observations/insights: athena insight phrases de. |
+| `client/src/features/insights/content/athenaInsightPhrasesEn.ts` | Клиентская feature observations/insights: athena insight phrases en. |
+| `client/src/features/insights/content/athenaInsightPhrasesRu.ts` | Клиентская feature observations/insights: athena insight phrases ru. |
+| `client/src/features/insights/content/athenaInsightPhrasesTypes.ts` | Клиентская feature observations/insights: athena insight phrases types. |
+| `client/src/features/insights/content/athenaInsightPhrasesUk.ts` | Клиентская feature observations/insights: athena insight phrases uk. |
+| `client/src/features/insights/content/insightPhrases.ts` | Клиентская feature observations/insights: insight phrases. |
+| `client/src/features/insights/content/insightText.ts` | Клиентская feature observations/insights: insight text. |
+| `client/src/features/insights/content/plainInsightPhraseLibraries.ts` | Клиентская feature observations/insights: plain insight phrase libraries. |
 | `client/src/features/insights/insightsApi.ts` | Клиентская feature observations/insights: insights api. |
+| `client/src/features/insights/seenInsights.ts` | Клиентская feature observations/insights: seen insights. |
+| `client/src/features/insights/ui/InsightStrip.tsx` | Клиентская feature observations/insights: insight strip. |
+| `client/src/features/insights/ui/Observations.tsx` | Клиентская feature observations/insights: observations. |
 | `client/src/features/insights/useInsights.ts` | Клиентская feature observations/insights: use insights. |
 | `client/src/features/rag/evidencePack.ts` | Локальная evidence-pack и ограниченная интерпретация: evidence pack. |
 | `client/src/features/rag/localInterpretation.ts` | Локальная evidence-pack и ограниченная интерпретация: local interpretation. |
@@ -103,124 +136,107 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 | `client/src/features/selfReports/selfReportTypes.ts` | Локальные self-reports и синхронизация агрегатов: self report types. |
 | `client/src/features/semantic/localEmbeddings.ts` | Локальные embeddings и semantic index: local embeddings. |
 | `client/src/features/semantic/semanticIndex.ts` | Локальные embeddings и semantic index: semantic index. |
-| `client/src/features/settings/components/AccessSettings.tsx` | Состояние и UI настроек: access settings. |
-| `client/src/features/settings/components/DataSettings.tsx` | Состояние и UI настроек: data settings. |
-| `client/src/features/settings/components/EntriesSettings.tsx` | Состояние и UI настроек: entries settings. |
-| `client/src/features/settings/components/InterfaceSettings.tsx` | Состояние и UI настроек: interface settings. |
-| `client/src/features/settings/components/SettingsPage.tsx` | Состояние и UI настроек: settings page. |
-| `client/src/features/settings/components/SettingsTabList.tsx` | Состояние и UI настроек: settings tab list. |
-| `client/src/features/settings/components/settingsTypes.ts` | Состояние и UI настроек: settings types. |
-| `client/src/features/settings/components/settingsUi.tsx` | Состояние и UI настроек: settings ui. |
 | `client/src/features/settings/extractionSettings.ts` | Состояние и UI настроек: extraction settings. |
 | `client/src/features/settings/pendingReextract.ts` | Состояние и UI настроек: pending reextract. |
+| `client/src/features/settings/settingsStorage.ts` | Состояние и UI настроек: settings storage. |
+| `client/src/features/settings/ui/AccessSettings.tsx` | Состояние и UI настроек: access settings. |
+| `client/src/features/settings/ui/DataSettings.tsx` | Состояние и UI настроек: data settings. |
+| `client/src/features/settings/ui/EntriesSettings.tsx` | Состояние и UI настроек: entries settings. |
+| `client/src/features/settings/ui/InterfaceSettings.tsx` | Состояние и UI настроек: interface settings. |
+| `client/src/features/settings/ui/SettingsPage.tsx` | Состояние и UI настроек: settings page. |
+| `client/src/features/settings/ui/SettingsTabList.tsx` | Состояние и UI настроек: settings tab list. |
+| `client/src/features/settings/ui/settingsTypes.ts` | Состояние и UI настроек: settings types. |
+| `client/src/features/settings/ui/settingsUi.tsx` | Состояние и UI настроек: settings ui. |
 | `client/src/features/settings/useSettingsState.ts` | Состояние и UI настроек: use settings state. |
 | `client/src/features/sync/entryReprocessJob.ts` | Политики и jobs фоновой синхронизации: entry reprocess job. |
 | `client/src/features/sync/entryServerSync.ts` | Политики и jobs фоновой синхронизации: entry server sync. |
 | `client/src/features/sync/entrySyncJob.ts` | Политики и jobs фоновой синхронизации: entry sync job. |
 | `client/src/features/sync/entrySyncPolicy.ts` | Политики и jobs фоновой синхронизации: entry sync policy. |
-| `client/src/features/sync/queue.ts` | Политики и jobs фоновой синхронизации: queue. |
+| `client/src/features/sync/queue.ts` | Исполнитель durable queue: handlers, retries, recovery и lifecycle processor. |
+| `client/src/features/sync/queueErrors.ts` | Политики и jobs фоновой синхронизации: queue errors. |
+| `client/src/features/sync/queueStorage.ts` | Политики и jobs фоновой синхронизации: queue storage. |
 | `client/src/features/sync/queueTypes.ts` | Политики и jobs фоновой синхронизации: queue types. |
 | `client/src/features/sync/reprocessPolicy.ts` | Политики и jobs фоновой синхронизации: reprocess policy. |
 | `client/src/features/sync/syncQueue.ts` | Регистрирует обработчики durable queue и маршрутизирует jobs синхронизации, reprocess и self-report. |
 | `client/src/features/sync/useQueueWakeups.ts` | Политики и jobs фоновой синхронизации: use queue wakeups. |
 | `client/src/features/sync/useSyncQueue.ts` | Политики и jobs фоновой синхронизации: use sync queue. |
+| `client/src/features/vault/appLock.ts` | React/API-адаптеры локального vault: app lock. |
+| `client/src/features/vault/ui/VaultGate.tsx` | React/API-адаптеры локального vault: vault gate. |
 | `client/src/features/vault/useLocalVault.ts` | React/API-адаптеры локального vault: use local vault. |
+| `client/src/features/vault/vault.ts` | React/API-адаптеры локального vault: vault. |
 | `client/src/features/vault/vaultApi.ts` | React/API-адаптеры локального vault: vault api. |
+| `client/src/features/vault/vaultCrypto.ts` | Низкоуровневые Web Crypto primitives без React и продуктовой оркестрации. |
+| `client/src/features/vault/vaultMigration.ts` | React/API-адаптеры локального vault: vault migration. |
+| `client/src/features/vault/vaultProfiles.ts` | React/API-адаптеры локального vault: vault profiles. |
 | `client/src/i18n/i18nContext.ts` | Интернационализация интерфейса: i18n context. |
 | `client/src/i18n/I18nProvider.tsx` | Интернационализация интерфейса: i18n provider. |
 | `client/src/i18n/languages.ts` | Интернационализация интерфейса: languages. |
 | `client/src/i18n/messages.ts` | Интернационализация интерфейса: messages. |
 | `client/src/i18n/useI18n.ts` | Интернационализация интерфейса: use i18n. |
 | `client/src/index.css` | Стили соответствующей клиентской поверхности. |
-| `client/src/lib/api.ts` | Низкоуровневый HTTP-клиент всех backend API с CSRF, cookie auth и классификацией ошибок. |
-| `client/src/lib/appLock.ts` | Низкоуровневая клиентская библиотека: app lock. |
-| `client/src/lib/athenaInsightPhraseLibraries.ts` | Низкоуровневая клиентская библиотека: athena insight phrase libraries. |
-| `client/src/lib/athenaInsightPhrasesDe.ts` | Низкоуровневая клиентская библиотека: athena insight phrases de. |
-| `client/src/lib/athenaInsightPhrasesEn.ts` | Низкоуровневая клиентская библиотека: athena insight phrases en. |
-| `client/src/lib/athenaInsightPhrasesRu.ts` | Низкоуровневая клиентская библиотека: athena insight phrases ru. |
-| `client/src/lib/athenaInsightPhrasesTypes.ts` | Низкоуровневая клиентская библиотека: athena insight phrases types. |
-| `client/src/lib/athenaInsightPhrasesUk.ts` | Низкоуровневая клиентская библиотека: athena insight phrases uk. |
-| `client/src/lib/athenaPhraseLibraries.ts` | Низкоуровневая клиентская библиотека: athena phrase libraries. |
-| `client/src/lib/athenaPhrasesDe.ts` | Низкоуровневая клиентская библиотека: athena phrases de. |
-| `client/src/lib/athenaPhrasesEn.ts` | Низкоуровневая клиентская библиотека: athena phrases en. |
-| `client/src/lib/athenaPhrasesRu.ts` | Низкоуровневая клиентская библиотека: athena phrases ru. |
-| `client/src/lib/athenaPhrasesTypes.ts` | Низкоуровневая клиентская библиотека: athena phrases types. |
-| `client/src/lib/athenaPhrasesUk.ts` | Низкоуровневая клиентская библиотека: athena phrases uk. |
-| `client/src/lib/athenaPlaceholder.ts` | Низкоуровневая клиентская библиотека: athena placeholder. |
-| `client/src/lib/dates.ts` | Низкоуровневая клиентская библиотека: dates. |
-| `client/src/lib/extraction.ts` | Низкоуровневая клиентская библиотека: extraction. |
-| `client/src/lib/insightPhrases.ts` | Низкоуровневая клиентская библиотека: insight phrases. |
-| `client/src/lib/insightText.ts` | Низкоуровневая клиентская библиотека: insight text. |
-| `client/src/lib/offline.ts` | Низкоуровневая клиентская библиотека: offline. |
-| `client/src/lib/phrasePicker.ts` | Низкоуровневая клиентская библиотека: phrase picker. |
-| `client/src/lib/plainInsightPhraseLibraries.ts` | Низкоуровневая клиентская библиотека: plain insight phrase libraries. |
-| `client/src/lib/queue.ts` | Исполнитель durable queue: регистрация handlers, retries/backoff, блокировка, recovery и публикация snapshots состояния. |
-| `client/src/lib/queueErrors.ts` | Низкоуровневая клиентская библиотека: queue errors. |
-| `client/src/lib/queueStorage.ts` | IndexedDB-репозиторий durable queue и операции обслуживания очереди. |
-| `client/src/lib/queueTypes.ts` | Низкоуровневая клиентская библиотека: queue types. |
-| `client/src/lib/serviceWorker.ts` | Низкоуровневая клиентская библиотека: service worker. |
-| `client/src/lib/signals.ts` | Клиентская нормализация Signal и детерминированное отображение evidence в метрики. |
-| `client/src/lib/signalVersions.ts` | Низкоуровневая клиентская библиотека: signal versions. |
-| `client/src/lib/storage.ts` | Главный browser persistence gateway: IndexedDB entries/drafts, profile-scoped localStorage, шифрование и локальные миграции. |
-| `client/src/lib/text.ts` | Низкоуровневая клиентская библиотека: text. |
-| `client/src/lib/vault.ts` | Криптографическое ядро локального vault: credentials, data key, PBKDF2, AES-GCM, lock/unlock и шифрование JSON. |
-| `client/src/lib/vaultMigration.ts` | Низкоуровневая клиентская библиотека: vault migration. |
-| `client/src/lib/vaultProfiles.ts` | Низкоуровневая клиентская библиотека: vault profiles. |
 | `client/src/main.tsx` | Точка запуска React-клиента: подключает стили, i18n, корневой App и service worker. |
-| `client/src/types.ts` | Проектный файл: types. |
+| `client/src/platform/storage/athenaDb.ts` | Единственная точка владения IndexedDB schema, object stores и profile-scoped соединением. |
+| `client/src/shared/contracts.ts` | Действительно общая клиентская инфраструктура и примитивы: contracts. |
+| `client/src/shared/http/httpClient.ts` | Общие HTTP-механизмы: CSRF, auth-required event и типизированные ошибки. |
+| `client/src/shared/lib/dates.ts` | Действительно общая клиентская инфраструктура и примитивы: dates. |
+| `client/src/shared/lib/offline.ts` | Действительно общая клиентская инфраструктура и примитивы: offline. |
+| `client/src/shared/lib/serviceWorker.ts` | Действительно общая клиентская инфраструктура и примитивы: service worker. |
+| `client/src/shared/lib/text.ts` | Действительно общая клиентская инфраструктура и примитивы: text. |
 
 ### Server runtime
 
 | Файл | Ответственность |
 | --- | --- |
-| `server/api/analytics.route.ts` | Express router HTTP API: analytics route. |
-| `server/api/auth.route.ts` | Express router HTTP API: auth route. |
-| `server/api/config.route.ts` | Express router HTTP API: config route. |
-| `server/api/entries.route.ts` | Express router HTTP API: entries route. |
-| `server/api/exports.route.ts` | Express router HTTP API: exports route. |
-| `server/api/extractions.route.ts` | Express router HTTP API: extractions route. |
-| `server/api/http.ts` | Express router HTTP API: http. |
-| `server/api/insights.route.ts` | Express router HTTP API: insights route. |
-| `server/api/self-reports.route.ts` | Express router HTTP API: self reports route. |
 | `server/app.ts` | Собирает Express middleware и API routers, затем раздаёт собранный frontend. |
 | `server/config/constants.ts` | Конфигурация backend: constants. |
 | `server/config/env.ts` | Конфигурация backend: env. |
 | `server/config/load-env.ts` | Конфигурация backend: load env. |
 | `server/config/versions.ts` | Конфигурация backend: versions. |
-| `server/core/analytics-v2.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: analytics v2 schema. |
-| `server/core/auth.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: auth schema. |
-| `server/core/entry.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: entry schema. |
-| `server/core/extraction.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: extraction schema. |
-| `server/core/markers.ts` | Доменные схемы, типы и чистые mapper-функции backend: markers. |
-| `server/core/self-report.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: self report schema. |
-| `server/core/signal.mapper.ts` | Доменные схемы, типы и чистые mapper-функции backend: signal mapper. |
-| `server/core/signal.schema.ts` | Доменные схемы, типы и чистые mapper-функции backend: signal schema. |
 | `server/core/types.ts` | Доменные схемы, типы и чистые mapper-функции backend: types. |
 | `server/db/migrate.ts` | SQLite bootstrap и миграции: migrate. |
 | `server/db/migration-runner.ts` | Планирует, проверяет и атомарно применяет SQL-миграции с integrity checks. |
 | `server/db/sqlite.ts` | Открывает SQLite и сериализует write transactions. |
-| `server/middleware/auth.middleware.ts` | Express middleware: auth middleware. |
-| `server/middleware/error.middleware.ts` | Express middleware: error middleware. |
-| `server/repositories/analytics-v2.repository.ts` | SQL repository без продуктовой оркестрации: analytics v2 repository. |
-| `server/repositories/analytics.repository.ts` | SQL repository без продуктовой оркестрации: analytics repository. |
-| `server/repositories/auth.repository.ts` | SQL repository без продуктовой оркестрации: auth repository. |
-| `server/repositories/entry.repository.ts` | SQL repository без продуктовой оркестрации: entry repository. |
-| `server/repositories/insight.repository.ts` | SQL repository без продуктовой оркестрации: insight repository. |
-| `server/repositories/self-report.repository.ts` | SQL repository без продуктовой оркестрации: self report repository. |
-| `server/repositories/signal.repository.ts` | SQL repository без продуктовой оркестрации: signal repository. |
+| `server/modules/analytics/analytics.repository.ts` | Вертикальный backend-модуль analytics: analytics repository. |
+| `server/modules/analytics/analytics.route.ts` | Вертикальный backend-модуль analytics: analytics route. |
+| `server/modules/analytics/analytics.service.ts` | Вертикальный backend-модуль analytics: analytics service. |
+| `server/modules/analytics/analyticsCollections.ts` | Вертикальный backend-модуль analytics: analytics collections. |
+| `server/modules/analytics/analyticsDates.ts` | Вертикальный backend-модуль analytics: analytics dates. |
+| `server/modules/analytics/analyticsStatistics.ts` | Вертикальный backend-модуль analytics: analytics statistics. |
+| `server/modules/analytics/analyticsV2.repository.ts` | Вертикальный backend-модуль analytics: analytics v2 repository. |
+| `server/modules/analytics/analyticsV2.service.ts` | Композиция Analytics V2 поверх отдельных date, statistics, collection и repository модулей. |
+| `server/modules/analytics/analyticsV2.types.ts` | Вертикальный backend-модуль analytics: analytics v2 types. |
+| `server/modules/auth/auth.middleware.ts` | Вертикальный backend-модуль owner auth: auth middleware. |
+| `server/modules/auth/auth.repository.ts` | Вертикальный backend-модуль owner auth: auth repository. |
+| `server/modules/auth/auth.route.ts` | Вертикальный backend-модуль owner auth: auth route. |
+| `server/modules/auth/auth.schema.ts` | Вертикальный backend-модуль owner auth: auth schema. |
+| `server/modules/auth/auth.service.ts` | Вертикальный backend-модуль owner auth: auth service. |
+| `server/modules/entries/entries.route.ts` | Вертикальный backend-модуль entries и signal persistence: entries route. |
+| `server/modules/entries/entry.repository.ts` | Вертикальный backend-модуль entries и signal persistence: entry repository. |
+| `server/modules/entries/entry.schema.ts` | Вертикальный backend-модуль entries и signal persistence: entry schema. |
+| `server/modules/entries/entry.service.ts` | Вертикальный backend-модуль entries и signal persistence: entry service. |
+| `server/modules/entries/signal.repository.ts` | Вертикальный backend-модуль entries и signal persistence: signal repository. |
+| `server/modules/exports/export.service.ts` | Вертикальный backend-модуль metadata export: export service. |
+| `server/modules/exports/exports.route.ts` | Вертикальный backend-модуль metadata export: exports route. |
+| `server/modules/extraction/extraction.schema.ts` | Вертикальный backend-модуль extraction и signal contracts: extraction schema. |
+| `server/modules/extraction/extraction.service.ts` | Вертикальный backend-модуль extraction и signal contracts: extraction service. |
+| `server/modules/extraction/extractions.route.ts` | Вертикальный backend-модуль extraction и signal contracts: extractions route. |
+| `server/modules/extraction/markers.ts` | Вертикальный backend-модуль extraction и signal contracts: markers. |
+| `server/modules/extraction/sanitization.service.ts` | Вертикальный backend-модуль extraction и signal contracts: sanitization service. |
+| `server/modules/extraction/signal.schema.ts` | Вертикальный backend-модуль extraction и signal contracts: signal schema. |
+| `server/modules/insights/insight.repository.ts` | Вертикальный backend-модуль insight snapshots: insight repository. |
+| `server/modules/insights/insight.service.ts` | Вертикальный backend-модуль insight snapshots: insight service. |
+| `server/modules/insights/insightInput.ts` | Вертикальный backend-модуль insight snapshots: insight input. |
+| `server/modules/insights/insights.route.ts` | Вертикальный backend-модуль insight snapshots: insights route. |
+| `server/modules/insights/insightV3.ts` | Вертикальный backend-модуль insight snapshots: insight v3. |
+| `server/modules/insights/legacyObservation.ts` | Вертикальный backend-модуль insight snapshots: legacy observation. |
+| `server/modules/selfReports/selfReport.repository.ts` | Вертикальный backend-модуль self-report aggregates: self report repository. |
+| `server/modules/selfReports/selfReport.schema.ts` | Вертикальный backend-модуль self-report aggregates: self report schema. |
+| `server/modules/selfReports/selfReport.service.ts` | Вертикальный backend-модуль self-report aggregates: self report service. |
+| `server/modules/selfReports/selfReports.route.ts` | Вертикальный backend-модуль self-report aggregates: self reports route. |
+| `server/platform/http/config.route.ts` | Общая backend platform infrastructure: config route. |
+| `server/platform/http/error.middleware.ts` | Общая backend platform infrastructure: error middleware. |
+| `server/platform/http/http.ts` | Общая backend platform infrastructure: http. |
 | `server/server.ts` | Исполняемая точка запуска Express-сервера. |
-| `server/services/analytics-v2.service.ts` | Детерминированный Analytics V2 pipeline: окна, baseline, оси, density, context, associations, quality и uncertainty. |
-| `server/services/analytics.service.ts` | Backend service с бизнес-оркестрацией: analytics service. |
-| `server/services/auth.service.ts` | Backend service с бизнес-оркестрацией: auth service. |
-| `server/services/entry.service.ts` | Backend service с бизнес-оркестрацией: entry service. |
-| `server/services/export.service.ts` | Backend service с бизнес-оркестрацией: export service. |
-| `server/services/extraction.service.ts` | Оркестрирует Ollama/Gemini/off extraction, prompt, provider status, timeout/error mapping и fallback. |
-| `server/services/insight-input.service.ts` | Backend service с бизнес-оркестрацией: insight input service. |
-| `server/services/insight-v3.service.ts` | Backend service с бизнес-оркестрацией: insight v3 service. |
-| `server/services/insight.service.ts` | Оркестрирует day/week/month snapshots: sufficiency gates, Analytics V2, Insight V3, persistence и retention. |
-| `server/services/observation.service.ts` | Backend service с бизнес-оркестрацией: observation service. |
-| `server/services/sanitization.service.ts` | Backend service с бизнес-оркестрацией: sanitization service. |
-| `server/services/self-report.service.ts` | Backend service с бизнес-оркестрацией: self report service. |
 
 ### Shared contracts
 
@@ -234,6 +250,7 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 | `shared/contracts/signal.ts` | Общий runtime/type контракт клиента и сервера: signal. |
 | `shared/contracts/signalAnalysis.ts` | Детерминированно выводит intent, структуру и временной контекст из одной записи и её metadata. |
 | `shared/README.md` | Ручная документация по теме, обозначенной именем файла. |
+| `shared/signal/signalMapper.ts` | Единый pure Signal mapper для клиентского и серверного runtime. |
 
 ### Database migrations
 
@@ -427,6 +444,47 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 
 - Основные вызовы: `refreshObservationHistory`.
 
+### `client/src/app/localData.ts`
+
+Клиентская оркестрация приложения и lifecycle hook: local data.
+
+#### `deleteAthenaLocalData` — L31–L37 · public API
+
+Удаляет или очищает athena local data с необходимыми связанными действиями.
+
+- Основные вызовы: `deleteCurrentAthenaDatabase`, `removeItem`, `getProfileScopedStorageKey`.
+
+#### `deleteAthenaProfileData` — L39–L42 · public API
+
+Удаляет или очищает athena profile data с необходимыми связанными действиями.
+
+- Параметры: `profileId`.
+
+- Основные вызовы: `deleteAthenaDatabaseForProfile`, `deleteProfileLocalStorage`.
+
+#### `deleteProfileLocalStorage` — L44–L69 · internal helper
+
+Удаляет или очищает profile local storage с необходимыми связанными действиями.
+
+- Параметры: `profileId`.
+
+- Основные вызовы: `isDefaultVaultProfile`, `getLocalStorageKeys`, `endsWith`, `removeItem`, `getProfileScopedStorageKey`, `getVaultProfiles`, `startsWith`.
+
+#### `getLocalStorageKeys` — L71–L75 · internal helper
+
+Получает local storage keys из принадлежащего модулю источника данных.
+
+- Основные вызовы: `Array.from`, `key`, `Boolean`.
+
+### `client/src/app/navigationTypes.ts`
+
+Клиентская оркестрация приложения и lifecycle hook: navigation types.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type Page` — L1
+
 ### `client/src/app/useAppAutoLock.ts`
 
 Клиентская оркестрация приложения и lifecycle hook: use app auto lock.
@@ -497,7 +555,7 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 
 Клиентская оркестрация приложения и lifecycle hook: use athena lifecycle.
 
-#### `useAthenaLifecycle` — L14–L54 · public API
+#### `useAthenaLifecycle` — L15–L55 · public API
 
 Управляет React-состоянием, derived values и side effects для athena lifecycle.
 
@@ -509,7 +567,7 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 
 Клиентская оркестрация приложения и lifecycle hook: use athena navigation.
 
-#### `useAthenaNavigation` — L22–L66 · public API
+#### `useAthenaNavigation` — L23–L67 · public API
 
 Управляет React-состоянием, derived values и side effects для athena navigation.
 
@@ -517,13 +575,13 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 
 - Основные вызовы: `useState`, `newBlankPage`, `clearEditorInsight`, `setPage`, `editEntry`, `clearAutosaveTimer`, `persistEditorText`, `activeEntryId`.
 
-#### `newBlankPage` — L30–L34 · nested helper в useAthenaNavigation
+#### `newBlankPage` — L31–L35 · nested helper в useAthenaNavigation
 
 Выполняет локальную операцию new blank page внутри ответственности этого файла.
 
 - Основные вызовы: `newBlankPage`, `clearEditorInsight`, `setPage`.
 
-#### `editEntry` — L36–L40 · nested helper в useAthenaNavigation
+#### `editEntry` — L37–L41 · nested helper в useAthenaNavigation
 
 Выполняет локальную операцию edit entry внутри ответственности этого файла.
 
@@ -531,7 +589,7 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 
 - Основные вызовы: `editEntry`, `clearEditorInsight`, `setPage`.
 
-#### `navigate` — L42–L55 · nested helper в useAthenaNavigation
+#### `navigate` — L43–L56 · nested helper в useAthenaNavigation
 
 Выполняет локальную операцию navigate внутри ответственности этого файла.
 
@@ -550,341 +608,6 @@ entry text -> transient extraction -> sanitized Signal -> deterministic analytic
 - Параметры: `{ clearAutosaveTimer, draftText, persistEditorText, }`.
 
 - Основные вызовы: `useCallback`, `stopQueueForVaultLock`, `clearAutosaveTimer`, `persistEditorText`.
-
-### `client/src/components/Editor.tsx`
-
-Пользовательский UI-компонент: editor.
-
-#### `Editor` — L42–L268 · public API
-
-Рендерит React-компонент Editor и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ analysisEnabled, availableTags, editingEntryId, entryDate, editorInsight, personaTextEnabled, tags, text, onChangeTags, onChangeText, onNewBlankPage, onToggleAnalysisEnabled, }`.
-
-- Основные вызовы: `useI18n`, `useState`, `useRef`, `useMemo`, `buildAthenaPlaceholder`, `useEditorTagControls`, `useFloatingTextOcclusion`, `useCallback`.
-
-#### `loadOrAttachSelfReport` — L113–L141 · nested helper в Editor
-
-Получает or attach self report из принадлежащего модулю источника данных.
-
-- Основные вызовы: `setSelfReportValues`, `catch`, `persistSelfReport`, `getEntrySelfReport`.
-
-### `client/src/components/editor/EditorActionButtons.tsx`
-
-UI-компонент редактора: editor action buttons.
-
-#### `EditorActionButtons` — L18–L171 · public API
-
-Рендерит React-компонент EditorActionButtons и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ analysisEnabled, selfReportCloseSignal, selfReportValues, onInsertTag, onSelfReportCommit, onNewBlankPage, onToggleAnalysisEnabled, }`.
-
-- Основные вызовы: `useI18n`, `useState`, `useRef`, `useEffect`, `window.clearTimeout`, `setIsSelfReportMenuOpen`, `setIsHeartPulsing`, `setHeartPulseKey`.
-
-#### `handleSelfReportClick` — L41–L54 · nested helper в EditorActionButtons
-
-Исполняет сценарий self report click и координирует его побочные эффекты.
-
-- Основные вызовы: `window.clearTimeout`, `setIsSelfReportMenuOpen`, `setIsHeartPulsing`, `setHeartPulseKey`, `window.setTimeout`.
-
-### `client/src/components/editor/EditorTagChips.tsx`
-
-UI-компонент редактора: editor tag chips.
-
-#### `EditorTagChips` — L14–L85 · public API
-
-Рендерит React-компонент EditorTagChips и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ editingTagIndex, editingTagValue, tags, onCancelEdit, onChangeEditingValue, onCommitEdit, onRemoveTag, onStartEditingTag, }`.
-
-- Основные вызовы: `useI18n`, `onChangeEditingValue`, `preventDefault`, `onCommitEdit`, `onCancelEdit`, `onStartEditingTag`, `t`, `onRemoveTag`.
-
-### `client/src/components/editor/EditorTagMenu.tsx`
-
-UI-компонент редактора: editor tag menu.
-
-#### `EditorTagMenu` — L15–L68 · public API
-
-Рендерит React-компонент EditorTagMenu и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ isOpen, menuPosition, selectedIndex, suggestions, onCommitSuggestion, }`.
-
-- Основные вызовы: `useI18n`, `onCommitSuggestion`, `t`.
-
-### `client/src/components/editor/LineLever.tsx`
-
-UI-компонент редактора: line lever.
-
-#### `LineLever` — L10–L33 · public API
-
-Рендерит React-компонент LineLever и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ label, testId, value, onChange }`.
-
-- Основные вызовы: `onChange`, `Number`.
-
-### `client/src/components/editor/SelfReportMenu.tsx`
-
-UI-компонент редактора: self report menu.
-
-#### `SelfReportMenu` — L58–L172 · public API
-
-Рендерит React-компонент SelfReportMenu и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ externalCloseSignal, isOpen, values: savedValues, onCommit, onClose, }`.
-
-- Основные вызовы: `useI18n`, `useRef`, `useState`, `useEffect`, `setValues`, `setHasInteracted`, `useCallback`, `onCommit`.
-
-#### `handlePointerDown` — L91–L101 · nested helper в SelfReportMenu
-
-Исполняет сценарий pointer down и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `closest`, `closePanel`.
-
-#### `setAxisValue` — L116–L122 · nested helper в SelfReportMenu
-
-Изменяет axis value, сохраняя инварианты данного модуля.
-
-- Параметры: `axis`, `value`.
-
-- Основные вызовы: `setHasInteracted`, `setValues`.
-
-#### `getSelfReportDefaultPosition` — L174–L198 · internal helper
-
-Получает self report default position из принадлежащего модулю источника данных.
-
-- Основные вызовы: `parseFloat`, `window.getComputedStyle`, `isFinite`, `Math.min`, `Math.max`.
-
-### `client/src/components/EntriesPage.tsx`
-
-Пользовательский UI-компонент: entries page.
-
-#### `EntriesPage` — L47–L162 · public API
-
-Рендерит React-компонент EntriesPage и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ debugMode, entries, selectedEntryId, searchQuery, includedTags, excludedTags, hasActiveFilters, isSearching, onClearFilters, onDeleteEntry, onEditEntry, onOpenObservations, onSearchQueryChange, onSelectEntry, onToggleEntryAnalysis, onToggleExcludedTag, onToggleTag, }`.
-
-- Основные вызовы: `useI18n`, `useRef`, `useState`, `useEntryColumnCount`, `useMemo`, `distributeEntriesByColumn`, `useEffect`, `setExpandedEntryId`.
-
-#### `handleSelectEntry` — L85–L88 · nested helper в EntriesPage
-
-Исполняет сценарий select entry и координирует его побочные эффекты.
-
-- Параметры: `entryId`.
-
-- Основные вызовы: `setExpandedEntryId`, `onSelectEntry`.
-
-#### `EntriesUtilityPanel` — L164–L262 · internal helper
-
-Рендерит React-компонент EntriesUtilityPanel и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ searchQuery, includedTags, excludedTags, hasActiveFilters, isSearching, onClearFilters, onOpenObservations, onSearchQueryChange, onToggleExcludedTag, onToggleTag, }`.
-
-- Основные вызовы: `useI18n`, `t`, `onSearchQueryChange`.
-
-#### `ActiveTagFilters` — L264–L318 · internal helper
-
-Рендерит React-компонент ActiveTagFilters и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ includedTags, excludedTags, onToggleTag, onToggleExcludedTag, }`.
-
-- Основные вызовы: `useI18n`, `t`, `tagTestIdValue`, `onToggleTag`, `onToggleExcludedTag`.
-
-#### `EntryTile` — L320–L561 · internal helper
-
-Рендерит React-компонент EntryTile и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ debugMode, entry, isExpanded, isSelected, language, searchQuery, onDeleteEntry, onEditEntry, onSelectEntry, onToggleEntryAnalysis, onToggleTag, }`.
-
-- Основные вызовы: `useI18n`, `useEntryDebugTooltip`, `createPortal`, `preventDefault`, `onSelectEntry`, `t`, `stopPropagation`, `onToggleEntryAnalysis`.
-
-#### `handleKeyDown` — L387–L393 · nested helper в EntryTile
-
-Исполняет сценарий key down и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `preventDefault`, `onSelectEntry`.
-
-#### `EntryText` — L563–L577 · internal helper
-
-Рендерит React-компонент EntryText и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ text, query }`.
-
-- Основные вызовы: `findSearchHighlightRange`.
-
-#### `findSearchHighlightRange` — L579–L593 · internal helper
-
-Выбирает search highlight range, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `text`, `query`.
-
-- Основные вызовы: `parseEntrySearchQuery`, `findCaseInsensitiveRange`.
-
-#### `findCaseInsensitiveRange` — L595–L609 · internal helper
-
-Выбирает case insensitive range, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `text`, `term`.
-
-- Основные вызовы: `toLocaleLowerCase`, `indexOf`.
-
-#### `EditIcon` — L611–L628 · internal helper
-
-Рендерит React-компонент EditIcon и связывает его props с соответствующей UI-поверхностью.
-
-#### `CloseIcon` — L630–L641 · internal helper
-
-Рендерит React-компонент CloseIcon и связывает его props с соответствующей UI-поверхностью.
-
-#### `tagTestIdValue` — L643–L645 · internal helper
-
-Возвращает вычисленное значение tag test id value для использования внутри данного модуля.
-
-- Параметры: `tag`.
-
-- Основные вызовы: `replace`, `normalizeTag`.
-
-#### `useEntryColumnCount` — L647–L680 · internal helper
-
-Управляет React-состоянием, derived values и side effects для entry column count.
-
-- Параметры: `containerRef`, `itemCount`.
-
-- Основные вызовы: `useState`, `useEffect`, `getEntryColumnCount`, `setColumnCount`, `updateColumnCount`, `window.addEventListener`, `window.removeEventListener`, `observe`.
-
-#### `updateColumnCount` — L657–L664 · nested helper в useEntryColumnCount
-
-Изменяет column count, сохраняя инварианты данного модуля.
-
-- Основные вызовы: `getEntryColumnCount`, `setColumnCount`.
-
-#### `getEntryColumnCount` — L682–L698 · internal helper
-
-Получает entry column count из принадлежащего модулю источника данных.
-
-- Параметры: `containerWidth`, `itemCount`.
-
-- Основные вызовы: `parseFloat`, `getComputedStyle`, `Math.max`, `Math.floor`, `Math.min`.
-
-#### `distributeEntriesByColumn` — L700–L711 · internal helper
-
-Возвращает вычисленное значение distribute entries by column для использования внутри данного модуля.
-
-- Параметры: `entries`, `columnCount`.
-
-- Основные вызовы: `Array.from`, `Math.max`, `Math.min`, `push`.
-
-### `client/src/components/entryDebugBlocks.ts`
-
-Пользовательский UI-компонент: entry debug blocks.
-
-#### `getEntryDebugBlocks` — L14–L115 · public API
-
-Получает entry debug blocks из принадлежащего модулю источника данных.
-
-- Параметры: `entry`.
-
-- Основные вызовы: `formatNullable`, `Object.entries`, `formatBasis`, `formatNullReasons`, `Object.keys`, `formatEmotionSignals`.
-
-#### `formatDebugValue` — L117–L120 · public API
-
-Преобразует debug value в стабильное представление для UI, сети или хранения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `String`.
-
-#### `formatEntryDebugText` — L122–L133 · public API
-
-Преобразует entry debug text в стабильное представление для UI, сети или хранения.
-
-- Параметры: `blocks`.
-
-- Основные вызовы: `flatMap`, `formatDebugValue`.
-
-#### `formatNullable` — L135–L137 · internal helper
-
-Преобразует nullable в стабильное представление для UI, сети или хранения.
-
-- Параметры: `value`.
-
-#### `formatBasis` — L139–L141 · internal helper
-
-Преобразует basis в стабильное представление для UI, сети или хранения.
-
-- Параметры: `basis`.
-
-#### `formatNullReasons` — L143–L153 · internal helper
-
-Преобразует null reasons в стабильное представление для UI, сети или хранения.
-
-- Параметры: `signals`.
-
-#### `formatEmotionSignals` — L155–L174 · internal helper
-
-Преобразует emotion signals в стабильное представление для UI, сети или хранения.
-
-- Параметры: `signals`.
-
-- Основные вызовы: `getRecord`, `push`, `Object.entries`, `String`.
-
-#### `getRecord` — L176–L180 · internal helper
-
-Получает record из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Array.isArray`.
-
-#### Публичные типы, классы и константы
-
-- `type DebugBlock` — L4
-- `type DebugRow` — L9
-
-### `client/src/components/EntryDebugTooltip.tsx`
-
-Пользовательский UI-компонент: entry debug tooltip.
-
-#### `EntryDebugWaitCue` — L19–L31 · public API
-
-Рендерит React-компонент EntryDebugWaitCue и связывает его props с соответствующей UI-поверхностью.
-
-#### `EntryDebugTooltip` — L33–L174 · public API
-
-Рендерит React-компонент EntryDebugTooltip и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ entry, maxHeight, onBlur, onFocus, onPointerEnter, onPointerLeave, style, tooltipRef, }`.
-
-- Основные вызовы: `useMemo`, `getEntryDebugBlocks`, `formatEntryDebugText`, `useRef`, `useState`, `useEffect`, `window.clearTimeout`, `useCallback`.
-
-#### `CopyIcon` — L176–L193 · internal helper
-
-Рендерит React-компонент CopyIcon и связывает его props с соответствующей UI-поверхностью.
-
-#### `CheckIcon` — L195–L207 · internal helper
-
-Рендерит React-компонент CheckIcon и связывает его props с соответствующей UI-поверхностью.
-
-#### `DebugTooltipRow` — L209–L218 · internal helper
-
-Рендерит React-компонент DebugTooltipRow и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ label, value }`.
-
-- Основные вызовы: `formatDebugValue`.
-
-#### `writeTextToClipboard` — L220–L250 · internal helper
-
-Сохраняет text to clipboard в принадлежащем модулю хранилище или read model.
-
-- Параметры: `text`.
-
-- Основные вызовы: `writeText`, `createElement`, `setAttribute`, `appendChild`, `focus`, `select`, `execCommand`, `removeChild`.
 
 ### `client/src/components/floating/FloatingLayerContext.ts`
 
@@ -1194,24 +917,6 @@ UI-компонент редактора: self report menu.
 
 - Параметры: `{ className = "h-5 w-5" }`.
 
-### `client/src/components/InsightStrip.tsx`
-
-Пользовательский UI-компонент: insight strip.
-
-#### `InsightStrip` — L9–L29 · public API
-
-Рендерит React-компонент InsightStrip и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ insights }`.
-
-- Основные вызовы: `useI18n`, `t`, `getLayerLabelKey`.
-
-#### `getLayerLabelKey` — L31–L35 · internal helper
-
-Получает layer label key из принадлежащего модулю источника данных.
-
-- Параметры: `layer`.
-
 ### `client/src/components/LanguageSelect.tsx`
 
 Пользовательский UI-компонент: language select.
@@ -1235,96 +940,6 @@ UI-компонент редактора: self report menu.
 - Параметры: `{ canLockAthena, currentPage, isSettingsOpen, onLockAthena, onNavigate, onOpenSettings, }`.
 
 - Основные вызовы: `useI18n`, `t`, `onNavigate`.
-
-### `client/src/components/Observations.tsx`
-
-Пользовательский UI-компонент: observations.
-
-#### `Observations` — L17–L133 · public API
-
-Рендерит React-компонент Observations и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ insights, personaTextEnabled, onClose, onDeleteInsight, onRefresh, }`.
-
-- Основные вызовы: `useI18n`, `groupInsightsByDate`, `t`, `formatLongDate`, `getLayerLabelKey`, `formatPeriod`, `formatInsightText`, `formatGeneratedAt`.
-
-#### `groupInsightsByDate` — L135–L148 · internal helper
-
-Возвращает вычисленное значение insights by date для использования внутри данного модуля.
-
-- Параметры: `insights`.
-
-- Основные вызовы: `set`, `get`, `Array.from`.
-
-#### `compareInsights` — L150–L158 · internal helper
-
-Сравнивает insights для стабильного детерминированного порядка.
-
-- Параметры: `left`, `right`.
-
-- Основные вызовы: `localeCompare`, `layerWeight`.
-
-#### `layerWeight` — L160–L164 · internal helper
-
-Возвращает вычисленное значение layer weight для использования внутри данного модуля.
-
-- Параметры: `layer`.
-
-#### `formatPeriod` — L166–L175 · internal helper
-
-Преобразует period в стабильное представление для UI, сети или хранения.
-
-- Параметры: `insight`, `language`.
-
-- Основные вызовы: `formatLongDate`.
-
-#### `formatGeneratedAt` — L177–L184 · internal helper
-
-Преобразует generated at в стабильное представление для UI, сети или хранения.
-
-- Параметры: `value`, `language`.
-
-- Основные вызовы: `toLocaleString`, `getLocale`.
-
-#### `getLayerLabelKey` — L186–L190 · internal helper
-
-Получает layer label key из принадлежащего модулю источника данных.
-
-- Параметры: `layer`.
-
-### `client/src/components/ServerAuthGate.tsx`
-
-Пользовательский UI-компонент: server auth gate.
-
-#### `ServerAuthGate` — L19–L193 · public API
-
-Рендерит React-компонент ServerAuthGate и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ error, isBusy, phase, onLogin, onRetry, onSetup, }`.
-
-- Основные вызовы: `useI18n`, `useState`, `useEffect`, `setLocalError`, `setPassword`, `setConfirmation`, `preventDefault`, `onRetry`.
-
-#### `handleSubmit` — L42–L76 · nested helper в ServerAuthGate
-
-Исполняет сценарий submit и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `preventDefault`, `setLocalError`, `onRetry`, `t`, `onSetup`, `onLogin`.
-
-#### `formatAuthError` — L195–L208 · internal helper
-
-Преобразует auth error в стабильное представление для UI, сети или хранения.
-
-- Параметры: `error`, `t`.
-
-- Основные вызовы: `t`.
-
-### `client/src/components/Settings.tsx`
-
-Пользовательский UI-компонент: settings.
-
-Именованных функций нет: файл служит re-export границей.
 
 ### `client/src/components/TooltipButton.tsx`
 
@@ -1386,156 +1001,70 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Math.max`.
 
-### `client/src/components/useEntryDebugTooltip.ts`
+### `client/src/features/auth/authApi.ts`
 
-Пользовательский UI-компонент: use entry debug tooltip.
+Клиентская feature server-auth: auth api.
 
-#### `useEntryDebugTooltip` — L25–L167 · public API
+#### `loadServerAuthStatus` — L33–L37 · public API
 
-Управляет React-состоянием, derived values и side effects для entry debug tooltip.
+Получает server auth status из принадлежащего модулю источника данных.
 
-- Параметры: `{ enabled }`.
+- Основные вызовы: `fetch`, `json`.
 
-- Основные вызовы: `useRef`, `useState`, `useCallback`, `window.clearTimeout`, `clearOpenTimer`, `clearCloseTimer`, `setPosition`, `setStatus`.
+#### `setupServerOwner` — L39–L50 · public API
 
-#### `handleAnchorPointerEnter` — L110–L112 · nested helper в useEntryDebugTooltip
+Изменяет up server owner, сохраняя инварианты данного модуля.
 
-Исполняет сценарий anchor pointer enter и координирует его побочные эффекты.
+- Параметры: `payload`.
 
-- Основные вызовы: `start`.
+- Основные вызовы: `fetch`, `jsonHeaders`, `text`, `json`.
 
-#### `handleAnchorPointerLeave` — L114–L116 · nested helper в useEntryDebugTooltip
+#### `loginServerOwner` — L52–L63 · public API
 
-Исполняет сценарий anchor pointer leave и координирует его побочные эффекты.
+Возвращает вычисленное значение login server owner для использования внутри данного модуля.
 
-- Основные вызовы: `closeSoon`.
+- Параметры: `payload`.
 
-#### `handleAnchorFocus` — L118–L120 · nested helper в useEntryDebugTooltip
+- Основные вызовы: `fetch`, `jsonHeaders`, `text`, `json`.
 
-Исполняет сценарий anchor focus и координирует его побочные эффекты.
+#### `logoutServerOwner` — L65–L74 · public API
 
-- Основные вызовы: `start`.
+Выполняет локальную операцию logout server owner внутри ответственности этого файла.
 
-#### `handleAnchorBlur` — L122–L125 · nested helper в useEntryDebugTooltip
-
-Исполняет сценарий anchor blur и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `isMovingWithinDebugSurface`, `closeSoon`.
-
-#### `handleTooltipPointerEnter` — L127–L129 · nested helper в useEntryDebugTooltip
-
-Исполняет сценарий tooltip pointer enter и координирует его побочные эффекты.
-
-- Основные вызовы: `cancelClose`.
-
-#### `handleTooltipPointerLeave` — L131–L133 · nested helper в useEntryDebugTooltip
-
-Исполняет сценарий tooltip pointer leave и координирует его побочные эффекты.
-
-- Основные вызовы: `closeSoon`.
-
-#### `handleTooltipFocus` — L135–L137 · nested helper в useEntryDebugTooltip
-
-Исполняет сценарий tooltip focus и координирует его побочные эффекты.
-
-- Основные вызовы: `cancelClose`.
-
-#### `handleTooltipBlur` — L139–L142 · nested helper в useEntryDebugTooltip
-
-Исполняет сценарий tooltip blur и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `isMovingWithinDebugSurface`, `closeSoon`.
-
-#### `isMovingWithinDebugSurface` — L144–L150 · nested helper в useEntryDebugTooltip
-
-Проверяет условие moving within debug surface и возвращает логический результат без изменения состояния.
-
-- Параметры: `target`.
-
-- Основные вызовы: `Boolean`, `contains`.
-
-#### `getDebugTooltipPosition` — L169–L199 · internal helper
-
-Получает debug tooltip position из принадлежащего модулю источника данных.
-
-- Параметры: `anchor`.
-
-- Основные вызовы: `getBoundingClientRect`, `Math.min`, `clamp`.
-
-#### `clamp` — L201–L203 · internal helper
-
-Ограничивает clamp допустимым диапазоном или точностью.
-
-- Параметры: `value`, `min`, `max`.
-
-- Основные вызовы: `Math.min`, `Math.max`.
+- Основные вызовы: `fetch`, `csrfHeaders`, `text`.
 
 #### Публичные типы, классы и константы
 
-- `type DebugTooltipPosition` — L9
-- `type DebugTooltipStatus` — L16
+- `type ServerAuthUser` — L9
+- `type ServerAuthStatus` — L15
 
-### `client/src/components/VaultGate.tsx`
+### `client/src/features/auth/ui/ServerAuthGate.tsx`
 
-Пользовательский UI-компонент: vault gate.
+Клиентская feature server-auth: server auth gate.
 
-#### `VaultGate` — L24–L319 · public API
+#### `ServerAuthGate` — L19–L193 · public API
 
-Рендерит React-компонент VaultGate и связывает его props с соответствующей UI-поверхностью.
+Рендерит React-компонент ServerAuthGate и связывает его props с соответствующей UI-поверхностью.
 
-- Параметры: `{ activeProfileId, error, isBusy, profiles, onCreateProfile, onSelectProfile, onUnlock, }`.
+- Параметры: `{ error, isBusy, phase, onLogin, onRetry, onSetup, }`.
 
-- Основные вызовы: `useI18n`, `useState`, `useRef`, `useEffect`, `contains`, `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`, `addEventListener`.
+- Основные вызовы: `useI18n`, `useState`, `useEffect`, `setLocalError`, `setPassword`, `setConfirmation`, `preventDefault`, `onRetry`.
 
-#### `handlePointerDown` — L46–L56 · nested helper в VaultGate
-
-Исполняет сценарий pointer down и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `contains`, `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`.
-
-#### `handleKeyDown` — L58–L63 · nested helper в VaultGate
-
-Исполняет сценарий key down и координирует его побочные эффекты.
-
-- Параметры: `event`.
-
-- Основные вызовы: `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`.
-
-#### `handleSubmit` — L74–L93 · nested helper в VaultGate
+#### `handleSubmit` — L42–L76 · nested helper в ServerAuthGate
 
 Исполняет сценарий submit и координирует его побочные эффекты.
 
 - Параметры: `event`.
 
-- Основные вызовы: `preventDefault`, `setLocalError`, `t`, `onUnlock`, `composeVaultSecret`.
+- Основные вызовы: `preventDefault`, `setLocalError`, `onRetry`, `t`, `onSetup`, `onLogin`.
 
-#### `handleLanguageSelect` — L95–L98 · nested helper в VaultGate
+#### `formatAuthError` — L195–L208 · internal helper
 
-Исполняет сценарий language select и координирует его побочные эффекты.
-
-- Параметры: `nextLanguage`.
-
-- Основные вызовы: `setLanguage`, `setIsLanguageMenuOpen`.
-
-#### `formatVaultError` — L321–L335 · internal helper
-
-Преобразует vault error в стабильное представление для UI, сети или хранения.
+Преобразует auth error в стабильное представление для UI, сети или хранения.
 
 - Параметры: `error`, `t`.
 
 - Основные вызовы: `t`.
-
-### `client/src/features/auth/authApi.ts`
-
-Клиентская feature server-auth: auth api.
-
-Именованных функций нет: файл служит re-export границей.
 
 ### `client/src/features/auth/useServerAuth.ts`
 
@@ -1579,6 +1108,184 @@ UI-компонент редактора: self report menu.
 
 - `type ServerAuthPhase` — L11
 - `type ServerAuthError` — L18
+
+### `client/src/features/editor/content/athenaPhraseLibraries.ts`
+
+Клиентская feature редактора: athena phrase libraries.
+
+#### `getAthenaPhraseLibrary` — L20–L24 · public API
+
+Получает athena phrase library из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_PHRASE_LANGUAGES` — L7
+- `type AthenaPhraseLanguage` — L9
+- `const DEFAULT_ATHENA_PHRASE_LANGUAGE` — L11
+
+### `client/src/features/editor/content/athenaPhrasesDe.ts`
+
+Клиентская feature редактора: athena phrases de.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ATHENA_LIBRARY_DE` — L3
+
+### `client/src/features/editor/content/athenaPhrasesEn.ts`
+
+Клиентская feature редактора: athena phrases en.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ATHENA_LIBRARY_EN` — L3
+
+### `client/src/features/editor/content/athenaPhrasesRu.ts`
+
+Клиентская feature редактора: athena phrases ru.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ATHENA_LIBRARY_RU` — L3
+
+### `client/src/features/editor/content/athenaPhrasesTypes.ts`
+
+Клиентская feature редактора: athena phrases types.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type AthenaPhraseTime` — L1
+- `type AthenaPhraseTone` — L3
+- `type AthenaPhrase` — L5
+- `type AthenaPhraseLibrary` — L12
+
+### `client/src/features/editor/content/athenaPhrasesUk.ts`
+
+Клиентская feature редактора: athena phrases uk.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ATHENA_LIBRARY_UK` — L3
+
+### `client/src/features/editor/content/athenaPlaceholder.ts`
+
+Клиентская feature редактора: athena placeholder.
+
+#### `weightByTone` — L11–L28 · internal helper
+
+Возвращает вычисленное значение weight by tone для использования внутри данного модуля.
+
+- Параметры: `phrases`.
+
+- Основные вызовы: `push`.
+
+#### `getTimeBucket` — L30–L35 · internal helper
+
+Получает time bucket из принадлежащего модулю источника данных.
+
+- Параметры: `hours`.
+
+#### `filterByTime` — L37–L42 · internal helper
+
+Выбирает by time, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `phrases`, `current`.
+
+#### `pickGreetingWithSignals` — L44–L66 · internal helper
+
+Выбирает greeting with signals, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `phrases`, `signals`, `language`.
+
+- Основные вызовы: `pickPhrase`.
+
+#### `pickCTAWithSignals` — L68–L95 · internal helper
+
+Выбирает ctawith signals, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `phrases`, `signals`, `language`.
+
+- Основные вызовы: `weightByTone`, `pickPhrase`.
+
+#### `generateAthenaPlaceholder` — L97–L132 · public API
+
+Создаёт athena placeholder из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `insights`, `signals`, `language`.
+
+- Основные вызовы: `getHours`, `getTimeBucket`, `getAthenaPhraseLibrary`, `Math.random`, `pickCTAWithSignals`, `filterByTime`, `pickGreetingWithSignals`.
+
+### `client/src/features/editor/content/phrasePicker.ts`
+
+Клиентская feature редактора: phrase picker.
+
+#### `getBagKey` — L8–L10 · internal helper
+
+Получает bag key из принадлежащего модулю источника данных.
+
+- Параметры: `group`.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+#### `pickPhrase` — L12–L39 · public API
+
+Выбирает phrase, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `group`, `phrases`.
+
+- Основные вызовы: `getItem`, `getBagKey`, `Math.floor`, `Math.random`, `splice`, `setItem`.
+
+### `client/src/features/editor/draftRepository.ts`
+
+Локальный зашифрованный repository текущего editor draft.
+
+#### `saveLocalDraft` — L29–L40 · public API
+
+Сохраняет local draft в принадлежащем модулю хранилище или read model.
+
+- Параметры: `text`.
+
+- Основные вызовы: `toISOString`, `openAthenaLocalDb`, `transaction`, `idbRequest`, `put`, `objectStore`, `encryptLocalDraft`.
+
+#### `clearLocalDraft` — L42–L44 · public API
+
+Удаляет или очищает local draft с необходимыми связанными действиями.
+
+- Основные вызовы: `saveLocalDraft`.
+
+#### `migrateLegacyDraftToIndexedDb` — L46–L49 · public API
+
+Переводит legacy draft to indexed db из legacy-формы в текущую без потери поддерживаемых данных.
+
+- Основные вызовы: `getItem`, `removeItem`.
+
+#### `migrateDraftsToVault` — L51–L65 · public API
+
+Переводит drafts to vault из legacy-формы в текущую без потери поддерживаемых данных.
+
+- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `getAll`, `objectStore`, `isEncryptedDraftRecord`, `put`, `encryptLocalDraft`.
+
+#### `encryptLocalDraft` — L67–L79 · internal helper
+
+Выполняет криптографическое преобразование local draft в рамках локальной privacy boundary.
+
+- Параметры: `draft`.
+
+- Основные вызовы: `encryptVaultJson`.
+
+#### `isEncryptedDraftRecord` — L81–L90 · internal helper
+
+Проверяет условие encrypted draft record и возвращает логический результат без изменения состояния.
+
+- Параметры: `record`.
+
+- Основные вызовы: `isVaultEncryptedPayload`.
 
 ### `client/src/features/editor/editorInsight.ts`
 
@@ -1655,11 +1362,117 @@ UI-компонент редактора: self report menu.
 - `type SuggestionOption` — L14
 - `type MenuPosition` — L26
 
+### `client/src/features/editor/ui/Editor.tsx`
+
+Клиентская feature редактора: editor.
+
+#### `Editor` — L42–L268 · public API
+
+Рендерит React-компонент Editor и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ analysisEnabled, availableTags, editingEntryId, entryDate, editorInsight, personaTextEnabled, tags, text, onChangeTags, onChangeText, onNewBlankPage, onToggleAnalysisEnabled, }`.
+
+- Основные вызовы: `useI18n`, `useState`, `useRef`, `useMemo`, `buildAthenaPlaceholder`, `useEditorTagControls`, `useFloatingTextOcclusion`, `useCallback`.
+
+#### `loadOrAttachSelfReport` — L113–L141 · nested helper в Editor
+
+Получает or attach self report из принадлежащего модулю источника данных.
+
+- Основные вызовы: `setSelfReportValues`, `catch`, `persistSelfReport`, `getEntrySelfReport`.
+
+### `client/src/features/editor/ui/EditorActionButtons.tsx`
+
+Клиентская feature редактора: editor action buttons.
+
+#### `EditorActionButtons` — L18–L171 · public API
+
+Рендерит React-компонент EditorActionButtons и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ analysisEnabled, selfReportCloseSignal, selfReportValues, onInsertTag, onSelfReportCommit, onNewBlankPage, onToggleAnalysisEnabled, }`.
+
+- Основные вызовы: `useI18n`, `useState`, `useRef`, `useEffect`, `window.clearTimeout`, `setIsSelfReportMenuOpen`, `setIsHeartPulsing`, `setHeartPulseKey`.
+
+#### `handleSelfReportClick` — L41–L54 · nested helper в EditorActionButtons
+
+Исполняет сценарий self report click и координирует его побочные эффекты.
+
+- Основные вызовы: `window.clearTimeout`, `setIsSelfReportMenuOpen`, `setIsHeartPulsing`, `setHeartPulseKey`, `window.setTimeout`.
+
+### `client/src/features/editor/ui/EditorTagChips.tsx`
+
+Клиентская feature редактора: editor tag chips.
+
+#### `EditorTagChips` — L14–L85 · public API
+
+Рендерит React-компонент EditorTagChips и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ editingTagIndex, editingTagValue, tags, onCancelEdit, onChangeEditingValue, onCommitEdit, onRemoveTag, onStartEditingTag, }`.
+
+- Основные вызовы: `useI18n`, `onChangeEditingValue`, `preventDefault`, `onCommitEdit`, `onCancelEdit`, `onStartEditingTag`, `t`, `onRemoveTag`.
+
+### `client/src/features/editor/ui/EditorTagMenu.tsx`
+
+Клиентская feature редактора: editor tag menu.
+
+#### `EditorTagMenu` — L15–L68 · public API
+
+Рендерит React-компонент EditorTagMenu и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ isOpen, menuPosition, selectedIndex, suggestions, onCommitSuggestion, }`.
+
+- Основные вызовы: `useI18n`, `onCommitSuggestion`, `t`.
+
+### `client/src/features/editor/ui/LineLever.tsx`
+
+Клиентская feature редактора: line lever.
+
+#### `LineLever` — L10–L33 · public API
+
+Рендерит React-компонент LineLever и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ label, testId, value, onChange }`.
+
+- Основные вызовы: `onChange`, `Number`.
+
+### `client/src/features/editor/ui/SelfReportMenu.tsx`
+
+Клиентская feature редактора: self report menu.
+
+#### `SelfReportMenu` — L61–L175 · public API
+
+Рендерит React-компонент SelfReportMenu и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ externalCloseSignal, isOpen, values: savedValues, onCommit, onClose, }`.
+
+- Основные вызовы: `useI18n`, `useRef`, `useState`, `useEffect`, `setValues`, `setHasInteracted`, `useCallback`, `onCommit`.
+
+#### `handlePointerDown` — L94–L104 · nested helper в SelfReportMenu
+
+Исполняет сценарий pointer down и координирует его побочные эффекты.
+
+- Параметры: `event`.
+
+- Основные вызовы: `closest`, `closePanel`.
+
+#### `setAxisValue` — L119–L125 · nested helper в SelfReportMenu
+
+Изменяет axis value, сохраняя инварианты данного модуля.
+
+- Параметры: `axis`, `value`.
+
+- Основные вызовы: `setHasInteracted`, `setValues`.
+
+#### `getSelfReportDefaultPosition` — L177–L201 · internal helper
+
+Получает self report default position из принадлежащего модулю источника данных.
+
+- Основные вызовы: `parseFloat`, `window.getComputedStyle`, `isFinite`, `Math.min`, `Math.max`.
+
 ### `client/src/features/editor/useEditorDraft.ts`
 
 Владеет жизненным циклом черновика и записи: автосохранение, локальная запись, удаление пустых записей и постановка sync/extraction jobs.
 
-#### `normalizeDraftTags` — L40–L48 · internal helper
+#### `normalizeDraftTags` — L45–L53 · internal helper
 
 Приводит draft tags к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
@@ -1667,7 +1480,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Array.from`, `toLocaleLowerCase`, `replace`.
 
-#### `tagsAreEqual` — L50–L55 · internal helper
+#### `tagsAreEqual` — L55–L60 · internal helper
 
 Сравнивает два набора тегов после одинаковой нормализации, чтобы autosave не реагировал на эквивалентные значения.
 
@@ -1675,7 +1488,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeDraftTags`.
 
-#### `useEditorDraft` — L57–L423 · public API
+#### `useEditorDraft` — L62–L428 · public API
 
 Управляет черновиком и активной записью, защищает autosave от гонок, пишет локально и ставит textless sync/extraction jobs.
 
@@ -1683,7 +1496,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useState`, `useRef`, `useEffect`, `useCallback`, `normalizeDraftTags`, `tagsAreEqual`, `setDraftStatus`, `getLocalEntry`.
 
-#### `changeText` — L298–L302 · nested helper в useEditorDraft
+#### `changeText` — L303–L307 · nested helper в useEditorDraft
 
 Обновляет текст текущего draft и помечает editor state ожидающим autosave.
 
@@ -1691,7 +1504,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setDraftText`, `setDraftStatus`, `setSaveStatus`.
 
-#### `changeTags` — L304–L310 · nested helper в useEditorDraft
+#### `changeTags` — L309–L315 · nested helper в useEditorDraft
 
 Нормализует новый набор тегов draft и помечает его ожидающим сохранения.
 
@@ -1699,19 +1512,19 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeDraftTags`, `setDraftTags`, `setDraftStatus`, `setSaveStatus`.
 
-#### `toggleAnalysisEnabled` — L312–L316 · nested helper в useEditorDraft
+#### `toggleAnalysisEnabled` — L317–L321 · nested helper в useEditorDraft
 
 Переключает пользовательское разрешение на анализ активной записи и инициирует сохранение нового состояния.
 
 - Основные вызовы: `setDraftAnalysisEnabled`, `setDraftStatus`, `setSaveStatus`.
 
-#### `newBlankPage` — L318–L324 · nested helper в useEditorDraft
+#### `newBlankPage` — L323–L329 · nested helper в useEditorDraft
 
 Завершает pending autosave текущей страницы, затем очищает editor для новой записи.
 
 - Основные вызовы: `clearAutosaveTimer`, `persistEditorText`, `resetDraftState`, `clearSelectedEntry`.
 
-#### `editEntry` — L326–L348 · nested helper в useEditorDraft
+#### `editEntry` — L331–L353 · nested helper в useEditorDraft
 
 Сохраняет текущий draft и загружает выбранную локальную запись в editor без потери её metadata.
 
@@ -1719,7 +1532,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `clearAutosaveTimer`, `persistEditorText`, `normalizeDraftTags`, `setEditingEntryId`, `setDraftText`, `setDraftTags`, `setDraftAnalysisEnabled`, `selectEntry`.
 
-#### `clearIfEditingEntry` — L350–L363 · nested helper в useEditorDraft
+#### `clearIfEditingEntry` — L355–L368 · nested helper в useEditorDraft
 
 Сбрасывает editor только когда удалённая запись сейчас открыта для редактирования.
 
@@ -1727,29 +1540,29 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setEditingEntryId`, `setDraftText`, `setDraftTags`, `setDraftAnalysisEnabled`.
 
-#### `resetAfterLocalDataClear` — L365–L377 · nested helper в useEditorDraft
+#### `resetAfterLocalDataClear` — L370–L382 · nested helper в useEditorDraft
 
 Очищает все editor refs и React state после удаления локальных данных профиля.
 
 - Основные вызовы: `setDraftText`, `setDraftTags`, `setDraftAnalysisEnabled`, `setEditingEntryId`, `setSaveStatus`.
 
-#### `activeEntryId` — L379–L381 · nested helper в useEditorDraft
+#### `activeEntryId` — L384–L386 · nested helper в useEditorDraft
 
 Возвращает id записи, которой сейчас принадлежит editor draft.
 
-#### `clearAutosaveTimer` — L383–L388 · nested helper в useEditorDraft
+#### `clearAutosaveTimer` — L388–L393 · nested helper в useEditorDraft
 
 Отменяет pending autosave timeout и очищает ссылку на него.
 
 - Основные вызовы: `window.clearTimeout`.
 
-#### `resetDraftState` — L390–L401 · nested helper в useEditorDraft
+#### `resetDraftState` — L395–L406 · nested helper в useEditorDraft
 
 Возвращает editor draft, refs и статусы сохранения в исходное пустое состояние.
 
 - Основные вызовы: `setEditingEntryId`, `setDraftText`, `setDraftTags`, `setDraftAnalysisEnabled`.
 
-#### `enqueuePendingEntrySyncJob` — L425–L445 · internal helper
+#### `enqueuePendingEntrySyncJob` — L430–L450 · internal helper
 
 Оркестрирует pending entry sync job в инфраструктуре синхронизации или фоновой очереди.
 
@@ -1757,7 +1570,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `catch`, `enqueueEntrySyncJob`.
 
-#### `enqueuePendingSignalJob` — L447–L468 · internal helper
+#### `enqueuePendingSignalJob` — L452–L473 · internal helper
 
 Оркестрирует pending signal job в инфраструктуре синхронизации или фоновой очереди.
 
@@ -1767,8 +1580,8 @@ UI-компонент редактора: self report menu.
 
 #### Публичные типы, классы и константы
 
-- `type DraftStatus` — L25
-- `type SaveStatus` — L26
+- `type DraftStatus` — L30
+- `type SaveStatus` — L31
 
 ### `client/src/features/editor/useEditorTagControls.ts`
 
@@ -1957,7 +1770,43 @@ UI-компонент редактора: self report menu.
 
 Клиентская feature архива записей: entries api.
 
-Именованных функций нет: файл служит re-export границей.
+#### `loadServerEntries` — L25–L35 · public API
+
+Получает server entries из принадлежащего модулю источника данных.
+
+- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
+
+#### `loadServerEntry` — L37–L49 · public API
+
+Получает server entry из принадлежащего модулю источника данных.
+
+- Параметры: `entryId`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `handleUnauthorized`, `json`.
+
+#### `createEntry` — L51–L63 · public API
+
+Создаёт entry из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `payload`.
+
+- Основные вызовы: `fetch`, `csrfJsonHeaders`, `handleUnauthorized`, `createApiHttpError`, `json`.
+
+#### `updateServerEntry` — L65–L80 · public API
+
+Изменяет server entry, сохраняя инварианты данного модуля.
+
+- Параметры: `entryId`, `payload`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `handleUnauthorized`, `createApiHttpError`, `json`.
+
+#### `deleteServerEntry` — L82–L92 · public API
+
+Удаляет или очищает server entry с необходимыми связанными действиями.
+
+- Параметры: `entryId`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfHeaders`, `handleUnauthorized`, `text`.
 
 ### `client/src/features/entries/entryFilters.ts`
 
@@ -2016,6 +1865,28 @@ UI-компонент редактора: self report menu.
 - Параметры: `selectedTags`, `availableTags`.
 
 - Основные вызовы: `normalizeTag`, `has`.
+
+### `client/src/features/entries/entryPreferences.ts`
+
+Клиентская feature архива записей: entry preferences.
+
+#### `getEntrySortDirection` — L6–L10 · public API
+
+Получает entry sort direction из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `getProfileScopedStorageKey`.
+
+#### `setEntrySortDirection` — L12–L14 · public API
+
+Изменяет entry sort direction, сохраняя инварианты данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `setItem`, `getProfileScopedStorageKey`.
+
+#### Публичные типы, классы и константы
+
+- `const ENTRY_SORT_DIRECTION_KEY` — L4
 
 ### `client/src/features/entries/entrySearch.ts`
 
@@ -2227,7 +2098,7 @@ UI-компонент редактора: self report menu.
 
 Клиентская feature архива записей: entry state.
 
-#### `mergeEntryState` — L10–L50 · public API
+#### `mergeEntryState` — L9–L49 · public API
 
 Преобразует или объединяет entry state по правилам домена.
 
@@ -2235,7 +2106,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeSignal`, `normalizeMetadata`.
 
-#### `mergeServerEntryIntoView` — L52–L68 · public API
+#### `mergeServerEntryIntoView` — L51–L67 · public API
 
 Преобразует или объединяет server entry into view по правилам домена.
 
@@ -2243,7 +2114,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeSignal`, `normalizeMetadata`.
 
-#### `sortEntries` — L70–L77 · public API
+#### `sortEntries` — L69–L76 · public API
 
 Сравнивает entries для стабильного детерминированного порядка.
 
@@ -2251,13 +2122,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `compareEntries`.
 
-#### `normalizeMetadata` — L79–L88 · internal helper
+#### `normalizeMetadata` — L78–L87 · internal helper
 
 Приводит metadata к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `metadata`.
 
-#### `compareEntries` — L90–L104 · internal helper
+#### `compareEntries` — L89–L103 · internal helper
 
 Сравнивает entries для стабильного детерминированного порядка.
 
@@ -2265,17 +2136,486 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `localeCompare`.
 
+### `client/src/features/entries/entryTypes.ts`
+
+Клиентская feature архива записей: entry types.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type EntrySortDirection` — L4
+- `type LocalEntry` — L6
+- `type EntryView` — L21
+
+### `client/src/features/entries/localEntryRepository.ts`
+
+Локальный зашифрованный repository записей и их browser-only текста.
+
+#### `getAllLocalEntries` — L25–L33 · public API
+
+Получает all local entries из принадлежащего модулю источника данных.
+
+- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `getAll`, `objectStore`, `Promise.all`.
+
+#### `getLocalEntry` — L35–L42 · public API
+
+Получает local entry из принадлежащего модулю источника данных.
+
+- Параметры: `id`.
+
+- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `get`, `objectStore`, `normalizeLocalEntry`, `readStoredLocalEntry`.
+
+#### `saveLocalEntry` — L44–L49 · public API
+
+Сохраняет local entry в принадлежащем модулю хранилище или read model.
+
+- Параметры: `entry`.
+
+- Основные вызовы: `encryptLocalEntry`, `openAthenaLocalDb`, `transaction`, `idbRequest`, `put`, `objectStore`.
+
+#### `updateLocalEntry` — L51–L61 · public API
+
+Изменяет local entry, сохраняя инварианты данного модуля.
+
+- Параметры: `id`, `patch`.
+
+- Основные вызовы: `getLocalEntry`, `toISOString`, `saveLocalEntry`.
+
+#### `deleteLocalEntry` — L63–L67 · public API
+
+Удаляет или очищает local entry с необходимыми связанными действиями.
+
+- Параметры: `id`.
+
+- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `delete`, `objectStore`.
+
+#### `replaceAllLocalEntries` — L69–L76 · public API
+
+Сохраняет replace all local entries в принадлежащем модулю хранилище или read model.
+
+- Параметры: `entries`.
+
+- Основные вызовы: `Promise.all`, `openAthenaLocalDb`, `transaction`, `objectStore`, `idbRequest`, `clear`, `put`.
+
+#### `migrateEntriesToVault` — L78–L91 · public API
+
+Переводит entries to vault из legacy-формы в текущую без потери поддерживаемых данных.
+
+- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `getAll`, `objectStore`, `isEncryptedLocalEntryRecord`, `encryptLocalEntry`, `put`.
+
+#### `createClientEntryId` — L93–L96 · public API
+
+Создаёт client entry id из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Основные вызовы: `crypto.randomUUID`, `now`, `Math.random`.
+
+#### `createTextHash` — L98–L104 · public API
+
+Создаёт text hash из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `text`.
+
+- Основные вызовы: `encode`, `digest`, `Array.from`, `padStart`.
+
+#### `compareLocalEntries` — L106–L111 · internal helper
+
+Сравнивает local entries для стабильного детерминированного порядка.
+
+- Параметры: `left`, `right`.
+
+- Основные вызовы: `localeCompare`.
+
+#### `normalizeLocalEntry` — L113–L115 · internal helper
+
+Приводит local entry к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `entry`.
+
+- Основные вызовы: `normalizeSignal`.
+
+#### `readStoredLocalEntry` — L117–L125 · internal helper
+
+Получает stored local entry из принадлежащего модулю источника данных.
+
+- Параметры: `record`.
+
+- Основные вызовы: `isEncryptedLocalEntryRecord`, `decryptVaultJson`, `createEntryVaultAssociatedData`.
+
+#### `encryptLocalEntry` — L127–L140 · internal helper
+
+Выполняет криптографическое преобразование local entry в рамках локальной privacy boundary.
+
+- Параметры: `entry`.
+
+- Основные вызовы: `encryptVaultJson`, `createEntryVaultAssociatedData`.
+
+#### `isEncryptedLocalEntryRecord` — L142–L151 · internal helper
+
+Проверяет условие encrypted local entry record и возвращает логический результат без изменения состояния.
+
+- Параметры: `record`.
+
+- Основные вызовы: `isVaultEncryptedPayload`.
+
+#### `createEntryVaultAssociatedData` — L153–L155 · internal helper
+
+Создаёт entry vault associated data из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entryId`.
+
+### `client/src/features/entries/ui/EntriesPage.tsx`
+
+Клиентская feature архива записей: entries page.
+
+#### `EntriesPage` — L30–L145 · public API
+
+Рендерит React-компонент EntriesPage и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ debugMode, entries, selectedEntryId, searchQuery, includedTags, excludedTags, hasActiveFilters, isSearching, onClearFilters, onDeleteEntry, onEditEntry, onOpenObservations, onSearchQueryChange, onSelectEntry, onToggleEntryAnalysis, onToggleExcludedTag, onToggleTag, }`.
+
+- Основные вызовы: `useI18n`, `useRef`, `useState`, `useEntryColumnCount`, `useMemo`, `distributeEntriesByColumn`, `useEffect`, `setExpandedEntryId`.
+
+#### `handleSelectEntry` — L68–L71 · nested helper в EntriesPage
+
+Исполняет сценарий select entry и координирует его побочные эффекты.
+
+- Параметры: `entryId`.
+
+- Основные вызовы: `setExpandedEntryId`, `onSelectEntry`.
+
+### `client/src/features/entries/ui/EntriesUtilityPanel.tsx`
+
+Клиентская feature архива записей: entries utility panel.
+
+#### `EntriesUtilityPanel` — L7–L105 · public API
+
+Рендерит React-компонент EntriesUtilityPanel и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ searchQuery, includedTags, excludedTags, hasActiveFilters, isSearching, onClearFilters, onOpenObservations, onSearchQueryChange, onToggleExcludedTag, onToggleTag, }`.
+
+- Основные вызовы: `useI18n`, `t`, `onSearchQueryChange`.
+
+#### `ActiveTagFilters` — L107–L161 · internal helper
+
+Рендерит React-компонент ActiveTagFilters и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ includedTags, excludedTags, onToggleTag, onToggleExcludedTag, }`.
+
+- Основные вызовы: `useI18n`, `t`, `tagTestIdValue`, `onToggleTag`, `onToggleExcludedTag`.
+
+### `client/src/features/entries/ui/entryDebugBlocks.ts`
+
+Клиентская feature архива записей: entry debug blocks.
+
+#### `getEntryDebugBlocks` — L14–L115 · public API
+
+Получает entry debug blocks из принадлежащего модулю источника данных.
+
+- Параметры: `entry`.
+
+- Основные вызовы: `formatNullable`, `Object.entries`, `formatBasis`, `formatNullReasons`, `Object.keys`, `formatEmotionSignals`.
+
+#### `formatDebugValue` — L117–L120 · public API
+
+Преобразует debug value в стабильное представление для UI, сети или хранения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `String`.
+
+#### `formatEntryDebugText` — L122–L133 · public API
+
+Преобразует entry debug text в стабильное представление для UI, сети или хранения.
+
+- Параметры: `blocks`.
+
+- Основные вызовы: `flatMap`, `formatDebugValue`.
+
+#### `formatNullable` — L135–L137 · internal helper
+
+Преобразует nullable в стабильное представление для UI, сети или хранения.
+
+- Параметры: `value`.
+
+#### `formatBasis` — L139–L141 · internal helper
+
+Преобразует basis в стабильное представление для UI, сети или хранения.
+
+- Параметры: `basis`.
+
+#### `formatNullReasons` — L143–L153 · internal helper
+
+Преобразует null reasons в стабильное представление для UI, сети или хранения.
+
+- Параметры: `signals`.
+
+#### `formatEmotionSignals` — L155–L174 · internal helper
+
+Преобразует emotion signals в стабильное представление для UI, сети или хранения.
+
+- Параметры: `signals`.
+
+- Основные вызовы: `getRecord`, `push`, `Object.entries`, `String`.
+
+#### `getRecord` — L176–L180 · internal helper
+
+Получает record из принадлежащего модулю источника данных.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`.
+
+#### Публичные типы, классы и константы
+
+- `type DebugBlock` — L4
+- `type DebugRow` — L9
+
+### `client/src/features/entries/ui/EntryDebugTooltip.tsx`
+
+Клиентская feature архива записей: entry debug tooltip.
+
+#### `EntryDebugWaitCue` — L19–L31 · public API
+
+Рендерит React-компонент EntryDebugWaitCue и связывает его props с соответствующей UI-поверхностью.
+
+#### `EntryDebugTooltip` — L33–L174 · public API
+
+Рендерит React-компонент EntryDebugTooltip и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ entry, maxHeight, onBlur, onFocus, onPointerEnter, onPointerLeave, style, tooltipRef, }`.
+
+- Основные вызовы: `useMemo`, `getEntryDebugBlocks`, `formatEntryDebugText`, `useRef`, `useState`, `useEffect`, `window.clearTimeout`, `useCallback`.
+
+#### `CopyIcon` — L176–L193 · internal helper
+
+Рендерит React-компонент CopyIcon и связывает его props с соответствующей UI-поверхностью.
+
+#### `CheckIcon` — L195–L207 · internal helper
+
+Рендерит React-компонент CheckIcon и связывает его props с соответствующей UI-поверхностью.
+
+#### `DebugTooltipRow` — L209–L218 · internal helper
+
+Рендерит React-компонент DebugTooltipRow и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ label, value }`.
+
+- Основные вызовы: `formatDebugValue`.
+
+#### `writeTextToClipboard` — L220–L250 · internal helper
+
+Сохраняет text to clipboard в принадлежащем модулю хранилище или read model.
+
+- Параметры: `text`.
+
+- Основные вызовы: `writeText`, `createElement`, `setAttribute`, `appendChild`, `focus`, `select`, `execCommand`, `removeChild`.
+
+### `client/src/features/entries/ui/entryGrid.ts`
+
+Клиентская feature архива записей: entry grid.
+
+#### `useEntryColumnCount` — L4–L37 · public API
+
+Управляет React-состоянием, derived values и side effects для entry column count.
+
+- Параметры: `containerRef`, `itemCount`.
+
+- Основные вызовы: `useState`, `useEffect`, `getEntryColumnCount`, `setColumnCount`, `updateColumnCount`, `window.addEventListener`, `window.removeEventListener`, `observe`.
+
+#### `updateColumnCount` — L14–L21 · nested helper в useEntryColumnCount
+
+Изменяет column count, сохраняя инварианты данного модуля.
+
+- Основные вызовы: `getEntryColumnCount`, `setColumnCount`.
+
+#### `getEntryColumnCount` — L39–L55 · internal helper
+
+Получает entry column count из принадлежащего модулю источника данных.
+
+- Параметры: `containerWidth`, `itemCount`.
+
+- Основные вызовы: `parseFloat`, `getComputedStyle`, `Math.max`, `Math.floor`, `Math.min`.
+
+#### `distributeEntriesByColumn` — L57–L68 · public API
+
+Возвращает вычисленное значение distribute entries by column для использования внутри данного модуля.
+
+- Параметры: `entries`, `columnCount`.
+
+- Основные вызовы: `Array.from`, `Math.max`, `Math.min`, `push`.
+
+### `client/src/features/entries/ui/entryTagId.ts`
+
+Клиентская feature архива записей: entry tag id.
+
+#### `tagTestIdValue` — L3–L5 · public API
+
+Возвращает вычисленное значение tag test id value для использования внутри данного модуля.
+
+- Параметры: `tag`.
+
+- Основные вызовы: `replace`, `normalizeTag`.
+
+### `client/src/features/entries/ui/EntryTile.tsx`
+
+Клиентская feature архива записей: entry tile.
+
+#### `EntryTile` — L15–L256 · public API
+
+Рендерит React-компонент EntryTile и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ debugMode, entry, isExpanded, isSelected, language, searchQuery, onDeleteEntry, onEditEntry, onSelectEntry, onToggleEntryAnalysis, onToggleTag, }`.
+
+- Основные вызовы: `useI18n`, `useEntryDebugTooltip`, `createPortal`, `preventDefault`, `onSelectEntry`, `t`, `stopPropagation`, `onToggleEntryAnalysis`.
+
+#### `handleKeyDown` — L82–L88 · nested helper в EntryTile
+
+Исполняет сценарий key down и координирует его побочные эффекты.
+
+- Параметры: `event`.
+
+- Основные вызовы: `preventDefault`, `onSelectEntry`.
+
+#### `EntryText` — L258–L272 · internal helper
+
+Рендерит React-компонент EntryText и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ text, query }`.
+
+- Основные вызовы: `findSearchHighlightRange`.
+
+#### `findSearchHighlightRange` — L274–L288 · internal helper
+
+Выбирает search highlight range, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `text`, `query`.
+
+- Основные вызовы: `parseEntrySearchQuery`, `findCaseInsensitiveRange`.
+
+#### `findCaseInsensitiveRange` — L290–L304 · internal helper
+
+Выбирает case insensitive range, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `text`, `term`.
+
+- Основные вызовы: `toLocaleLowerCase`, `indexOf`.
+
+### `client/src/features/entries/ui/entryUiHelpers.tsx`
+
+Клиентская feature архива записей: entry ui helpers.
+
+#### `EditIcon` — L1–L18 · public API
+
+Рендерит React-компонент EditIcon и связывает его props с соответствующей UI-поверхностью.
+
+#### `CloseIcon` — L20–L31 · public API
+
+Рендерит React-компонент CloseIcon и связывает его props с соответствующей UI-поверхностью.
+
+### `client/src/features/entries/ui/useEntryDebugTooltip.ts`
+
+Клиентская feature архива записей: use entry debug tooltip.
+
+#### `useEntryDebugTooltip` — L25–L167 · public API
+
+Управляет React-состоянием, derived values и side effects для entry debug tooltip.
+
+- Параметры: `{ enabled }`.
+
+- Основные вызовы: `useRef`, `useState`, `useCallback`, `window.clearTimeout`, `clearOpenTimer`, `clearCloseTimer`, `setPosition`, `setStatus`.
+
+#### `handleAnchorPointerEnter` — L110–L112 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий anchor pointer enter и координирует его побочные эффекты.
+
+- Основные вызовы: `start`.
+
+#### `handleAnchorPointerLeave` — L114–L116 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий anchor pointer leave и координирует его побочные эффекты.
+
+- Основные вызовы: `closeSoon`.
+
+#### `handleAnchorFocus` — L118–L120 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий anchor focus и координирует его побочные эффекты.
+
+- Основные вызовы: `start`.
+
+#### `handleAnchorBlur` — L122–L125 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий anchor blur и координирует его побочные эффекты.
+
+- Параметры: `event`.
+
+- Основные вызовы: `isMovingWithinDebugSurface`, `closeSoon`.
+
+#### `handleTooltipPointerEnter` — L127–L129 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий tooltip pointer enter и координирует его побочные эффекты.
+
+- Основные вызовы: `cancelClose`.
+
+#### `handleTooltipPointerLeave` — L131–L133 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий tooltip pointer leave и координирует его побочные эффекты.
+
+- Основные вызовы: `closeSoon`.
+
+#### `handleTooltipFocus` — L135–L137 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий tooltip focus и координирует его побочные эффекты.
+
+- Основные вызовы: `cancelClose`.
+
+#### `handleTooltipBlur` — L139–L142 · nested helper в useEntryDebugTooltip
+
+Исполняет сценарий tooltip blur и координирует его побочные эффекты.
+
+- Параметры: `event`.
+
+- Основные вызовы: `isMovingWithinDebugSurface`, `closeSoon`.
+
+#### `isMovingWithinDebugSurface` — L144–L150 · nested helper в useEntryDebugTooltip
+
+Проверяет условие moving within debug surface и возвращает логический результат без изменения состояния.
+
+- Параметры: `target`.
+
+- Основные вызовы: `Boolean`, `contains`.
+
+#### `getDebugTooltipPosition` — L169–L199 · internal helper
+
+Получает debug tooltip position из принадлежащего модулю источника данных.
+
+- Параметры: `anchor`.
+
+- Основные вызовы: `getBoundingClientRect`, `Math.min`, `clamp`.
+
+#### `clamp` — L201–L203 · internal helper
+
+Ограничивает clamp допустимым диапазоном или точностью.
+
+- Параметры: `value`, `min`, `max`.
+
+- Основные вызовы: `Math.min`, `Math.max`.
+
+#### Публичные типы, классы и константы
+
+- `type DebugTooltipPosition` — L9
+- `type DebugTooltipStatus` — L16
+
 ### `client/src/features/entries/useEntries.ts`
 
 Клиентская feature архива записей: use entries.
 
-#### `useEntries` — L20–L205 · public API
+#### `useEntries` — L23–L208 · public API
 
 Управляет React-состоянием, derived values и side effects для entries.
 
 - Основные вызовы: `useState`, `useRef`, `getEntrySortDirection`, `useEntrySearch`, `useEffect`, `useCallback`, `loadServerEntry`, `setEntries`.
 
-#### `changeEntrySortDirection` — L161–L164 · nested helper в useEntries
+#### `changeEntrySortDirection` — L164–L167 · nested helper в useEntries
 
 Обновляет или переключает change entry sort direction и связанные derived state.
 
@@ -2283,13 +2623,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setEntrySortDirection`, `persistEntrySortDirection`.
 
-#### `resetEntries` — L166–L171 · nested helper в useEntries
+#### `resetEntries` — L169–L174 · nested helper в useEntries
 
 Сбрасывает reset entries в исходное согласованное состояние.
 
 - Основные вызовы: `setEntries`, `setSelectedEntryId`, `clearFilters`.
 
-#### `selectEntry` — L173–L179 · nested helper в useEntries
+#### `selectEntry` — L176–L182 · nested helper в useEntries
 
 Выбирает entry, удовлетворяющий ограничениям текущего сценария.
 
@@ -2509,7 +2849,7 @@ UI-компонент редактора: self report menu.
 
 Локальный export/import: import apply.
 
-#### `applyLocalImportReplace` — L43–L69 · public API
+#### `applyLocalImportReplace` — L46–L72 · public API
 
 Преобразует или объединяет local import replace по правилам домена.
 
@@ -2517,7 +2857,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `validateLocalExportPackage`, `Promise.all`, `replaceEntries`, `replaceSelfReportEvents`.
 
-#### `toImportedLocalEntry` — L71–L89 · public API
+#### `toImportedLocalEntry` — L74–L92 · public API
 
 Возвращает вычисленное значение to imported local entry для использования внутри данного модуля.
 
@@ -2525,7 +2865,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `createTextHash`, `createFallbackSignal`, `createImportFallbackMetadata`.
 
-#### `toImportedSelfReportEvent` — L91–L104 · public API
+#### `toImportedSelfReportEvent` — L94–L107 · public API
 
 Возвращает вычисленное значение to imported self report event для использования внутри данного модуля.
 
@@ -2533,7 +2873,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `toSelfReportValues`.
 
-#### `toSelfReportValues` — L106–L116 · public API
+#### `toSelfReportValues` — L109–L119 · public API
 
 Возвращает вычисленное значение to self report values для использования внутри данного модуля.
 
@@ -2541,7 +2881,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeSelfReportValue`.
 
-#### `normalizeSelfReportValue` — L118–L123 · internal helper
+#### `normalizeSelfReportValue` — L121–L126 · internal helper
 
 Приводит self report value к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
@@ -2549,13 +2889,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `isFinite`, `Math.max`, `Math.min`, `Math.round`.
 
-#### `createFallbackSignal` — L125–L152 · internal helper
+#### `createFallbackSignal` — L128–L155 · internal helper
 
 Создаёт fallback signal из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `entryDate`.
 
-#### `createImportFallbackMetadata` — L154–L163 · internal helper
+#### `createImportFallbackMetadata` — L157–L166 · internal helper
 
 Создаёт import fallback metadata из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -2563,95 +2903,40 @@ UI-компонент редактора: self report menu.
 
 #### Публичные типы, классы и константы
 
-- `type LocalImportApplyMode` — L19
-- `type LocalImportApplyResult` — L21
-- `type LocalImportApplyStorage` — L31
+- `type LocalImportApplyMode` — L22
+- `type LocalImportApplyResult` — L24
+- `type LocalImportApplyStorage` — L34
 
-### `client/src/features/exportImport/importPackage.ts`
+### `client/src/features/exportImport/importPreview.ts`
 
-Строгая недоверенная граница импорта: разбирает JSON, запрещает лишние поля и строит безопасный preview.
+Локальный export/import: import preview.
 
-#### `parseAndValidateLocalExportJson` — L164–L180 · public API
-
-Разбирает and validate local export json и преобразует вход в типизированное представление.
-
-- Параметры: `jsonText`.
-
-- Основные вызовы: `validateLocalExportPackage`.
-
-#### `validateLocalExportPackage` — L182–L214 · public API
-
-Строго проверяет полную структуру import package, версии, даты, допустимые ключи и отсутствие запрещённых данных.
-
-- Параметры: `value`.
-
-- Основные вызовы: `assertNoForbiddenKeys`, `assertPlainObject`, `assertAllowedKeys`, `assertEquals`, `readIsoDate`, `validateSource`, `validateEntries`, `validateSelfReports`.
-
-#### `buildLocalImportPreview` — L216–L292 · public API
+#### `buildLocalImportPreview` — L25–L75 · public API
 
 Создаёт local import preview из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `packageData`, `currentData`.
 
-- Основные вызовы: `validateLocalExportPackage`, `Array.from`, `has`, `localeCompare`, `push`, `at`.
+- Основные вызовы: `validateLocalExportPackage`, `has`, `localeCompare`, `at`, `buildWarnings`.
 
-#### `validateSource` — L294–L325 · internal helper
+#### `buildWarnings` — L77–L102 · internal helper
 
-Проверяет корректность source и явно отклоняет нарушение контракта.
+Создаёт warnings из переданных данных, не отдавая вызывающему коду детали сборки.
 
-- Параметры: `value`.
+- Параметры: `data`, `currentLocalData`, `duplicates`.
 
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNullableString`, `readExact`.
+- Основные вызовы: `push`.
 
-#### `validateEntries` — L327–L383 · internal helper
+#### Публичные типы, классы и константы
 
-Проверяет корректность entries и явно отклоняет нарушение контракта.
+- `type LocalImportCurrentDataSummary` — L4
+- `type LocalImportPreview` — L9
 
-- Параметры: `value`.
+### `client/src/features/exportImport/importReaders.ts`
 
-- Основные вызовы: `assertCondition`, `Array.isArray`, `assertPlainObject`, `assertAllowedKeys`, `readNonEmptyString`, `has`, `add`, `readNullableString`.
+Локальный export/import: import readers.
 
-#### `validateSelfReports` — L385–L440 · internal helper
-
-Проверяет корректность self reports и явно отклоняет нарушение контракта.
-
-- Параметры: `value`.
-
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `Array.isArray`, `readNonEmptyString`, `has`, `add`, `readLocalDay`.
-
-#### `validateSelfReportValues` — L442–L453 · internal helper
-
-Проверяет корректность self report values и явно отклоняет нарушение контракта.
-
-- Параметры: `value`.
-
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNullableSelfReportValue`.
-
-#### `validateSettings` — L455–L513 · internal helper
-
-Проверяет корректность settings и явно отклоняет нарушение контракта.
-
-- Параметры: `value`.
-
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `readNonEmptyString`, `readBoolean`.
-
-#### `validateQueue` — L515–L529 · internal helper
-
-Проверяет корректность queue и явно отклоняет нарушение контракта.
-
-- Параметры: `value`.
-
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `Array.isArray`, `validateQueueExportSummary`.
-
-#### `validateQueueExportSummary` — L531–L565 · internal helper
-
-Проверяет корректность queue export summary и явно отклоняет нарушение контракта.
-
-- Параметры: `value`, `index`.
-
-- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNonEmptyString`, `assertCondition`, `has`, `readNullableString`.
-
-#### `assertNoForbiddenKeys` — L567–L582 · internal helper
+#### `assertNoForbiddenKeys` — L36–L51 · public API
 
 Проверяет корректность no forbidden keys и явно отклоняет нарушение контракта.
 
@@ -2659,7 +2944,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Array.isArray`, `assertNoForbiddenKeys`, `isPlainObject`, `Object.entries`, `assertCondition`, `has`.
 
-#### `assertAllowedKeys` — L584–L594 · internal helper
+#### `assertAllowedKeys` — L53–L63 · public API
 
 Проверяет корректность allowed keys и явно отклоняет нарушение контракта.
 
@@ -2667,7 +2952,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Object.keys`, `assertCondition`, `has`.
 
-#### `assertPlainObject` — L596–L602 · internal helper
+#### `assertPlainObject` — L65–L71 · public API
 
 Проверяет корректность plain object и явно отклоняет нарушение контракта.
 
@@ -2675,7 +2960,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`, `isPlainObject`.
 
-#### `isPlainObject` — L604–L606 · internal helper
+#### `isPlainObject` — L73–L75 · internal helper
 
 Проверяет условие plain object и возвращает логический результат без изменения состояния.
 
@@ -2683,7 +2968,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Array.isArray`.
 
-#### `readExact` — L608–L616 · internal helper
+#### `readExact` — L77–L85 · public API
 
 Получает exact из принадлежащего модулю источника данных.
 
@@ -2691,7 +2976,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertEquals`.
 
-#### `readString` — L618–L626 · internal helper
+#### `readString` — L87–L95 · public API
 
 Получает string из принадлежащего модулю источника данных.
 
@@ -2699,7 +2984,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`.
 
-#### `readNonEmptyString` — L628–L636 · internal helper
+#### `readNonEmptyString` — L97–L105 · public API
 
 Получает non empty string из принадлежащего модулю источника данных.
 
@@ -2707,7 +2992,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `readString`, `assertCondition`.
 
-#### `readNullableString` — L638–L649 · internal helper
+#### `readNullableString` — L107–L118 · public API
 
 Получает nullable string из принадлежащего модулю источника данных.
 
@@ -2715,7 +3000,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`.
 
-#### `readBoolean` — L651–L659 · internal helper
+#### `readBoolean` — L120–L128 · public API
 
 Получает boolean из принадлежащего модулю источника данных.
 
@@ -2723,7 +3008,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`.
 
-#### `readNullableNonNegativeInteger` — L661–L676 · internal helper
+#### `readNullableNonNegativeInteger` — L130–L145 · public API
 
 Получает nullable non negative integer из принадлежащего модулю источника данных.
 
@@ -2731,7 +3016,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`, `isInteger`.
 
-#### `readStringArray` — L678–L704 · internal helper
+#### `readStringArray` — L147–L173 · public API
 
 Получает string array из принадлежащего модулю источника данных.
 
@@ -2739,7 +3024,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`, `Array.isArray`, `has`, `add`, `push`.
 
-#### `readLocalDay` — L706–L714 · internal helper
+#### `readLocalDay` — L175–L183 · public API
 
 Получает local day из принадлежащего модулю источника данных.
 
@@ -2747,7 +3032,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `readString`, `assertCondition`, `isValidLocalDay`.
 
-#### `readIsoDate` — L716–L724 · internal helper
+#### `readIsoDate` — L185–L193 · public API
 
 Получает iso date из принадлежащего модулю источника данных.
 
@@ -2755,7 +3040,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `readString`, `assertIsoDate`.
 
-#### `readNullableSelfReportValue` — L726–L743 · internal helper
+#### `readNullableSelfReportValue` — L195–L212 · public API
 
 Получает nullable self report value из принадлежащего модулю источника данных.
 
@@ -2763,7 +3048,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`, `isInteger`.
 
-#### `readNullableJsonValue` — L745–L757 · internal helper
+#### `readNullableJsonValue` — L214–L226 · public API
 
 Получает nullable json value из принадлежащего модулю источника данных.
 
@@ -2771,7 +3056,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertJsonValue`.
 
-#### `assertJsonValue` — L759–L784 · internal helper
+#### `assertJsonValue` — L228–L253 · internal helper
 
 Проверяет корректность json value и явно отклоняет нарушение контракта.
 
@@ -2779,7 +3064,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`, `isFinite`, `Array.isArray`, `assertJsonValue`, `isPlainObject`, `Object.values`.
 
-#### `isValidLocalDay` — L786–L801 · internal helper
+#### `isValidLocalDay` — L255–L270 · internal helper
 
 Проверяет условие valid local day и возвращает логический результат без изменения состояния.
 
@@ -2787,7 +3072,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `match`, `Number`, `UTC`, `getUTCFullYear`, `getUTCMonth`, `getUTCDate`.
 
-#### `assertIsoDate` — L803–L808 · internal helper
+#### `assertIsoDate` — L272–L277 · internal helper
 
 Проверяет корректность iso date и явно отклоняет нарушение контракта.
 
@@ -2795,7 +3080,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `parse`, `assertCondition`, `isNaN`, `toISOString`.
 
-#### `assertEquals` — L810–L816 · internal helper
+#### `assertEquals` — L279–L285 · public API
 
 Проверяет корректность equals и явно отклоняет нарушение контракта.
 
@@ -2803,28 +3088,790 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `assertCondition`.
 
-#### `assertCondition` — L818–L822 · internal helper
+#### `assertCondition` — L287–L291 · public API
 
 Проверяет корректность condition и явно отклоняет нарушение контракта.
 
 - Параметры: `condition`, `message`.
 
-#### Публичные типы, классы и константы
+### `client/src/features/exportImport/importValidation.ts`
 
-- `type LocalImportCurrentDataSummary` — L143
-- `type LocalImportPreview` — L148
+Локальный export/import: import validation.
+
+#### `parseAndValidateLocalExportJson` — L130–L146 · public API
+
+Разбирает and validate local export json и преобразует вход в типизированное представление.
+
+- Параметры: `jsonText`.
+
+- Основные вызовы: `validateLocalExportPackage`.
+
+#### `validateLocalExportPackage` — L148–L180 · public API
+
+Проверяет корректность local export package и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertNoForbiddenKeys`, `assertPlainObject`, `assertAllowedKeys`, `assertEquals`, `readIsoDate`, `validateSource`, `validateEntries`, `validateSelfReports`.
+
+#### `validateSource` — L182–L213 · internal helper
+
+Проверяет корректность source и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNullableString`, `readExact`.
+
+#### `validateEntries` — L215–L271 · internal helper
+
+Проверяет корректность entries и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertCondition`, `Array.isArray`, `assertPlainObject`, `assertAllowedKeys`, `readNonEmptyString`, `has`, `add`, `readNullableString`.
+
+#### `validateSelfReports` — L273–L328 · internal helper
+
+Проверяет корректность self reports и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `Array.isArray`, `readNonEmptyString`, `has`, `add`, `readLocalDay`.
+
+#### `validateSelfReportValues` — L330–L341 · internal helper
+
+Проверяет корректность self report values и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNullableSelfReportValue`.
+
+#### `validateSettings` — L343–L401 · internal helper
+
+Проверяет корректность settings и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `readNonEmptyString`, `readBoolean`.
+
+#### `validateQueue` — L403–L417 · internal helper
+
+Проверяет корректность queue и явно отклоняет нарушение контракта.
+
+- Параметры: `value`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `assertCondition`, `Array.isArray`, `validateQueueExportSummary`.
+
+#### `validateQueueExportSummary` — L419–L453 · internal helper
+
+Проверяет корректность queue export summary и явно отклоняет нарушение контракта.
+
+- Параметры: `value`, `index`.
+
+- Основные вызовы: `assertPlainObject`, `assertAllowedKeys`, `readNonEmptyString`, `assertCondition`, `has`, `readNullableString`.
 
 ### `client/src/features/extraction/extractionApi.ts`
 
 Клиентский адаптер extraction API: extraction api.
 
-Именованных функций нет: файл служит re-export границей.
+#### `loadExtractionConfig` — L17–L24 · public API
+
+Получает extraction config из принадлежащего модулю источника данных.
+
+- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
+
+#### `loadExtractionStatus` — L26–L37 · public API
+
+Получает extraction status из принадлежащего модулю источника данных.
+
+- Параметры: `settings`.
+
+- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
+
+#### `extractSignal` — L39–L64 · public API
+
+Извлекает signal из входных данных без самостоятельного сохранения результата.
+
+- Параметры: `payload`.
+
+- Основные вызовы: `fetch`, `csrfJsonHeaders`, `handleUnauthorized`, `text`, `json`.
+
+#### `appendEntrySignal` — L66–L85 · public API
+
+Возвращает вычисленное значение append entry signal для использования внутри данного модуля.
+
+- Параметры: `entryId`, `payload`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `handleUnauthorized`, `text`, `json`.
+
+### `client/src/features/extraction/extractSignalForText.ts`
+
+Клиентский адаптер extraction API: extract signal for text.
+
+#### `extractSignalForText` — L16–L99 · public API
+
+Извлекает signal for text из входных данных без самостоятельного сохранения результата.
+
+- Параметры: `rawText`, `settings`, `context`, `signal`.
+
+- Основные вызовы: `releaseGeminiDailyExtraction`, `loadLocalEmotionModuleIfAllowed`, `extractLocalEmotionSignals`, `reserveGeminiDailyExtraction`, `mergeEmotionIfAvailable`, `withSignalContext`, `createFallbackSignal`, `createFallbackMetadata`.
+
+#### `releaseGeminiReservation` — L27–L32 · nested helper в extractSignalForText
+
+Исполняет сценарий release gemini reservation и координирует его побочные эффекты.
+
+- Основные вызовы: `releaseGeminiDailyExtraction`.
+
+#### `withSignalContext` — L101–L113 · internal helper
+
+Возвращает вычисленное значение with signal context для использования внутри данного модуля.
+
+- Параметры: `extraction`, `rawText`, `context`.
+
+- Основные вызовы: `analyzeSignalContext`.
+
+#### `hasExtractionError` — L115–L119 · internal helper
+
+Проверяет условие extraction error и возвращает логический результат без изменения состояния.
+
+- Параметры: `extraction`.
+
+- Основные вызовы: `Boolean`.
+
+#### `mergeEmotionIfAvailable` — L121–L131 · internal helper
+
+Преобразует или объединяет emotion if available по правилам домена.
+
+- Параметры: `extraction`, `emotionResult`, `mergeLocalEmotionSignals`.
+
+- Основные вызовы: `mergeLocalEmotionSignals`.
+
+#### `loadLocalEmotionModuleIfAllowed` — L133–L138 · internal helper
+
+Получает local emotion module if allowed из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getLocalEmotionSpikeEnabled`, `getCurrentInterfaceLanguage`.
+
+#### `getCurrentInterfaceLanguage` — L140–L148 · internal helper
+
+Получает current interface language из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`.
+
+### `client/src/features/extraction/geminiQuota.ts`
+
+Клиентский адаптер extraction API: gemini quota.
+
+#### `getGeminiDailyExtractionUsage` — L9–L24 · public API
+
+Получает gemini daily extraction usage из принадлежащего модулю источника данных.
+
+- Основные вызовы: `localDateKey`, `getItem`, `storageKey`, `isFinite`, `Math.max`, `Math.floor`, `Math.min`.
+
+#### `getRemainingGeminiDailyExtractions` — L26–L31 · public API
+
+Получает remaining gemini daily extractions из принадлежащего модулю источника данных.
+
+- Основные вызовы: `Math.max`, `getGeminiDailyExtractionUsage`.
+
+#### `reserveGeminiDailyExtraction` — L33–L38 · public API
+
+Возвращает вычисленное значение reserve gemini daily extraction для использования внутри данного модуля.
+
+- Основные вызовы: `getGeminiDailyExtractionUsage`, `persist`.
+
+#### `releaseGeminiDailyExtraction` — L40–L44 · public API
+
+Исполняет сценарий release gemini daily extraction и координирует его побочные эффекты.
+
+- Основные вызовы: `getGeminiDailyExtractionUsage`, `persist`.
+
+#### `persist` — L46–L48 · internal helper
+
+Выполняет локальную операцию persist внутри ответственности этого файла.
+
+- Параметры: `usage`.
+
+- Основные вызовы: `setItem`, `storageKey`.
+
+#### `storageKey` — L50–L52 · internal helper
+
+Возвращает вычисленное значение storage key для использования внутри данного модуля.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+#### `localDateKey` — L54–L60 · internal helper
+
+Возвращает вычисленное значение local date key для использования внутри данного модуля.
+
+- Основные вызовы: `getFullYear`, `padStart`, `String`, `getMonth`, `getDate`.
+
+#### Публичные типы, классы и константы
+
+- `const GEMINI_DAILY_EXTRACTION_LIMIT` — L4
+- `const GEMINI_QUOTA_STORAGE_KEYS` — L5
+
+### `client/src/features/extraction/signals.ts`
+
+Клиентский адаптер extraction API: signals.
+
+#### `createFallbackSignal` — L46–L65 · public API
+
+Создаёт fallback signal из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Основные вызовы: `createDefaultSignalContext`, `createEmptyMetricConfidence`.
+
+#### `createFallbackMetadata` — L67–L80 · public API
+
+Создаёт fallback metadata из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `provider`, `model`, `errorCode`.
+
+- Основные вызовы: `toISOString`.
+
+#### `normalizeSignal` — L82–L114 · public API
+
+Приводит signal к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `createFallbackSignal`, `isNormalizedSignal`, `normalizeStringArray`, `normalizeStateInference`, `normalizeMetricConfidence`, `normalizeEntryIntent`, `normalizeStructureSignal`.
+
+#### `normalizeStateInference` — L116–L126 · internal helper
+
+Приводит state inference к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `Object.entries`, `normalizeStateInferenceValue`, `has`.
+
+#### `normalizeStateInferenceValue` — L128–L140 · internal helper
+
+Приводит state inference value к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `has`, `String`, `normalizeStringArray`.
+
+#### `normalizeMetricConfidence` — L142–L150 · internal helper
+
+Приводит metric confidence к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `createEmptyMetricConfidence`, `normalizeConfidence`.
+
+#### `normalizeEntryIntent` — L152–L172 · internal helper
+
+Приводит entry intent к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `normalizeConfidence`, `normalizeStringArray`.
+
+#### `normalizeStructureSignal` — L174–L193 · internal helper
+
+Приводит structure signal к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `normalizeConfidence`, `normalizeStringArray`.
+
+#### `normalizeTemporalContext` — L195–L224 · internal helper
+
+Приводит temporal context к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `test`.
+
+#### `normalizeConfidence` — L226–L228 · internal helper
+
+Приводит confidence к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `has`, `String`.
+
+#### `normalizeStringArray` — L230–L237 · internal helper
+
+Приводит string array к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`.
+
+#### `normalizeScore` — L239–L246 · internal helper
+
+Приводит score к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isInteger`.
+
+#### `isNormalizedSignal` — L248–L268 · internal helper
+
+Проверяет условие normalized signal и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isBoundedStringArray`, `isNormalizedStateInference`, `isRecord`, `isNormalizedMetricConfidence`, `isNormalizedEntryIntent`, `isNormalizedStructureSignal`, `isNormalizedTemporalContext`, `isNormalizedScore`.
+
+#### `isBoundedStringArray` — L270–L276 · internal helper
+
+Проверяет условие bounded string array и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`, `maxLength`.
+
+- Основные вызовы: `Array.isArray`.
+
+#### `isNormalizedStateInference` — L278–L285 · internal helper
+
+Проверяет условие normalized state inference и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `Object.entries`, `has`, `isNormalizedStateInferenceValue`.
+
+#### `isNormalizedStateInferenceValue` — L287–L296 · internal helper
+
+Проверяет условие normalized state inference value и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
+
+#### `isNormalizedMetricConfidence` — L298–L307 · internal helper
+
+Проверяет условие normalized metric confidence и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `has`, `String`.
+
+#### `isNormalizedEntryIntent` — L309–L322 · internal helper
+
+Проверяет условие normalized entry intent и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
+
+#### `isNormalizedStructureSignal` — L324–L338 · internal helper
+
+Проверяет условие normalized structure signal и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
+
+#### `isNormalizedTemporalContext` — L340–L357 · internal helper
+
+Проверяет условие normalized temporal context и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isRecord`, `test`.
+
+#### `isNormalizedScore` — L359–L367 · internal helper
+
+Проверяет условие normalized score и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isInteger`.
+
+#### `isRecord` — L369–L371 · internal helper
+
+Проверяет условие record и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`.
+
+#### Публичные типы, классы и константы
+
+- `const SIGNAL_AXES` — L23
+
+### `client/src/features/extraction/signalVersions.ts`
+
+Клиентский адаптер extraction API: signal versions.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const CLIENT_ACTIVE_SCHEMA_VERSION` — L1
+- `const CLIENT_ACTIVE_PROMPT_VERSION` — L2
+
+### `client/src/features/insights/content/athenaInsightPhraseLibraries.ts`
+
+Клиентская feature observations/insights: athena insight phrase libraries.
+
+#### `getAthenaInsightTopics` — L20–L24 · public API
+
+Получает athena insight topics из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_INSIGHT_LANGUAGES` — L7
+- `type AthenaInsightLanguage` — L9
+- `const DEFAULT_ATHENA_INSIGHT_LANGUAGE` — L11
+
+### `client/src/features/insights/content/athenaInsightPhrasesDe.ts`
+
+Клиентская feature observations/insights: athena insight phrases de.
+
+#### `createTopic` — L31–L37 · internal helper
+
+Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `seed`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_INSIGHT_TOPICS_DE` — L39
+
+### `client/src/features/insights/content/athenaInsightPhrasesEn.ts`
+
+Клиентская feature observations/insights: athena insight phrases en.
+
+#### `createTopic` — L31–L37 · internal helper
+
+Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `seed`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_INSIGHT_TOPICS_EN` — L39
+
+### `client/src/features/insights/content/athenaInsightPhrasesRu.ts`
+
+Клиентская feature observations/insights: athena insight phrases ru.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ATHENA_INSIGHT_TOPICS_RU` — L3
+
+### `client/src/features/insights/content/athenaInsightPhrasesTypes.ts`
+
+Клиентская feature observations/insights: athena insight phrases types.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type AthenaInsightTopic` — L1
+
+### `client/src/features/insights/content/athenaInsightPhrasesUk.ts`
+
+Клиентская feature observations/insights: athena insight phrases uk.
+
+#### `createTopic` — L31–L37 · internal helper
+
+Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `seed`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_INSIGHT_TOPICS_UK` — L39
+
+### `client/src/features/insights/content/insightPhrases.ts`
+
+Клиентская feature observations/insights: insight phrases.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type PlainInsightTopic` — L1
+- `const PLAIN_INSIGHT_TOPICS` — L9
+
+### `client/src/features/insights/content/insightText.ts`
+
+Клиентская feature observations/insights: insight text.
+
+#### `formatInsightText` — L23–L72 · public API
+
+Преобразует insight text в стабильное представление для UI, сети или хранения.
+
+- Параметры: `insight`, `{ language = DEFAULT_ATHENA_INSIGHT_LANGUAGE, personaTextEnabled, }`.
+
+- Основные вызовы: `getInsightTopic`, `getAthenaInsightTopics`, `getPlainInsightTopics`, `findTopicProfile`, `getAthenaInsightTone`, `getPlainInsightTone`, `normalizeTopic`, `pickInsightLine`.
+
+#### `findTopicProfile` — L74–L82 · internal helper
+
+Выбирает topic profile, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `topic`, `topics`.
+
+- Основные вызовы: `normalizeTopic`.
+
+#### `getInsightTopic` — L84–L89 · internal helper
+
+Получает insight topic из принадлежащего модулю источника данных.
+
+- Параметры: `insight`.
+
+- Основные вызовы: `match`.
+
+#### `fallbackTemplate` — L91–L189 · internal helper
+
+Возвращает вычисленное значение fallback template для использования внутри данного модуля.
+
+- Параметры: `layer`, `personaTextEnabled`, `language`.
+
+#### `fallbackAdvice` — L191–L224 · internal helper
+
+Возвращает вычисленное значение fallback advice для использования внутри данного модуля.
+
+- Параметры: `personaTextEnabled`, `language`.
+
+#### `getAthenaInsightTone` — L226–L230 · internal helper
+
+Получает athena insight tone из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### `getPlainInsightTone` — L232–L236 · internal helper
+
+Получает plain insight tone из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### `renderTemplate` — L238–L240 · internal helper
+
+Возвращает вычисленное значение render template для использования внутри данного модуля.
+
+- Параметры: `template`, `subject`.
+
+- Основные вызовы: `replaceAll`.
+
+#### `joinSentences` — L242–L247 · internal helper
+
+Возвращает вычисленное значение join sentences для использования внутри данного модуля.
+
+- Параметры: `first`, `second`.
+
+#### `pickInsightLine` — L249–L283 · internal helper
+
+Выбирает insight line, удовлетворяющий ограничениям текущего сценария.
+
+- Параметры: `items`, `seed`, `scope`.
+
+- Основные вызовы: `getLocalStorage`, `deterministicPick`, `getChoiceKey`, `readIndex`, `getItem`, `getBagKey`, `readBag`, `hashSeed`.
+
+#### `getChoiceKey` — L285–L302 · internal helper
+
+Получает choice key из принадлежащего модулю источника данных.
+
+- Параметры: `scope`, `itemCount`.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+#### `getBagKey` — L304–L319 · internal helper
+
+Получает bag key из принадлежащего модулю источника данных.
+
+- Параметры: `scope`, `itemCount`.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+#### `readIndex` — L321–L328 · internal helper
+
+Получает index из принадлежащего модулю источника данных.
+
+- Параметры: `raw`, `itemCount`.
+
+- Основные вызовы: `Number`, `isInteger`.
+
+#### `readBag` — L330–L352 · internal helper
+
+Получает bag из принадлежащего модулю источника данных.
+
+- Параметры: `raw`, `itemCount`.
+
+- Основные вызовы: `Array.from`, `freshBag`, `Array.isArray`, `isInteger`.
+
+#### `freshBag` — L331–L332 · nested helper в readBag
+
+Возвращает вычисленное значение fresh bag для использования внутри данного модуля.
+
+- Основные вызовы: `Array.from`.
+
+#### `getLocalStorage` — L354–L360 · internal helper
+
+Получает local storage из принадлежащего модулю источника данных.
+
+#### `deterministicPick` — L362–L366 · internal helper
+
+Возвращает вычисленное значение deterministic pick для использования внутри данного модуля.
+
+- Параметры: `items`, `seed`.
+
+- Основные вызовы: `hashSeed`.
+
+#### `hashSeed` — L368–L375 · internal helper
+
+Проверяет условие seed и возвращает логический результат без изменения состояния.
+
+- Параметры: `seed`.
+
+- Основные вызовы: `charCodeAt`.
+
+#### `normalizeTopic` — L377–L379 · internal helper
+
+Приводит topic к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `topic`.
+
+- Основные вызовы: `toLowerCase`.
+
+### `client/src/features/insights/content/plainInsightPhraseLibraries.ts`
+
+Клиентская feature observations/insights: plain insight phrase libraries.
+
+#### `getPlainInsightTopics` — L149–L151 · public API
+
+Получает plain insight topics из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### `topic` — L153–L155 · internal helper
+
+Возвращает вычисленное значение topic для использования внутри данного модуля.
+
+- Параметры: `id`, `aliases`, `subject`.
+
+#### `buildTopics` — L157–L167 · internal helper
+
+Создаёт topics из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `definitions`, `templates`, `advice`.
 
 ### `client/src/features/insights/insightsApi.ts`
 
 Клиентская feature observations/insights: insights api.
 
-Именованных функций нет: файл служит re-export границей.
+#### `loadCurrentInsights` — L9–L22 · public API
+
+Получает current insights из принадлежащего модулю источника данных.
+
+- Параметры: `today`.
+
+- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
+
+#### `loadInsightHistory` — L24–L34 · public API
+
+Получает insight history из принадлежащего модулю источника данных.
+
+- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
+
+#### `deleteInsightSnapshot` — L36–L46 · public API
+
+Удаляет или очищает insight snapshot с необходимыми связанными действиями.
+
+- Параметры: `insightId`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfHeaders`, `handleUnauthorized`, `text`.
+
+### `client/src/features/insights/seenInsights.ts`
+
+Клиентская feature observations/insights: seen insights.
+
+#### `getSeenEditorInsightIds` — L5–L23 · public API
+
+Получает seen editor insight ids из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `getProfileScopedStorageKey`, `Array.isArray`, `isInteger`.
+
+#### `markEditorInsightSeen` — L25–L32 · public API
+
+Изменяет editor insight seen, сохраняя инварианты данного модуля.
+
+- Параметры: `id`.
+
+- Основные вызовы: `getSeenEditorInsightIds`, `add`, `setItem`, `getProfileScopedStorageKey`, `Array.from`.
+
+#### Публичные типы, классы и константы
+
+- `const SEEN_EDITOR_INSIGHT_IDS_KEY` — L3
+
+### `client/src/features/insights/ui/InsightStrip.tsx`
+
+Клиентская feature observations/insights: insight strip.
+
+#### `InsightStrip` — L9–L29 · public API
+
+Рендерит React-компонент InsightStrip и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ insights }`.
+
+- Основные вызовы: `useI18n`, `t`, `getLayerLabelKey`.
+
+#### `getLayerLabelKey` — L31–L35 · internal helper
+
+Получает layer label key из принадлежащего модулю источника данных.
+
+- Параметры: `layer`.
+
+### `client/src/features/insights/ui/Observations.tsx`
+
+Клиентская feature observations/insights: observations.
+
+#### `Observations` — L17–L133 · public API
+
+Рендерит React-компонент Observations и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ insights, personaTextEnabled, onClose, onDeleteInsight, onRefresh, }`.
+
+- Основные вызовы: `useI18n`, `groupInsightsByDate`, `t`, `formatLongDate`, `getLayerLabelKey`, `formatPeriod`, `formatInsightText`, `formatGeneratedAt`.
+
+#### `groupInsightsByDate` — L135–L148 · internal helper
+
+Возвращает вычисленное значение insights by date для использования внутри данного модуля.
+
+- Параметры: `insights`.
+
+- Основные вызовы: `set`, `get`, `Array.from`.
+
+#### `compareInsights` — L150–L158 · internal helper
+
+Сравнивает insights для стабильного детерминированного порядка.
+
+- Параметры: `left`, `right`.
+
+- Основные вызовы: `localeCompare`, `layerWeight`.
+
+#### `layerWeight` — L160–L164 · internal helper
+
+Возвращает вычисленное значение layer weight для использования внутри данного модуля.
+
+- Параметры: `layer`.
+
+#### `formatPeriod` — L166–L175 · internal helper
+
+Преобразует period в стабильное представление для UI, сети или хранения.
+
+- Параметры: `insight`, `language`.
+
+- Основные вызовы: `formatLongDate`.
+
+#### `formatGeneratedAt` — L177–L184 · internal helper
+
+Преобразует generated at в стабильное представление для UI, сети или хранения.
+
+- Параметры: `value`, `language`.
+
+- Основные вызовы: `toLocaleString`, `getLocale`.
+
+#### `getLayerLabelKey` — L186–L190 · internal helper
+
+Получает layer label key из принадлежащего модулю источника данных.
+
+- Параметры: `layer`.
 
 ### `client/src/features/insights/useInsights.ts`
 
@@ -2995,7 +4042,23 @@ UI-компонент редактора: self report menu.
 
 Локальные self-reports и синхронизация агрегатов: self report api.
 
-Именованных функций нет: файл служит re-export границей.
+#### `syncSelfReportDailyAggregates` — L12–L33 · public API
+
+Оркестрирует self report daily aggregates в инфраструктуре синхронизации или фоновой очереди.
+
+- Параметры: `localDay`, `aggregates`.
+
+- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `serializeSelfReportDailyAggregates`, `handleUnauthorized`, `text`.
+
+#### `serializeSelfReportDailyAggregates` — L35–L51 · public API
+
+Преобразует self report daily aggregates в стабильное представление для UI, сети или хранения.
+
+- Параметры: `aggregates`.
+
+#### Публичные типы, классы и константы
+
+- `type SyncSelfReportDailyAggregatePayload` — L7
 
 ### `client/src/features/selfReports/selfReportQueue.ts`
 
@@ -3434,7 +4497,121 @@ UI-компонент редактора: self report menu.
 - `type LocalSemanticEntryDocument` — L24
 - `type LocalSemanticSearchResult` — L31
 
-### `client/src/features/settings/components/AccessSettings.tsx`
+### `client/src/features/settings/extractionSettings.ts`
+
+Состояние и UI настроек: extraction settings.
+
+#### `normalizeExtractionSettings` — L11–L28 · public API
+
+Приводит extraction settings к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `settings`, `config`.
+
+#### Публичные типы, классы и константы
+
+- `const DEFAULT_EXTRACTION_SETTINGS` — L6
+
+### `client/src/features/settings/pendingReextract.ts`
+
+Состояние и UI настроек: pending reextract.
+
+#### `reprocessLocalEntry` — L19–L102 · public API
+
+Возвращает вычисленное значение reprocess local entry для использования внутри данного модуля.
+
+- Параметры: `entry`, `settings`, `signal`.
+
+- Основные вызовы: `extractSignalForText`, `isRetryableProviderErrorCode`, `getLocalEntry`, `toISOString`, `updateLocalEntry`, `syncLocalEntryToServer`, `catch`, `enqueueEntrySyncJob`.
+
+#### `processPendingReextractEntries` — L104–L140 · public API
+
+Исполняет сценарий pending reextract entries и координирует его побочные эффекты.
+
+- Параметры: `settings`.
+
+- Основные вызовы: `getAllLocalEntries`, `isSignalReprocessCandidate`, `push`, `releaseTerminalPendingReextractEntry`, `getRemainingGeminiDailyExtractions`, `enqueueEntrySignalReprocessJob`, `getSignalReprocessReason`.
+
+#### `releaseTerminalPendingReextractEntry` — L142–L156 · internal helper
+
+Исполняет сценарий release terminal pending reextract entry и координирует его побочные эффекты.
+
+- Параметры: `entry`.
+
+- Основные вызовы: `updateLocalEntry`, `catch`, `enqueueEntrySyncJob`.
+
+### `client/src/features/settings/settingsStorage.ts`
+
+Состояние и UI настроек: settings storage.
+
+#### `getDebugMode` — L16–L18 · public API
+
+Получает debug mode из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `key`.
+
+#### `setDebugMode` — L20–L22 · public API
+
+Изменяет debug mode, сохраняя инварианты данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `setItem`, `key`, `String`.
+
+#### `getPersonaTextEnabled` — L24–L26 · public API
+
+Получает persona text enabled из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `key`.
+
+#### `setPersonaTextEnabled` — L28–L30 · public API
+
+Изменяет persona text enabled, сохраняя инварианты данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `setItem`, `key`, `String`.
+
+#### `getExtractionSettings` — L32–L44 · public API
+
+Получает extraction settings из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `key`.
+
+#### `setExtractionSettings` — L46–L48 · public API
+
+Изменяет extraction settings, сохраняя инварианты данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `setItem`, `key`.
+
+#### `getLocalEmotionSpikeEnabled` — L50–L52 · public API
+
+Получает local emotion spike enabled из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `key`.
+
+#### `setLocalEmotionSpikeEnabled` — L54–L56 · public API
+
+Изменяет local emotion spike enabled, сохраняя инварианты данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `setItem`, `key`, `String`.
+
+#### `key` — L58–L60 · internal helper
+
+Возвращает вычисленное значение key для использования внутри данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+#### Публичные типы, классы и константы
+
+- `const SETTINGS_STORAGE_KEYS` — L9
+
+### `client/src/features/settings/ui/AccessSettings.tsx`
 
 Состояние и UI настроек: access settings.
 
@@ -3524,11 +4701,11 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setProfileStatus`, `setIsProfileBusy`, `onDeleteProfile`, `t`.
 
-### `client/src/features/settings/components/DataSettings.tsx`
+### `client/src/features/settings/ui/DataSettings.tsx`
 
 Состояние и UI настроек: data settings.
 
-#### `DataSettings` — L78–L328 · public API
+#### `DataSettings` — L82–L332 · public API
 
 Рендерит React-компонент DataSettings и связывает его props с соответствующей UI-поверхностью.
 
@@ -3536,13 +4713,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `useRef`, `useState`, `setExportStatus`, `getExtractionSettings`, `buildLocalExportPackage`, `getAllLocalEntries`, `getAllSelfReportEvents`.
 
-#### `handleExportLocalData` — L97–L142 · nested helper в DataSettings
+#### `handleExportLocalData` — L101–L146 · nested helper в DataSettings
 
 Исполняет сценарий export local data и координирует его побочные эффекты.
 
 - Основные вызовы: `setExportStatus`, `getExtractionSettings`, `buildLocalExportPackage`, `getAllLocalEntries`, `getAllSelfReportEvents`, `getEntrySortDirection`, `getPersonaTextEnabled`, `getLocalEmotionSpikeEnabled`.
 
-#### `handleImportFileChange` — L144–L183 · nested helper в DataSettings
+#### `handleImportFileChange` — L148–L187 · nested helper в DataSettings
 
 Исполняет сценарий import file change и координирует его побочные эффекты.
 
@@ -3550,23 +4727,23 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setIsReading`, `setPreviewState`, `createIdlePreviewState`, `text`, `parseAndValidateLocalExportJson`, `buildLocalImportPreview`, `formatImportError`.
 
-#### `handleApplyImport` — L185–L218 · nested helper в DataSettings
+#### `handleApplyImport` — L189–L222 · nested helper в DataSettings
 
 Исполняет сценарий apply import и координирует его побочные эффекты.
 
 - Основные вызовы: `window.confirm`, `t`, `setPreviewState`, `applyLocalImportReplace`, `onImportApplied`, `formatImportError`.
 
-#### `handleClearPreview` — L220–L222 · nested helper в DataSettings
+#### `handleClearPreview` — L224–L226 · nested helper в DataSettings
 
 Исполняет сценарий clear preview и координирует его побочные эффекты.
 
 - Основные вызовы: `setPreviewState`, `createIdlePreviewState`.
 
-#### `createIdlePreviewState` — L330–L339 · internal helper
+#### `createIdlePreviewState` — L334–L343 · internal helper
 
 Создаёт idle preview state из переданных данных, не отдавая вызывающему коду детали сборки.
 
-#### `ImportPreviewCard` — L341–L464 · internal helper
+#### `ImportPreviewCard` — L345–L468 · internal helper
 
 Рендерит React-компонент ImportPreviewCard и связывает его props с соответствующей UI-поверхностью.
 
@@ -3574,7 +4751,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `t`, `formatDateTime`, `formatDateRange`, `formatCurrentLocalData`, `formatPreviewWarning`.
 
-#### `ImportResultCard` — L466–L502 · internal helper
+#### `ImportResultCard` — L470–L506 · internal helper
 
 Рендерит React-компонент ImportResultCard и связывает его props с соответствующей UI-поверхностью.
 
@@ -3582,25 +4759,25 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `t`.
 
-#### `PreviewStat` — L504–L517 · internal helper
+#### `PreviewStat` — L508–L521 · internal helper
 
 Рендерит React-компонент PreviewStat и связывает его props с соответствующей UI-поверхностью.
 
 - Параметры: `{ label, value, }`.
 
-#### `ResultRow` — L519–L532 · internal helper
+#### `ResultRow` — L523–L536 · internal helper
 
 Рендерит React-компонент ResultRow и связывает его props с соответствующей UI-поверхностью.
 
 - Параметры: `{ label, value, }`.
 
-#### `formatDateRange` — L534–L544 · internal helper
+#### `formatDateRange` — L538–L548 · internal helper
 
 Преобразует date range в стабильное представление для UI, сети или хранения.
 
 - Параметры: `preview`.
 
-#### `formatCurrentLocalData` — L546–L553 · internal helper
+#### `formatCurrentLocalData` — L550–L557 · internal helper
 
 Преобразует current local data в стабильное представление для UI, сети или хранения.
 
@@ -3608,7 +4785,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `t`.
 
-#### `formatPreviewWarning` — L555–L571 · internal helper
+#### `formatPreviewWarning` — L559–L575 · internal helper
 
 Преобразует preview warning в стабильное представление для UI, сети или хранения.
 
@@ -3616,7 +4793,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `t`.
 
-#### `formatDateTime` — L573–L579 · internal helper
+#### `formatDateTime` — L577–L583 · internal helper
 
 Преобразует date time в стабильное представление для UI, сети или хранения.
 
@@ -3624,13 +4801,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `parse`, `isNaN`, `toLocaleString`.
 
-#### `formatImportError` — L581–L587 · internal helper
+#### `formatImportError` — L585–L591 · internal helper
 
 Преобразует import error в стабильное представление для UI, сети или хранения.
 
 - Параметры: `error`.
 
-### `client/src/features/settings/components/EntriesSettings.tsx`
+### `client/src/features/settings/ui/EntriesSettings.tsx`
 
 Состояние и UI настроек: entries settings.
 
@@ -3734,7 +4911,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Object.entries`.
 
-### `client/src/features/settings/components/InterfaceSettings.tsx`
+### `client/src/features/settings/ui/InterfaceSettings.tsx`
 
 Состояние и UI настроек: interface settings.
 
@@ -3752,7 +4929,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `t`, `setLanguage`.
 
-### `client/src/features/settings/components/SettingsPage.tsx`
+### `client/src/features/settings/ui/SettingsPage.tsx`
 
 Состояние и UI настроек: settings page.
 
@@ -3764,7 +4941,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `useState`, `isSignalReprocessCandidate`, `t`.
 
-### `client/src/features/settings/components/SettingsTabList.tsx`
+### `client/src/features/settings/ui/SettingsTabList.tsx`
 
 Состояние и UI настроек: settings tab list.
 
@@ -3776,7 +4953,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useI18n`, `onChange`, `t`.
 
-### `client/src/features/settings/components/settingsTypes.ts`
+### `client/src/features/settings/ui/settingsTypes.ts`
 
 Состояние и UI настроек: settings types.
 
@@ -3788,7 +4965,7 @@ UI-компонент редактора: self report menu.
 - `type RunStatus` — L12
 - `type StatusMessageState` — L14
 
-### `client/src/features/settings/components/settingsUi.tsx`
+### `client/src/features/settings/ui/settingsUi.tsx`
 
 Состояние и UI настроек: settings ui.
 
@@ -3876,53 +5053,11 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `releasePointerCapture`, `setActiveX`, `getBoundingClientRect`, `Math.max`, `Math.min`, `onChange`.
 
-### `client/src/features/settings/extractionSettings.ts`
-
-Состояние и UI настроек: extraction settings.
-
-#### `normalizeExtractionSettings` — L8–L25 · public API
-
-Приводит extraction settings к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `settings`, `config`.
-
-#### Публичные типы, классы и константы
-
-- `const DEFAULT_EXTRACTION_SETTINGS` — L3
-
-### `client/src/features/settings/pendingReextract.ts`
-
-Состояние и UI настроек: pending reextract.
-
-#### `reprocessLocalEntry` — L18–L101 · public API
-
-Возвращает вычисленное значение reprocess local entry для использования внутри данного модуля.
-
-- Параметры: `entry`, `settings`, `signal`.
-
-- Основные вызовы: `extractSignalForText`, `isRetryableProviderErrorCode`, `getLocalEntry`, `toISOString`, `updateLocalEntry`, `syncLocalEntryToServer`, `catch`, `enqueueEntrySyncJob`.
-
-#### `processPendingReextractEntries` — L103–L139 · public API
-
-Исполняет сценарий pending reextract entries и координирует его побочные эффекты.
-
-- Параметры: `settings`.
-
-- Основные вызовы: `getAllLocalEntries`, `isSignalReprocessCandidate`, `push`, `releaseTerminalPendingReextractEntry`, `getRemainingGeminiDailyExtractions`, `enqueueEntrySignalReprocessJob`, `getSignalReprocessReason`.
-
-#### `releaseTerminalPendingReextractEntry` — L141–L155 · internal helper
-
-Исполняет сценарий release terminal pending reextract entry и координирует его побочные эффекты.
-
-- Параметры: `entry`.
-
-- Основные вызовы: `updateLocalEntry`, `catch`, `enqueueEntrySyncJob`.
-
 ### `client/src/features/settings/useSettingsState.ts`
 
 Состояние и UI настроек: use settings state.
 
-#### `useSettingsState` — L43–L279 · public API
+#### `useSettingsState` — L45–L281 · public API
 
 Управляет React-состоянием, derived values и side effects для settings state.
 
@@ -3930,7 +5065,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `useState`, `getDebugMode`, `getLocalEmotionSpikeEnabled`, `getPersonaTextEnabled`, `useEffect`, `setLocalEmotionSpikeEnabled`, `persistLocalEmotionSpikeEnabled`, `setLocalEmotionSpikeResult`.
 
-#### `changeExtractionSettings` — L112–L120 · nested helper в useSettingsState
+#### `changeExtractionSettings` — L114–L122 · nested helper в useSettingsState
 
 Обновляет или переключает change extraction settings и связанные derived state.
 
@@ -3938,7 +5073,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `normalizeExtractionSettings`, `setExtractionSettings`, `persistExtractionSettings`, `setReprocessStatus`, `setReprocessMessage`, `refreshExtractionStatus`.
 
-#### `toggleDebugMode` — L122–L125 · nested helper в useSettingsState
+#### `toggleDebugMode` — L124–L127 · nested helper в useSettingsState
 
 Обновляет или переключает toggle debug mode и связанные derived state.
 
@@ -3946,7 +5081,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setDebugMode`, `persistDebugMode`.
 
-#### `toggleLocalEmotionSpike` — L127–L137 · nested helper в useSettingsState
+#### `toggleLocalEmotionSpike` — L129–L139 · nested helper в useSettingsState
 
 Обновляет или переключает toggle local emotion spike и связанные derived state.
 
@@ -3954,7 +5089,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setLocalEmotionSpikeEnabled`, `persistLocalEmotionSpikeEnabled`, `setLocalEmotionSpikeResult`, `setLocalEmotionSpikeStatus`.
 
-#### `togglePersonaText` — L139–L142 · nested helper в useSettingsState
+#### `togglePersonaText` — L141–L144 · nested helper в useSettingsState
 
 Обновляет или переключает toggle persona text и связанные derived state.
 
@@ -3962,13 +5097,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `setPersonaTextEnabled`, `persistPersonaTextEnabled`.
 
-#### `runLocalEmotionSpikeDemo` — L144–L164 · nested helper в useSettingsState
+#### `runLocalEmotionSpikeDemo` — L146–L166 · nested helper в useSettingsState
 
 Исполняет сценарий local emotion spike demo и координирует его побочные эффекты.
 
 - Основные вызовы: `setLocalEmotionSpikeEnabled`, `persistLocalEmotionSpikeEnabled`, `setLocalEmotionSpikeResult`, `setLocalEmotionSpikeStatus`, `extractLocalEmotionSignals`, `translateMessage`.
 
-#### `reprocessFallbackEntries` — L166–L246 · nested helper в useSettingsState
+#### `reprocessFallbackEntries` — L168–L248 · nested helper в useSettingsState
 
 Выполняет локальную операцию reprocess fallback entries внутри ответственности этого файла.
 
@@ -3976,7 +5111,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `isSignalReprocessCandidate`, `getRemainingGeminiDailyExtractions`, `setReprocessStatus`, `setReprocessMessage`, `translateMessage`, `updateLocalEntry`, `enqueueEntrySignalReprocessJob`, `getSignalReprocessReason`.
 
-#### `resetAfterLocalDataClear` — L248–L256 · nested helper в useSettingsState
+#### `resetAfterLocalDataClear` — L250–L258 · nested helper в useSettingsState
 
 Сбрасывает reset after local data clear в исходное согласованное состояние.
 
@@ -3984,7 +5119,7 @@ UI-компонент редактора: self report menu.
 
 #### Публичные типы, классы и константы
 
-- `type ReprocessStatus` — L35
+- `type ReprocessStatus` — L37
 
 ### `client/src/features/sync/entryReprocessJob.ts`
 
@@ -4002,7 +5137,7 @@ UI-компонент редактора: self report menu.
 
 Политики и jobs фоновой синхронизации: entry server sync.
 
-#### `syncLocalEntryToServer` — L14–L31 · public API
+#### `syncLocalEntryToServer` — L15–L32 · public API
 
 Оркестрирует local entry to server в инфраструктуре синхронизации или фоновой очереди.
 
@@ -4010,19 +5145,19 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `createEntry`, `buildCreatePayload`, `updateServerEntry`, `buildUpdatePayload`, `isHttpNotFound`.
 
-#### `buildCreatePayload` — L33–L42 · internal helper
+#### `buildCreatePayload` — L34–L43 · internal helper
 
 Создаёт create payload из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `entry`.
 
-#### `buildUpdatePayload` — L44–L52 · internal helper
+#### `buildUpdatePayload` — L45–L53 · internal helper
 
 Создаёт update payload из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `entry`.
 
-#### `isHttpNotFound` — L54–L60 · internal helper
+#### `isHttpNotFound` — L55–L61 · internal helper
 
 Проверяет условие http not found и возвращает логический результат без изменения состояния.
 
@@ -4032,7 +5167,7 @@ UI-компонент редактора: self report menu.
 
 Политики и jobs фоновой синхронизации: entry sync job.
 
-#### `enqueueEntrySyncJob` — L33–L53 · public API
+#### `enqueueEntrySyncJob` — L36–L56 · public API
 
 Оркестрирует entry sync job в инфраструктуре синхронизации или фоновой очереди.
 
@@ -4040,7 +5175,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `createEntrySyncQueuePayload`, `enqueueQueueJob`, `createEntrySyncIdempotencyKey`.
 
-#### `createEntrySyncQueuePayload` — L55–L67 · public API
+#### `createEntrySyncQueuePayload` — L58–L70 · public API
 
 Создаёт entry sync queue payload из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -4048,13 +5183,13 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `toISOString`, `validateEntrySyncQueuePayload`.
 
-#### `createEntrySyncIdempotencyKey` — L69–L79 · public API
+#### `createEntrySyncIdempotencyKey` — L72–L82 · public API
 
 Создаёт entry sync idempotency key из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `payload`.
 
-#### `validateEntrySyncQueuePayload` — L81–L124 · public API
+#### `validateEntrySyncQueuePayload` — L84–L127 · public API
 
 Проверяет корректность entry sync queue payload и явно отклоняет нарушение контракта.
 
@@ -4062,7 +5197,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `Array.isArray`, `queueBlocked`, `Object.keys`, `test`.
 
-#### `handleEntrySyncJob` — L126–L163 · public API
+#### `handleEntrySyncJob` — L129–L166 · public API
 
 Исполняет сценарий entry sync job и координирует его побочные эффекты.
 
@@ -4070,7 +5205,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `throwIfAborted`, `validateEntrySyncQueuePayload`, `getLocalEntry`, `planEntrySyncJob`, `queueBlocked`, `queueConflict`, `syncLocalEntryToServer`, `persistSyncResultIfStillCurrent`.
 
-#### `persistSyncResultIfStillCurrent` — L165–L190 · internal helper
+#### `persistSyncResultIfStillCurrent` — L168–L193 · internal helper
 
 Выполняет локальную операцию persist sync result if still current внутри ответственности этого файла.
 
@@ -4078,7 +5213,7 @@ UI-компонент редактора: self report menu.
 
 - Основные вызовы: `getLocalEntry`, `updateLocalEntry`.
 
-#### `throwIfAborted` — L192–L196 · internal helper
+#### `throwIfAborted` — L195–L199 · internal helper
 
 Выполняет локальную операцию throw if aborted внутри ответственности этого файла.
 
@@ -4105,1075 +5240,7 @@ UI-компонент редактора: self report menu.
 
 ### `client/src/features/sync/queue.ts`
 
-Политики и jobs фоновой синхронизации: queue.
-
-Именованных функций нет: файл служит re-export границей.
-
-### `client/src/features/sync/queueTypes.ts`
-
-Политики и jobs фоновой синхронизации: queue types.
-
-Именованных функций нет: файл служит re-export границей.
-
-### `client/src/features/sync/reprocessPolicy.ts`
-
-Политики и jobs фоновой синхронизации: reprocess policy.
-
-#### `isRetryableProviderErrorCode` — L39–L41 · public API
-
-Проверяет условие retryable provider error code и возвращает логический результат без изменения состояния.
-
-- Параметры: `errorCode`.
-
-- Основные вызовы: `has`.
-
-#### `isMetricEmptySignal` — L43–L45 · public API
-
-Проверяет условие metric empty signal и возвращает логический результат без изменения состояния.
-
-- Параметры: `signal`.
-
-#### `isMetricEmptySparseSignal` — L47–L49 · public API
-
-Проверяет условие metric empty sparse signal и возвращает логический результат без изменения состояния.
-
-- Параметры: `signal`.
-
-- Основные вызовы: `isMetricEmptySignal`.
-
-#### `hasCurrentSignalContract` — L51–L56 · public API
-
-Проверяет условие current signal contract и возвращает логический результат без изменения состояния.
-
-- Параметры: `metadata`.
-
-#### `getSignalReprocessReason` — L58–L70 · public API
-
-Получает signal reprocess reason из принадлежащего модулю источника данных.
-
-- Параметры: `signal`, `metadata`, `explicitReason`.
-
-- Основные вызовы: `normalizeEntryReprocessReason`, `isRetryableProviderErrorCode`, `isMetricEmptySparseSignal`.
-
-#### `isSignalReprocessCandidate` — L72–L82 · public API
-
-Проверяет условие signal reprocess candidate и возвращает логический результат без изменения состояния.
-
-- Параметры: `signal`, `metadata`.
-
-- Основные вызовы: `isFallbackReprocessCandidate`, `isSparseNoMetricsReprocessCandidate`, `isRetryableProviderErrorCode`, `hasCurrentSignalContract`.
-
-#### `isFallbackReprocessCandidate` — L84–L93 · public API
-
-Проверяет условие fallback reprocess candidate и возвращает логический результат без изменения состояния.
-
-- Параметры: `signal`, `metadata`.
-
-- Основные вызовы: `hasCurrentSignalContract`, `isRetryableProviderErrorCode`, `isTerminalCurrentFallbackErrorCode`.
-
-#### `isSparseNoMetricsReprocessCandidate` — L95–L103 · public API
-
-Проверяет условие sparse no metrics reprocess candidate и возвращает логический результат без изменения состояния.
-
-- Параметры: `signal`, `metadata`.
-
-- Основные вызовы: `isMetricEmptySparseSignal`, `hasCurrentSignalContract`, `isRetryableProviderErrorCode`.
-
-#### `isTerminalCurrentFallbackErrorCode` — L105–L107 · internal helper
-
-Проверяет условие terminal current fallback error code и возвращает логический результат без изменения состояния.
-
-- Параметры: `errorCode`.
-
-- Основные вызовы: `has`.
-
-#### `createEntryReprocessPayload` — L109–L129 · public API
-
-Создаёт entry reprocess payload из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ entryId, serverId, sourceTextHash, reason, }`.
-
-- Основные вызовы: `toISOString`.
-
-#### `createEntryReprocessJobIdempotencyKey` — L131–L141 · public API
-
-Создаёт entry reprocess job idempotency key из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ entryId, sourceTextHash, reason, }`.
-
-#### `planEntryReprocessJob` — L143–L189 · public API
-
-Выводит entry reprocess job по явным правилам без скрытых побочных эффектов.
-
-- Параметры: `job`, `entry`.
-
-- Основные вызовы: `getPayloadRecord`, `readNonEmptyString`, `getSignalReprocessReason`.
-
-#### `normalizeEntryReprocessReason` — L191–L200 · internal helper
-
-Приводит entry reprocess reason к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-#### `getPayloadRecord` — L202–L206 · internal helper
-
-Получает payload record из принадлежащего модулю источника данных.
-
-- Параметры: `payload`.
-
-- Основные вызовы: `Array.isArray`.
-
-#### `readNonEmptyString` — L208–L210 · internal helper
-
-Получает non empty string из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-#### Публичные типы, классы и константы
-
-- `type EntryReprocessPlan` — L23
-
-### `client/src/features/sync/syncQueue.ts`
-
-Регистрирует обработчики durable queue и маршрутизирует jobs синхронизации, reprocess и self-report.
-
-#### `registerSyncQueueHandlers` — L24–L48 · public API
-
-Один раз связывает persisted job types с актуальными обработчиками entry sync, signal reprocess и self-report sync.
-
-- Параметры: `settings`.
-
-- Основные вызовы: `registerQueueHandler`, `handleEntryReprocessSignalJob`.
-
-#### `handleEntryReprocessSignalJob` — L50–L89 · internal helper
-
-Исполняет сценарий entry reprocess signal job и координирует его побочные эффекты.
-
-- Параметры: `job`, `settings`, `signal`.
-
-- Основные вызовы: `getEntryId`, `getLocalEntry`, `planEntryReprocessJob`, `reprocessLocalEntry`.
-
-#### `getEntryId` — L91–L106 · internal helper
-
-Получает entry id из принадлежащего модулю источника данных.
-
-- Параметры: `job`.
-
-- Основные вызовы: `Array.isArray`.
-
-### `client/src/features/sync/useQueueWakeups.ts`
-
-Политики и jobs фоновой синхронизации: use queue wakeups.
-
-#### `useQueueWakeups` — L8–L38 · public API
-
-Управляет React-состоянием, derived values и side effects для queue wakeups.
-
-- Параметры: `{ enabled }`.
-
-- Основные вызовы: `useEffect`, `wakeQueue`, `window.addEventListener`, `addEventListener`, `window.removeEventListener`, `removeEventListener`.
-
-#### `wakeWhenOnline` — L12–L16 · nested helper в useQueueWakeups
-
-Выполняет локальную операцию wake when online внутри ответственности этого файла.
-
-- Основные вызовы: `wakeQueue`.
-
-#### `wakeWhenFocused` — L18–L20 · nested helper в useQueueWakeups
-
-Выполняет локальную операцию wake when focused внутри ответственности этого файла.
-
-- Основные вызовы: `wakeQueue`.
-
-#### `wakeWhenVisible` — L22–L26 · nested helper в useQueueWakeups
-
-Выполняет локальную операцию wake when visible внутри ответственности этого файла.
-
-- Основные вызовы: `wakeQueue`.
-
-### `client/src/features/sync/useSyncQueue.ts`
-
-Политики и jobs фоновой синхронизации: use sync queue.
-
-#### `useSyncQueue` — L24–L73 · public API
-
-Управляет React-состоянием, derived values и side effects для sync queue.
-
-- Параметры: `{ extractionSettings }`.
-
-- Основные вызовы: `useState`, `getQueueSnapshot`, `useQueueWakeups`, `useEffect`, `registerSyncQueueHandlers`, `wakeQueue`, `subscribeToQueue`, `setSnapshot`.
-
-### `client/src/features/vault/useLocalVault.ts`
-
-React/API-адаптеры локального vault: use local vault.
-
-#### `toUserMessage` — L26–L42 · internal helper
-
-Возвращает вычисленное значение to user message для использования внутри данного модуля.
-
-- Параметры: `error`.
-
-#### `useLocalVault` — L44–L207 · public API
-
-Управляет React-состоянием, derived values и side effects для local vault.
-
-- Основные вызовы: `useState`, `getVaultStatus`, `getVaultCredentialSummaries`, `useEffect`, `subscribeVault`, `setPhase`, `setCredentials`, `useCallback`.
-
-#### Публичные типы, классы и константы
-
-- `type LocalVaultPhase` — L19
-- `type LocalVaultError` — L20
-
-### `client/src/features/vault/vaultApi.ts`
-
-React/API-адаптеры локального vault: vault api.
-
-Именованных функций нет: файл служит re-export границей.
-
-### `client/src/i18n/i18nContext.ts`
-
-Интернационализация интерфейса: i18n context.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `type I18nContextValue` — L7
-- `const I18nContext` — L13
-
-### `client/src/i18n/I18nProvider.tsx`
-
-Интернационализация интерфейса: i18n provider.
-
-#### `I18nProvider` — L18–L49 · public API
-
-Рендерит React-компонент I18nProvider и связывает его props с соответствующей UI-поверхностью.
-
-- Параметры: `{ children }`.
-
-- Основные вызовы: `useState`, `readStoredLanguage`, `useCallback`, `setLanguageState`, `setItem`, `getLanguageStorageKey`, `translateMessage`, `useEffect`.
-
-#### `readStoredLanguage` — L51–L58 · internal helper
-
-Получает stored language из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getItem`, `getLanguageStorageKey`, `isSupportedLanguage`.
-
-#### `getLanguageStorageKey` — L60–L62 · internal helper
-
-Получает language storage key из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getProfileScopedStorageKey`.
-
-### `client/src/i18n/languages.ts`
-
-Интернационализация интерфейса: languages.
-
-#### `isSupportedLanguage` — L16–L18 · public API
-
-Проверяет условие supported language и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-#### `detectBrowserLanguage` — L20–L31 · public API
-
-Возвращает вычисленное значение browser language для использования внутри данного модуля.
-
-- Основные вызовы: `split`, `toLowerCase`, `isSupportedLanguage`.
-
-#### Публичные типы, классы и константы
-
-- `const SUPPORTED_LANGUAGES` — L1
-- `type Language` — L3
-- `const DEFAULT_LANGUAGE` — L5
-- `const LANGUAGE_LABELS` — L7
-- `const LANGUAGE_STORAGE_KEY` — L14
-
-### `client/src/i18n/messages.ts`
-
-Интернационализация интерфейса: messages.
-
-#### `translateMessage` — L1143–L1153 · public API
-
-Возвращает вычисленное значение translate message для использования внутри данного модуля.
-
-- Параметры: `language`, `key`, `values`.
-
-- Основные вызовы: `replace`, `String`.
-
-#### Публичные типы, классы и константы
-
-- `const en` — L3
-- `type MessageKey` — L294
-- `const messages` — L1136
-
-### `client/src/i18n/useI18n.ts`
-
-Интернационализация интерфейса: use i18n.
-
-#### `useI18n` — L4–L12 · public API
-
-Управляет React-состоянием, derived values и side effects для i18n.
-
-- Основные вызовы: `useContext`.
-
-### `client/src/lib/api.ts`
-
-Низкоуровневый HTTP-клиент всех backend API с CSRF, cookie auth и классификацией ошибок.
-
-#### `loadServerAuthStatus` — L101–L111 · public API
-
-Получает server auth status из принадлежащего модулю источника данных.
-
-- Основные вызовы: `fetch`, `json`.
-
-#### `setupServerOwner` — L113–L127 · public API
-
-Изменяет up server owner, сохраняя инварианты данного модуля.
-
-- Параметры: `payload`.
-
-- Основные вызовы: `fetch`, `jsonHeaders`, `text`, `json`.
-
-#### `loginServerOwner` — L129–L143 · public API
-
-Возвращает вычисленное значение login server owner для использования внутри данного модуля.
-
-- Параметры: `payload`.
-
-- Основные вызовы: `fetch`, `jsonHeaders`, `text`, `json`.
-
-#### `logoutServerOwner` — L145–L156 · public API
-
-Выполняет локальную операцию logout server owner внутри ответственности этого файла.
-
-- Основные вызовы: `fetch`, `csrfHeaders`, `text`.
-
-#### `loadServerEntries` — L158–L176 · public API
-
-Получает server entries из принадлежащего модулю источника данных.
-
-- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
-
-#### `loadServerEntry` — L178–L196 · public API
-
-Получает server entry из принадлежащего модулю источника данных.
-
-- Параметры: `entryId`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `handleUnauthorized`, `json`.
-
-#### `createEntry` — L198–L214 · public API
-
-Создаёт entry из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `payload`.
-
-- Основные вызовы: `fetch`, `csrfJsonHeaders`, `handleUnauthorized`, `createApiHttpError`, `json`.
-
-#### `updateServerEntry` — L216–L235 · public API
-
-Изменяет server entry, сохраняя инварианты данного модуля.
-
-- Параметры: `entryId`, `payload`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `handleUnauthorized`, `createApiHttpError`, `json`.
-
-#### `deleteServerEntry` — L237–L250 · public API
-
-Удаляет или очищает server entry с необходимыми связанными действиями.
-
-- Параметры: `entryId`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfHeaders`, `handleUnauthorized`, `text`.
-
-#### `loadExtractionConfig` — L252–L264 · public API
-
-Получает extraction config из принадлежащего модулю источника данных.
-
-- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
-
-#### `loadExtractionStatus` — L266–L283 · public API
-
-Получает extraction status из принадлежащего модулю источника данных.
-
-- Параметры: `settings`.
-
-- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
-
-#### `extractSignal` — L285–L314 · public API
-
-Извлекает signal из входных данных без самостоятельного сохранения результата.
-
-- Параметры: `payload`.
-
-- Основные вызовы: `fetch`, `csrfJsonHeaders`, `handleUnauthorized`, `text`, `json`.
-
-#### `appendEntrySignal` — L316–L336 · public API
-
-Возвращает вычисленное значение append entry signal для использования внутри данного модуля.
-
-- Параметры: `entryId`, `payload`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `handleUnauthorized`, `text`, `json`.
-
-#### `loadCurrentInsights` — L338–L357 · public API
-
-Получает current insights из принадлежащего модулю источника данных.
-
-- Параметры: `today`.
-
-- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
-
-#### `loadInsightHistory` — L359–L377 · public API
-
-Получает insight history из принадлежащего модулю источника данных.
-
-- Основные вызовы: `fetch`, `handleUnauthorized`, `json`.
-
-#### `deleteInsightSnapshot` — L379–L392 · public API
-
-Удаляет или очищает insight snapshot с необходимыми связанными действиями.
-
-- Параметры: `insightId`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfHeaders`, `handleUnauthorized`, `text`.
-
-#### `syncSelfReportDailyAggregates` — L394–L416 · public API
-
-Оркестрирует self report daily aggregates в инфраструктуре синхронизации или фоновой очереди.
-
-- Параметры: `localDay`, `aggregates`.
-
-- Основные вызовы: `fetch`, `encodeURIComponent`, `csrfJsonHeaders`, `serializeSelfReportDailyAggregates`, `handleUnauthorized`, `text`.
-
-#### `serializeSelfReportDailyAggregates` — L418–L434 · public API
-
-Преобразует self report daily aggregates в стабильное представление для UI, сети или хранения.
-
-- Параметры: `aggregates`.
-
-#### `jsonHeaders` — L436–L440 · internal helper
-
-Возвращает вычисленное значение json headers для использования внутри данного модуля.
-
-#### `csrfJsonHeaders` — L442–L447 · internal helper
-
-Возвращает вычисленное значение csrf json headers для использования внутри данного модуля.
-
-- Основные вызовы: `jsonHeaders`, `csrfHeaders`.
-
-#### `csrfHeaders` — L449–L453 · internal helper
-
-Возвращает вычисленное значение csrf headers для использования внутри данного модуля.
-
-- Основные вызовы: `readBrowserCookie`.
-
-#### `readBrowserCookie` — L455–L475 · internal helper
-
-Получает browser cookie из принадлежащего модулю источника данных.
-
-- Параметры: `name`.
-
-- Основные вызовы: `split`, `startsWith`, `decodeURIComponent`.
-
-#### `createApiHttpError` — L477–L488 · internal helper
-
-Преобразует неуспешный HTTP response в типизированную ошибку с кодом, status и безопасным сообщением.
-
-- Параметры: `response`, `prefix`.
-
-- Основные вызовы: `text`, `classifyHttpErrorCode`.
-
-#### `classifyHttpErrorCode` — L490–L496 · internal helper
-
-Возвращает вычисленное значение classify http error code для использования внутри данного модуля.
-
-- Параметры: `status`.
-
-#### `handleUnauthorized` — L498–L504 · internal helper
-
-Исполняет сценарий unauthorized и координирует его побочные эффекты.
-
-- Параметры: `response`.
-
-- Основные вызовы: `window.dispatchEvent`.
-
-#### Публичные типы, классы и константы
-
-- `type ServerAuthUser` — L17
-- `type ServerAuthStatus` — L23
-- `type SyncSelfReportDailyAggregatePayload` — L80
-- `const SERVER_AUTH_REQUIRED_EVENT` — L85
-- `class ApiHttpError` — L89
-
-### `client/src/lib/appLock.ts`
-
-Низкоуровневая клиентская библиотека: app lock.
-
-#### `getPrimaryVaultProfileId` — L24–L28 · public API
-
-Получает primary vault profile id из принадлежащего модулю источника данных.
-
-- Параметры: `credentials`.
-
-#### `getProfileCredentials` — L30–L35 · public API
-
-Получает profile credentials из принадлежащего модулю источника данных.
-
-- Параметры: `credentials`, `profileId`.
-
-- Основные вызовы: `getPrimaryVaultProfileId`.
-
-#### `isAppProtectionEnabled` — L37–L49 · public API
-
-Проверяет условие app protection enabled и возвращает логический результат без изменения состояния.
-
-- Параметры: `credentials`.
-
-- Основные вызовы: `getProfileCredentials`.
-
-#### `getAppLockAutoLockPreference` — L51–L59 · public API
-
-Получает app lock auto lock preference из принадлежащего модулю источника данных.
-
-- Основные вызовы: `normalizeAutoLockPreference`, `getItem`.
-
-#### `setAppLockAutoLockPreference` — L61–L73 · public API
-
-Изменяет app lock auto lock preference, сохраняя инварианты данного модуля.
-
-- Параметры: `value`.
-
-- Основные вызовы: `setItem`, `window.dispatchEvent`.
-
-#### `getAppLockAutoLockDelayMs` — L75–L79 · public API
-
-Получает app lock auto lock delay ms из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-#### `normalizeAutoLockPreference` — L81–L95 · internal helper
-
-Приводит auto lock preference к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-#### Публичные типы, классы и константы
-
-- `type AppLockAutoLockPreference` — L3
-- `const APP_LOCK_AUTO_LOCK_CHANGED_EVENT` — L10
-
-### `client/src/lib/athenaInsightPhraseLibraries.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrase libraries.
-
-#### `getAthenaInsightTopics` — L20–L24 · public API
-
-Получает athena insight topics из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### Публичные типы, классы и константы
-
-- `const ATHENA_INSIGHT_LANGUAGES` — L7
-- `type AthenaInsightLanguage` — L9
-- `const DEFAULT_ATHENA_INSIGHT_LANGUAGE` — L11
-
-### `client/src/lib/athenaInsightPhrasesDe.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrases de.
-
-#### `createTopic` — L31–L37 · internal helper
-
-Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `seed`.
-
-#### Публичные типы, классы и константы
-
-- `const ATHENA_INSIGHT_TOPICS_DE` — L39
-
-### `client/src/lib/athenaInsightPhrasesEn.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrases en.
-
-#### `createTopic` — L31–L37 · internal helper
-
-Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `seed`.
-
-#### Публичные типы, классы и константы
-
-- `const ATHENA_INSIGHT_TOPICS_EN` — L39
-
-### `client/src/lib/athenaInsightPhrasesRu.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrases ru.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ATHENA_INSIGHT_TOPICS_RU` — L3
-
-### `client/src/lib/athenaInsightPhrasesTypes.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrases types.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `type AthenaInsightTopic` — L1
-
-### `client/src/lib/athenaInsightPhrasesUk.ts`
-
-Низкоуровневая клиентская библиотека: athena insight phrases uk.
-
-#### `createTopic` — L31–L37 · internal helper
-
-Создаёт topic из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `seed`.
-
-#### Публичные типы, классы и константы
-
-- `const ATHENA_INSIGHT_TOPICS_UK` — L39
-
-### `client/src/lib/athenaPhraseLibraries.ts`
-
-Низкоуровневая клиентская библиотека: athena phrase libraries.
-
-#### `getAthenaPhraseLibrary` — L20–L24 · public API
-
-Получает athena phrase library из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### Публичные типы, классы и константы
-
-- `const ATHENA_PHRASE_LANGUAGES` — L7
-- `type AthenaPhraseLanguage` — L9
-- `const DEFAULT_ATHENA_PHRASE_LANGUAGE` — L11
-
-### `client/src/lib/athenaPhrasesDe.ts`
-
-Низкоуровневая клиентская библиотека: athena phrases de.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ATHENA_LIBRARY_DE` — L3
-
-### `client/src/lib/athenaPhrasesEn.ts`
-
-Низкоуровневая клиентская библиотека: athena phrases en.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ATHENA_LIBRARY_EN` — L3
-
-### `client/src/lib/athenaPhrasesRu.ts`
-
-Низкоуровневая клиентская библиотека: athena phrases ru.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ATHENA_LIBRARY_RU` — L3
-
-### `client/src/lib/athenaPhrasesTypes.ts`
-
-Низкоуровневая клиентская библиотека: athena phrases types.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `type AthenaPhraseTime` — L1
-- `type AthenaPhraseTone` — L3
-- `type AthenaPhrase` — L5
-- `type AthenaPhraseLibrary` — L12
-
-### `client/src/lib/athenaPhrasesUk.ts`
-
-Низкоуровневая клиентская библиотека: athena phrases uk.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ATHENA_LIBRARY_UK` — L3
-
-### `client/src/lib/athenaPlaceholder.ts`
-
-Низкоуровневая клиентская библиотека: athena placeholder.
-
-#### `weightByTone` — L11–L28 · internal helper
-
-Возвращает вычисленное значение weight by tone для использования внутри данного модуля.
-
-- Параметры: `phrases`.
-
-- Основные вызовы: `push`.
-
-#### `getTimeBucket` — L30–L35 · internal helper
-
-Получает time bucket из принадлежащего модулю источника данных.
-
-- Параметры: `hours`.
-
-#### `filterByTime` — L37–L42 · internal helper
-
-Выбирает by time, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `phrases`, `current`.
-
-#### `pickGreetingWithSignals` — L44–L66 · internal helper
-
-Выбирает greeting with signals, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `phrases`, `signals`, `language`.
-
-- Основные вызовы: `pickPhrase`.
-
-#### `pickCTAWithSignals` — L68–L95 · internal helper
-
-Выбирает ctawith signals, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `phrases`, `signals`, `language`.
-
-- Основные вызовы: `weightByTone`, `pickPhrase`.
-
-#### `generateAthenaPlaceholder` — L97–L132 · public API
-
-Создаёт athena placeholder из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `insights`, `signals`, `language`.
-
-- Основные вызовы: `getHours`, `getTimeBucket`, `getAthenaPhraseLibrary`, `Math.random`, `pickCTAWithSignals`, `filterByTime`, `pickGreetingWithSignals`.
-
-### `client/src/lib/dates.ts`
-
-Низкоуровневая клиентская библиотека: dates.
-
-#### `todayDateOnly` — L10–L12 · public API
-
-Возвращает вычисленное значение today date only для использования внутри данного модуля.
-
-- Основные вызовы: `toDateOnly`.
-
-#### `formatLongDate` — L14–L20 · public API
-
-Преобразует long date в стабильное представление для UI, сети или хранения.
-
-- Параметры: `dateOnly`, `language`.
-
-- Основные вызовы: `toLocaleDateString`, `parseDateOnly`, `getLocale`.
-
-#### `formatShortDate` — L22–L27 · public API
-
-Преобразует short date в стабильное представление для UI, сети или хранения.
-
-- Параметры: `dateOnly`, `language`.
-
-- Основные вызовы: `toLocaleDateString`, `parseDateOnly`, `getLocale`.
-
-#### `getLocale` — L29–L31 · public API
-
-Получает locale из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### `toDateOnly` — L33–L39 · internal helper
-
-Возвращает вычисленное значение to date only для использования внутри данного модуля.
-
-- Параметры: `date`.
-
-- Основные вызовы: `getFullYear`, `padStart`, `String`, `getMonth`, `getDate`.
-
-#### `parseDateOnly` — L41–L44 · internal helper
-
-Разбирает date only и преобразует вход в типизированное представление.
-
-- Параметры: `dateOnly`.
-
-- Основные вызовы: `split`.
-
-### `client/src/lib/extraction.ts`
-
-Низкоуровневая клиентская библиотека: extraction.
-
-#### `extractSignalForText` — L16–L99 · public API
-
-Извлекает signal for text из входных данных без самостоятельного сохранения результата.
-
-- Параметры: `rawText`, `settings`, `context`, `signal`.
-
-- Основные вызовы: `releaseGeminiDailyExtraction`, `loadLocalEmotionModuleIfAllowed`, `extractLocalEmotionSignals`, `reserveGeminiDailyExtraction`, `mergeEmotionIfAvailable`, `withSignalContext`, `createFallbackSignal`, `createFallbackMetadata`.
-
-#### `releaseGeminiReservation` — L27–L32 · nested helper в extractSignalForText
-
-Исполняет сценарий release gemini reservation и координирует его побочные эффекты.
-
-- Основные вызовы: `releaseGeminiDailyExtraction`.
-
-#### `withSignalContext` — L101–L113 · internal helper
-
-Возвращает вычисленное значение with signal context для использования внутри данного модуля.
-
-- Параметры: `extraction`, `rawText`, `context`.
-
-- Основные вызовы: `analyzeSignalContext`.
-
-#### `hasExtractionError` — L115–L119 · internal helper
-
-Проверяет условие extraction error и возвращает логический результат без изменения состояния.
-
-- Параметры: `extraction`.
-
-- Основные вызовы: `Boolean`.
-
-#### `mergeEmotionIfAvailable` — L121–L131 · internal helper
-
-Преобразует или объединяет emotion if available по правилам домена.
-
-- Параметры: `extraction`, `emotionResult`, `mergeLocalEmotionSignals`.
-
-- Основные вызовы: `mergeLocalEmotionSignals`.
-
-#### `loadLocalEmotionModuleIfAllowed` — L133–L138 · internal helper
-
-Получает local emotion module if allowed из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getLocalEmotionSpikeEnabled`, `getCurrentInterfaceLanguage`.
-
-#### `getCurrentInterfaceLanguage` — L140–L148 · internal helper
-
-Получает current interface language из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getItem`.
-
-### `client/src/lib/insightPhrases.ts`
-
-Низкоуровневая клиентская библиотека: insight phrases.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `type PlainInsightTopic` — L1
-- `const PLAIN_INSIGHT_TOPICS` — L9
-
-### `client/src/lib/insightText.ts`
-
-Низкоуровневая клиентская библиотека: insight text.
-
-#### `formatInsightText` — L23–L72 · public API
-
-Преобразует insight text в стабильное представление для UI, сети или хранения.
-
-- Параметры: `insight`, `{ language = DEFAULT_ATHENA_INSIGHT_LANGUAGE, personaTextEnabled, }`.
-
-- Основные вызовы: `getInsightTopic`, `getAthenaInsightTopics`, `getPlainInsightTopics`, `findTopicProfile`, `getAthenaInsightTone`, `getPlainInsightTone`, `normalizeTopic`, `pickInsightLine`.
-
-#### `findTopicProfile` — L74–L82 · internal helper
-
-Выбирает topic profile, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `topic`, `topics`.
-
-- Основные вызовы: `normalizeTopic`.
-
-#### `getInsightTopic` — L84–L89 · internal helper
-
-Получает insight topic из принадлежащего модулю источника данных.
-
-- Параметры: `insight`.
-
-- Основные вызовы: `match`.
-
-#### `fallbackTemplate` — L91–L189 · internal helper
-
-Возвращает вычисленное значение fallback template для использования внутри данного модуля.
-
-- Параметры: `layer`, `personaTextEnabled`, `language`.
-
-#### `fallbackAdvice` — L191–L224 · internal helper
-
-Возвращает вычисленное значение fallback advice для использования внутри данного модуля.
-
-- Параметры: `personaTextEnabled`, `language`.
-
-#### `getAthenaInsightTone` — L226–L230 · internal helper
-
-Получает athena insight tone из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### `getPlainInsightTone` — L232–L236 · internal helper
-
-Получает plain insight tone из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### `renderTemplate` — L238–L240 · internal helper
-
-Возвращает вычисленное значение render template для использования внутри данного модуля.
-
-- Параметры: `template`, `subject`.
-
-- Основные вызовы: `replaceAll`.
-
-#### `joinSentences` — L242–L247 · internal helper
-
-Возвращает вычисленное значение join sentences для использования внутри данного модуля.
-
-- Параметры: `first`, `second`.
-
-#### `pickInsightLine` — L249–L283 · internal helper
-
-Выбирает insight line, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `items`, `seed`, `scope`.
-
-- Основные вызовы: `getLocalStorage`, `deterministicPick`, `getChoiceKey`, `readIndex`, `getItem`, `getBagKey`, `readBag`, `hashSeed`.
-
-#### `getChoiceKey` — L285–L302 · internal helper
-
-Получает choice key из принадлежащего модулю источника данных.
-
-- Параметры: `scope`, `itemCount`.
-
-- Основные вызовы: `getProfileScopedStorageKey`.
-
-#### `getBagKey` — L304–L319 · internal helper
-
-Получает bag key из принадлежащего модулю источника данных.
-
-- Параметры: `scope`, `itemCount`.
-
-- Основные вызовы: `getProfileScopedStorageKey`.
-
-#### `readIndex` — L321–L328 · internal helper
-
-Получает index из принадлежащего модулю источника данных.
-
-- Параметры: `raw`, `itemCount`.
-
-- Основные вызовы: `Number`, `isInteger`.
-
-#### `readBag` — L330–L352 · internal helper
-
-Получает bag из принадлежащего модулю источника данных.
-
-- Параметры: `raw`, `itemCount`.
-
-- Основные вызовы: `Array.from`, `freshBag`, `Array.isArray`, `isInteger`.
-
-#### `freshBag` — L331–L332 · nested helper в readBag
-
-Возвращает вычисленное значение fresh bag для использования внутри данного модуля.
-
-- Основные вызовы: `Array.from`.
-
-#### `getLocalStorage` — L354–L360 · internal helper
-
-Получает local storage из принадлежащего модулю источника данных.
-
-#### `deterministicPick` — L362–L366 · internal helper
-
-Возвращает вычисленное значение deterministic pick для использования внутри данного модуля.
-
-- Параметры: `items`, `seed`.
-
-- Основные вызовы: `hashSeed`.
-
-#### `hashSeed` — L368–L375 · internal helper
-
-Проверяет условие seed и возвращает логический результат без изменения состояния.
-
-- Параметры: `seed`.
-
-- Основные вызовы: `charCodeAt`.
-
-#### `normalizeTopic` — L377–L379 · internal helper
-
-Приводит topic к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `topic`.
-
-- Основные вызовы: `toLowerCase`.
-
-### `client/src/lib/offline.ts`
-
-Низкоуровневая клиентская библиотека: offline.
-
-#### `getOnlineStatus` — L3–L5 · public API
-
-Получает online status из принадлежащего модулю источника данных.
-
-#### `useOnlineStatus` — L7–L29 · public API
-
-Управляет React-состоянием, derived values и side effects для online status.
-
-- Основные вызовы: `useState`, `getOnlineStatus`, `useEffect`, `setIsOnline`, `window.addEventListener`, `window.removeEventListener`.
-
-#### `handleOnline` — L11–L13 · nested helper в useOnlineStatus
-
-Исполняет сценарий online и координирует его побочные эффекты.
-
-- Основные вызовы: `setIsOnline`.
-
-#### `handleOffline` — L15–L17 · nested helper в useOnlineStatus
-
-Исполняет сценарий offline и координирует его побочные эффекты.
-
-- Основные вызовы: `setIsOnline`.
-
-### `client/src/lib/phrasePicker.ts`
-
-Низкоуровневая клиентская библиотека: phrase picker.
-
-#### `getBagKey` — L8–L10 · internal helper
-
-Получает bag key из принадлежащего модулю источника данных.
-
-- Параметры: `group`.
-
-- Основные вызовы: `getProfileScopedStorageKey`.
-
-#### `pickPhrase` — L12–L39 · public API
-
-Выбирает phrase, удовлетворяющий ограничениям текущего сценария.
-
-- Параметры: `group`, `phrases`.
-
-- Основные вызовы: `getItem`, `getBagKey`, `Math.floor`, `Math.random`, `splice`, `setItem`.
-
-### `client/src/lib/plainInsightPhraseLibraries.ts`
-
-Низкоуровневая клиентская библиотека: plain insight phrase libraries.
-
-#### `getPlainInsightTopics` — L149–L151 · public API
-
-Получает plain insight topics из принадлежащего модулю источника данных.
-
-- Параметры: `language`.
-
-#### `topic` — L153–L155 · internal helper
-
-Возвращает вычисленное значение topic для использования внутри данного модуля.
-
-- Параметры: `id`, `aliases`, `subject`.
-
-#### `buildTopics` — L157–L167 · internal helper
-
-Создаёт topics из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `definitions`, `templates`, `advice`.
-
-### `client/src/lib/queue.ts`
-
-Исполнитель durable queue: регистрация handlers, retries/backoff, блокировка, recovery и публикация snapshots состояния.
+Исполнитель durable queue: handlers, retries, recovery и lifecycle processor.
 
 #### `createQueueJobId` — L65–L68 · internal helper
 
@@ -5333,7 +5400,7 @@ React/API-адаптеры локального vault: vault api.
 
 #### `processQueue` — L406–L501 · internal helper
 
-Запускает доступные durable jobs, применяет handlers и переводит jobs в succeeded/retry/blocked/conflict/cancelled состояния.
+Исполняет сценарий queue и координирует его побочные эффекты.
 
 - Основные вызовы: `getRunnableQueueJobs`, `emitQueueSnapshot`, `scheduleNextRunAfterWake`, `get`, `updateQueueJob`, `nowIso`, `serializeQueueError`, `queueBlocked`.
 
@@ -5349,9 +5416,9 @@ React/API-адаптеры локального vault: vault api.
 
 - Основные вызовы: `deleteQueueJobsByStatuses`, `refreshQueueSnapshot`.
 
-### `client/src/lib/queueErrors.ts`
+### `client/src/features/sync/queueErrors.ts`
 
-Низкоуровневая клиентская библиотека: queue errors.
+Политики и jobs фоновой синхронизации: queue errors.
 
 #### `queueRetryable` — L34–L40 · public API
 
@@ -5425,11 +5492,11 @@ React/API-адаптеры локального vault: vault api.
 - `type ClassifiedQueueError` — L7
 - `class QueueJobError` — L17
 
-### `client/src/lib/queueStorage.ts`
+### `client/src/features/sync/queueStorage.ts`
 
-IndexedDB-репозиторий durable queue и операции обслуживания очереди.
+Политики и jobs фоновой синхронизации: queue storage.
 
-#### `promisifyRequest` — L28–L33 · internal helper
+#### `promisifyRequest` — L31–L36 · internal helper
 
 Возвращает вычисленное значение promisify request для использования внутри данного модуля.
 
@@ -5437,7 +5504,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `resolve`, `reject`.
 
-#### `openTransaction` — L35–L41 · internal helper
+#### `openTransaction` — L38–L44 · internal helper
 
 Управляет состоянием transaction и соответствующей границей доступа.
 
@@ -5445,7 +5512,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `transaction`, `objectStore`.
 
-#### `addQueueJob` — L43–L49 · public API
+#### `addQueueJob` — L46–L52 · public API
 
 Возвращает вычисленное значение queue job для использования внутри данного модуля.
 
@@ -5453,7 +5520,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `openAthenaLocalDb`, `openTransaction`, `promisifyRequest`, `add`.
 
-#### `updateQueueJob` — L51–L57 · public API
+#### `updateQueueJob` — L54–L60 · public API
 
 Изменяет queue job, сохраняя инварианты данного модуля.
 
@@ -5461,7 +5528,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `openAthenaLocalDb`, `openTransaction`, `promisifyRequest`, `put`.
 
-#### `getQueueJob` — L59–L65 · public API
+#### `getQueueJob` — L62–L68 · public API
 
 Получает queue job из принадлежащего модулю источника данных.
 
@@ -5469,13 +5536,13 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `openAthenaLocalDb`, `openTransaction`, `promisifyRequest`, `get`.
 
-#### `getQueueJobs` — L67–L72 · public API
+#### `getQueueJobs` — L70–L75 · public API
 
 Получает queue jobs из принадлежащего модулю источника данных.
 
 - Основные вызовы: `openAthenaLocalDb`, `openTransaction`, `promisifyRequest`, `getAll`.
 
-#### `getRunnableQueueJobs` — L74–L99 · public API
+#### `getRunnableQueueJobs` — L77–L102 · public API
 
 Получает runnable queue jobs из принадлежащего модулю источника данных.
 
@@ -5483,7 +5550,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `toISOString`, `getQueueJobs`, `localeCompare`.
 
-#### `recoverStaleRunningJobs` — L101–L130 · public API
+#### `recoverStaleRunningJobs` — L104–L133 · public API
 
 Возвращает вычисленное значение stale running jobs для использования внутри данного модуля.
 
@@ -5491,31 +5558,31 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `getQueueJobs`, `now`, `getTime`, `isFinite`, `toISOString`, `updateQueueJob`, `push`.
 
-#### `recoverSignalValidationJobs` — L132–L156 · public API
+#### `recoverSignalValidationJobs` — L135–L159 · public API
 
 Возвращает вычисленное значение signal validation jobs для использования внутри данного модуля.
 
 - Основные вызовы: `getQueueJobs`, `has`, `isSignalValidationError`, `toISOString`, `updateQueueJob`, `push`.
 
-#### `countQueueJobsByStatus` — L158–L177 · public API
+#### `countQueueJobsByStatus` — L161–L180 · public API
 
 Детерминированно вычисляет queue jobs by status из входных данных.
 
 - Основные вызовы: `getQueueJobs`.
 
-#### `getLastQueueError` — L179–L187 · public API
+#### `getLastQueueError` — L182–L190 · public API
 
 Получает last queue error из принадлежащего модулю источника данных.
 
 - Основные вызовы: `getQueueJobs`, `localeCompare`.
 
-#### `getLatestQueueJobSummary` — L189–L209 · public API
+#### `getLatestQueueJobSummary` — L192–L212 · public API
 
 Получает latest queue job summary из принадлежащего модулю источника данных.
 
 - Основные вызовы: `getQueueJobs`, `localeCompare`, `readQueueJobReason`.
 
-#### `replaceQueueJob` — L211–L213 · public API
+#### `replaceQueueJob` — L214–L216 · public API
 
 Сохраняет replace queue job в принадлежащем модулю хранилище или read model.
 
@@ -5523,7 +5590,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `updateQueueJob`.
 
-#### `findQueueJobByIdempotencyKey` — L215–L227 · public API
+#### `findQueueJobByIdempotencyKey` — L218–L230 · public API
 
 Выбирает queue job by idempotency key, удовлетворяющий ограничениям текущего сценария.
 
@@ -5531,7 +5598,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `getQueueJobs`, `has`.
 
-#### `deleteQueueJob` — L229–L234 · public API
+#### `deleteQueueJob` — L232–L237 · public API
 
 Удаляет или очищает queue job с необходимыми связанными действиями.
 
@@ -5539,7 +5606,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `openAthenaLocalDb`, `openTransaction`, `promisifyRequest`, `delete`.
 
-#### `deleteQueueJobsByStatuses` — L236–L248 · public API
+#### `deleteQueueJobsByStatuses` — L239–L251 · public API
 
 Удаляет или очищает queue jobs by statuses с необходимыми связанными действиями.
 
@@ -5547,13 +5614,13 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `getQueueJobs`, `has`, `deleteQueueJob`.
 
-#### `compactQueueJobs` — L250–L299 · public API
+#### `compactQueueJobs` — L253–L302 · public API
 
 Возвращает вычисленное значение compact queue jobs для использования внутри данного модуля.
 
 - Основные вызовы: `getQueueJobs`, `now`, `getTime`, `isFinite`, `has`, `deleteQueueJob`, `localeCompare`.
 
-#### `assertQueueCanAcceptJob` — L301–L319 · public API
+#### `assertQueueCanAcceptJob` — L304–L322 · public API
 
 Проверяет корректность queue can accept job и явно отклоняет нарушение контракта.
 
@@ -5561,7 +5628,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `compactQueueJobs`, `getQueueJobs`, `has`.
 
-#### `getQueueJobsByStatuses` — L321–L328 · public API
+#### `getQueueJobsByStatuses` — L324–L331 · public API
 
 Получает queue jobs by statuses из принадлежащего модулю источника данных.
 
@@ -5569,7 +5636,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `getQueueJobs`, `has`.
 
-#### `readQueueJobReason` — L330–L338 · internal helper
+#### `readQueueJobReason` — L333–L341 · internal helper
 
 Получает queue job reason из принадлежащего модулю источника данных.
 
@@ -5577,7 +5644,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `Array.isArray`.
 
-#### `isSignalValidationError` — L340–L351 · internal helper
+#### `isSignalValidationError` — L343–L354 · internal helper
 
 Проверяет условие signal validation error и возвращает логический результат без изменения состояния.
 
@@ -5585,9 +5652,9 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `toLowerCase`.
 
-### `client/src/lib/queueTypes.ts`
+### `client/src/features/sync/queueTypes.ts`
 
-Низкоуровневая клиентская библиотека: queue types.
+Политики и jobs фоновой синхронизации: queue types.
 
 Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
 #### Публичные типы, классы и константы
@@ -5603,728 +5670,353 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 - `type EntryQueuePayload` — L78
 - `type EntrySyncQueuePayload` — L89
 
-### `client/src/lib/serviceWorker.ts`
+### `client/src/features/sync/reprocessPolicy.ts`
 
-Низкоуровневая клиентская библиотека: service worker.
+Политики и jobs фоновой синхронизации: reprocess policy.
 
-#### `registerServiceWorker` — L1–L17 · public API
+#### `isRetryableProviderErrorCode` — L40–L42 · public API
 
-Оркестрирует service worker в инфраструктуре синхронизации или фоновой очереди.
+Проверяет условие retryable provider error code и возвращает логический результат без изменения состояния.
 
-- Основные вызовы: `window.addEventListener`, `catch`, `then`, `register`, `console.error`.
+- Параметры: `errorCode`.
 
-### `client/src/lib/signals.ts`
+- Основные вызовы: `has`.
 
-Клиентская нормализация Signal и детерминированное отображение evidence в метрики.
+#### `isMetricEmptySignal` — L44–L46 · public API
 
-#### `createFallbackSignal` — L102–L121 · public API
+Проверяет условие metric empty signal и возвращает логический результат без изменения состояния.
 
-Создаёт fallback signal из переданных данных, не отдавая вызывающему коду детали сборки.
+- Параметры: `signal`.
 
-- Основные вызовы: `createDefaultSignalContext`, `createEmptyMetricConfidence`.
+#### `isMetricEmptySparseSignal` — L48–L50 · public API
 
-#### `createFallbackMetadata` — L123–L136 · public API
+Проверяет условие metric empty sparse signal и возвращает логический результат без изменения состояния.
 
-Создаёт fallback metadata из переданных данных, не отдавая вызывающему коду детали сборки.
+- Параметры: `signal`.
 
-- Параметры: `provider`, `model`, `errorCode`.
+- Основные вызовы: `isMetricEmptySignal`.
+
+#### `hasCurrentSignalContract` — L52–L57 · public API
+
+Проверяет условие current signal contract и возвращает логический результат без изменения состояния.
+
+- Параметры: `metadata`.
+
+#### `getSignalReprocessReason` — L59–L71 · public API
+
+Получает signal reprocess reason из принадлежащего модулю источника данных.
+
+- Параметры: `signal`, `metadata`, `explicitReason`.
+
+- Основные вызовы: `normalizeEntryReprocessReason`, `isRetryableProviderErrorCode`, `isMetricEmptySparseSignal`.
+
+#### `isSignalReprocessCandidate` — L73–L83 · public API
+
+Проверяет условие signal reprocess candidate и возвращает логический результат без изменения состояния.
+
+- Параметры: `signal`, `metadata`.
+
+- Основные вызовы: `isFallbackReprocessCandidate`, `isSparseNoMetricsReprocessCandidate`, `isRetryableProviderErrorCode`, `hasCurrentSignalContract`.
+
+#### `isFallbackReprocessCandidate` — L85–L94 · public API
+
+Проверяет условие fallback reprocess candidate и возвращает логический результат без изменения состояния.
+
+- Параметры: `signal`, `metadata`.
+
+- Основные вызовы: `hasCurrentSignalContract`, `isRetryableProviderErrorCode`, `isTerminalCurrentFallbackErrorCode`.
+
+#### `isSparseNoMetricsReprocessCandidate` — L96–L104 · public API
+
+Проверяет условие sparse no metrics reprocess candidate и возвращает логический результат без изменения состояния.
+
+- Параметры: `signal`, `metadata`.
+
+- Основные вызовы: `isMetricEmptySparseSignal`, `hasCurrentSignalContract`, `isRetryableProviderErrorCode`.
+
+#### `isTerminalCurrentFallbackErrorCode` — L106–L108 · internal helper
+
+Проверяет условие terminal current fallback error code и возвращает логический результат без изменения состояния.
+
+- Параметры: `errorCode`.
+
+- Основные вызовы: `has`.
+
+#### `createEntryReprocessPayload` — L110–L130 · public API
+
+Создаёт entry reprocess payload из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ entryId, serverId, sourceTextHash, reason, }`.
 
 - Основные вызовы: `toISOString`.
 
-#### `createEmptyMetricConfidence` — L138–L144 · public API
+#### `createEntryReprocessJobIdempotencyKey` — L132–L142 · public API
 
-Создаёт empty metric confidence из переданных данных, не отдавая вызывающему коду детали сборки.
+Создаёт entry reprocess job idempotency key из переданных данных, не отдавая вызывающему коду детали сборки.
 
-#### `normalizeSignal` — L146–L178 · public API
+- Параметры: `{ entryId, sourceTextHash, reason, }`.
 
-Приводит неизвестный или legacy Signal payload к текущей безопасной форме Signal v4.
+#### `planEntryReprocessJob` — L144–L190 · public API
 
-- Параметры: `value`.
+Выводит entry reprocess job по явным правилам без скрытых побочных эффектов.
 
-- Основные вызовы: `isRecord`, `createFallbackSignal`, `isNormalizedSignal`, `normalizeStringArray`, `normalizeStateInference`, `normalizeMetricConfidence`, `normalizeEntryIntent`, `normalizeStructureSignal`.
+- Параметры: `job`, `entry`.
 
-#### `mapSignalCandidate` — L180–L220 · public API
+- Основные вызовы: `getPayloadRecord`, `readNonEmptyString`, `getSignalReprocessReason`.
 
-Детерминированно пересчитывает метрики, confidence и quality из структурированного evidence вместо доверия готовым model scores.
+#### `normalizeEntryReprocessReason` — L192–L201 · internal helper
 
-- Параметры: `candidate`.
-
-- Основные вызовы: `extractEmotionLabels`, `mapMetric`, `Object.keys`, `normalizeEntryIntent`, `normalizeStructureSignal`, `normalizeTemporalContext`, `getQualityReason`.
-
-#### `mapMetric` — L222–L271 · internal helper
-
-Преобразует или объединяет metric по правилам домена.
-
-- Параметры: `metric`, `stateInference`, `emotionLabels`.
-
-- Основные вызовы: `scoreLevel`, `confidenceWeight`, `clampScore`, `Math.round`, `highestConfidence`, `getEmotionMetricAdjustment`, `adjustConfidence`.
-
-#### `scoreLevel` — L273–L277 · internal helper
-
-Детерминированно вычисляет level из входных данных.
-
-- Параметры: `level`, `direction`.
-
-#### `confidenceWeight` — L279–L283 · internal helper
-
-Возвращает вычисленное значение confidence weight для использования внутри данного модуля.
-
-- Параметры: `confidence`.
-
-#### `highestConfidence` — L285–L291 · internal helper
-
-Возвращает вычисленное значение highest confidence для использования внутри данного модуля.
-
-- Параметры: `confidences`.
-
-#### `adjustConfidence` — L293–L302 · internal helper
-
-Возвращает вычисленное значение adjust confidence для использования внутри данного модуля.
-
-- Параметры: `confidence`, `emotionAdjustment`.
-
-#### `clampScore` — L304–L306 · internal helper
-
-Ограничивает score допустимым диапазоном или точностью.
-
-- Параметры: `score`.
-
-- Основные вызовы: `Math.max`, `Math.min`.
-
-#### `getQualityReason` — L308–L336 · internal helper
-
-Получает quality reason из принадлежащего модулю источника данных.
-
-- Параметры: `stateInference`, `hasMetric`, `hasTextSignal`, `hasEmotionSignal`, `metrics`.
-
-- Основные вызовы: `Object.entries`, `localeCompare`, `withEmotionReason`.
-
-#### `withEmotionReason` — L338–L353 · internal helper
-
-Возвращает вычисленное значение with emotion reason для использования внутри данного модуля.
-
-- Параметры: `reason`, `metrics`.
-
-#### `extractEmotionLabels` — L355–L370 · internal helper
-
-Извлекает emotion labels из входных данных без самостоятельного сохранения результата.
-
-- Параметры: `signals`.
-
-- Основные вызовы: `isRecord`, `Object.entries`, `isFinite`, `normalizeEmotionLabel`, `Math.max`, `Math.min`.
-
-#### `getEmotionMetricAdjustment` — L372–L381 · internal helper
-
-Получает emotion metric adjustment из принадлежащего модулю источника данных.
-
-- Параметры: `metric`, `labels`.
-
-- Основные вызовы: `getEmotionAdjustmentCandidates`.
-
-#### `getEmotionAdjustmentCandidates` — L383–L415 · internal helper
-
-Получает emotion adjustment candidates из принадлежащего модулю источника данных.
-
-- Параметры: `metric`, `labels`.
-
-- Основные вызовы: `emotionCandidate`.
-
-#### `emotionCandidate` — L417–L429 · internal helper
-
-Возвращает вычисленное значение emotion candidate для использования внутри данного модуля.
-
-- Параметры: `metric`, `label`, `labels`, `direction`.
-
-#### `normalizeEmotionLabel` — L431–L438 · internal helper
-
-Приводит emotion label к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `label`.
-
-- Основные вызовы: `replace`, `toLocaleLowerCase`.
-
-#### `normalizeStateInference` — L440–L450 · internal helper
-
-Приводит state inference к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+Приводит entry reprocess reason к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `value`.
 
-- Основные вызовы: `isRecord`, `Object.entries`, `normalizeStateInferenceValue`, `has`.
+#### `getPayloadRecord` — L203–L207 · internal helper
 
-#### `normalizeStateInferenceValue` — L452–L464 · internal helper
+Получает payload record из принадлежащего модулю источника данных.
 
-Приводит state inference value к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `has`, `String`, `normalizeStringArray`.
-
-#### `normalizeMetricConfidence` — L466–L474 · internal helper
-
-Приводит metric confidence к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `createEmptyMetricConfidence`, `normalizeConfidence`.
-
-#### `normalizeEntryIntent` — L476–L496 · internal helper
-
-Приводит entry intent к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `normalizeConfidence`, `normalizeStringArray`.
-
-#### `normalizeStructureSignal` — L498–L517 · internal helper
-
-Приводит structure signal к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `normalizeConfidence`, `normalizeStringArray`.
-
-#### `normalizeTemporalContext` — L519–L548 · internal helper
-
-Приводит temporal context к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `createDefaultSignalContext`, `isRecord`, `test`.
-
-#### `normalizeConfidence` — L550–L552 · internal helper
-
-Приводит confidence к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `has`, `String`.
-
-#### `normalizeStringArray` — L554–L561 · internal helper
-
-Приводит string array к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
+- Параметры: `payload`.
 
 - Основные вызовы: `Array.isArray`.
 
-#### `normalizeScore` — L563–L570 · internal helper
+#### `readNonEmptyString` — L209–L211 · internal helper
 
-Приводит score к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isInteger`.
-
-#### `isNormalizedSignal` — L572–L592 · internal helper
-
-Проверяет условие normalized signal и возвращает логический результат без изменения состояния.
+Получает non empty string из принадлежащего модулю источника данных.
 
 - Параметры: `value`.
 
-- Основные вызовы: `isBoundedStringArray`, `isNormalizedStateInference`, `isRecord`, `isNormalizedMetricConfidence`, `isNormalizedEntryIntent`, `isNormalizedStructureSignal`, `isNormalizedTemporalContext`, `isNormalizedScore`.
+#### Публичные типы, классы и константы
 
-#### `isBoundedStringArray` — L594–L600 · internal helper
+- `type EntryReprocessPlan` — L24
 
-Проверяет условие bounded string array и возвращает логический результат без изменения состояния.
+### `client/src/features/sync/syncQueue.ts`
 
-- Параметры: `value`, `maxLength`.
+Регистрирует обработчики durable queue и маршрутизирует jobs синхронизации, reprocess и self-report.
+
+#### `registerSyncQueueHandlers` — L24–L48 · public API
+
+Один раз связывает persisted job types с актуальными обработчиками entry sync, signal reprocess и self-report sync.
+
+- Параметры: `settings`.
+
+- Основные вызовы: `registerQueueHandler`, `handleEntryReprocessSignalJob`.
+
+#### `handleEntryReprocessSignalJob` — L50–L89 · internal helper
+
+Исполняет сценарий entry reprocess signal job и координирует его побочные эффекты.
+
+- Параметры: `job`, `settings`, `signal`.
+
+- Основные вызовы: `getEntryId`, `getLocalEntry`, `planEntryReprocessJob`, `reprocessLocalEntry`.
+
+#### `getEntryId` — L91–L106 · internal helper
+
+Получает entry id из принадлежащего модулю источника данных.
+
+- Параметры: `job`.
 
 - Основные вызовы: `Array.isArray`.
 
-#### `isNormalizedStateInference` — L602–L609 · internal helper
+### `client/src/features/sync/useQueueWakeups.ts`
 
-Проверяет условие normalized state inference и возвращает логический результат без изменения состояния.
+Политики и jobs фоновой синхронизации: use queue wakeups.
+
+#### `useQueueWakeups` — L8–L38 · public API
+
+Управляет React-состоянием, derived values и side effects для queue wakeups.
+
+- Параметры: `{ enabled }`.
+
+- Основные вызовы: `useEffect`, `wakeQueue`, `window.addEventListener`, `addEventListener`, `window.removeEventListener`, `removeEventListener`.
+
+#### `wakeWhenOnline` — L12–L16 · nested helper в useQueueWakeups
+
+Выполняет локальную операцию wake when online внутри ответственности этого файла.
+
+- Основные вызовы: `wakeQueue`.
+
+#### `wakeWhenFocused` — L18–L20 · nested helper в useQueueWakeups
+
+Выполняет локальную операцию wake when focused внутри ответственности этого файла.
+
+- Основные вызовы: `wakeQueue`.
+
+#### `wakeWhenVisible` — L22–L26 · nested helper в useQueueWakeups
+
+Выполняет локальную операцию wake when visible внутри ответственности этого файла.
+
+- Основные вызовы: `wakeQueue`.
+
+### `client/src/features/sync/useSyncQueue.ts`
+
+Политики и jobs фоновой синхронизации: use sync queue.
+
+#### `useSyncQueue` — L24–L73 · public API
+
+Управляет React-состоянием, derived values и side effects для sync queue.
+
+- Параметры: `{ extractionSettings }`.
+
+- Основные вызовы: `useState`, `getQueueSnapshot`, `useQueueWakeups`, `useEffect`, `registerSyncQueueHandlers`, `wakeQueue`, `subscribeToQueue`, `setSnapshot`.
+
+### `client/src/features/vault/appLock.ts`
+
+React/API-адаптеры локального vault: app lock.
+
+#### `getPrimaryVaultProfileId` — L24–L28 · public API
+
+Получает primary vault profile id из принадлежащего модулю источника данных.
+
+- Параметры: `credentials`.
+
+#### `getProfileCredentials` — L30–L35 · public API
+
+Получает profile credentials из принадлежащего модулю источника данных.
+
+- Параметры: `credentials`, `profileId`.
+
+- Основные вызовы: `getPrimaryVaultProfileId`.
+
+#### `isAppProtectionEnabled` — L37–L49 · public API
+
+Проверяет условие app protection enabled и возвращает логический результат без изменения состояния.
+
+- Параметры: `credentials`.
+
+- Основные вызовы: `getProfileCredentials`.
+
+#### `getAppLockAutoLockPreference` — L51–L59 · public API
+
+Получает app lock auto lock preference из принадлежащего модулю источника данных.
+
+- Основные вызовы: `normalizeAutoLockPreference`, `getItem`.
+
+#### `setAppLockAutoLockPreference` — L61–L73 · public API
+
+Изменяет app lock auto lock preference, сохраняя инварианты данного модуля.
 
 - Параметры: `value`.
 
-- Основные вызовы: `isRecord`, `Object.entries`, `has`, `isNormalizedStateInferenceValue`.
+- Основные вызовы: `setItem`, `window.dispatchEvent`.
 
-#### `isNormalizedStateInferenceValue` — L611–L620 · internal helper
+#### `getAppLockAutoLockDelayMs` — L75–L79 · public API
 
-Проверяет условие normalized state inference value и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
-
-#### `isNormalizedMetricConfidence` — L622–L631 · internal helper
-
-Проверяет условие normalized metric confidence и возвращает логический результат без изменения состояния.
+Получает app lock auto lock delay ms из принадлежащего модулю источника данных.
 
 - Параметры: `value`.
 
-- Основные вызовы: `isRecord`, `has`, `String`.
+#### `normalizeAutoLockPreference` — L81–L95 · internal helper
 
-#### `isNormalizedEntryIntent` — L633–L646 · internal helper
-
-Проверяет условие normalized entry intent и возвращает логический результат без изменения состояния.
+Приводит auto lock preference к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
-
-#### `isNormalizedStructureSignal` — L648–L662 · internal helper
-
-Проверяет условие normalized structure signal и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `has`, `String`, `isBoundedStringArray`.
-
-#### `isNormalizedTemporalContext` — L664–L681 · internal helper
-
-Проверяет условие normalized temporal context и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isRecord`, `test`.
-
-#### `isNormalizedScore` — L683–L691 · internal helper
-
-Проверяет условие normalized score и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isInteger`.
-
-#### `isRecord` — L693–L695 · internal helper
-
-Проверяет условие record и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Array.isArray`.
 
 #### Публичные типы, классы и константы
 
-- `const SIGNAL_AXES` — L18
+- `type AppLockAutoLockPreference` — L3
+- `const APP_LOCK_AUTO_LOCK_CHANGED_EVENT` — L10
 
-### `client/src/lib/signalVersions.ts`
+### `client/src/features/vault/ui/VaultGate.tsx`
 
-Низкоуровневая клиентская библиотека: signal versions.
+React/API-адаптеры локального vault: vault gate.
 
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
+#### `VaultGate` — L27–L322 · public API
 
-- `const CLIENT_ACTIVE_SCHEMA_VERSION` — L1
-- `const CLIENT_ACTIVE_PROMPT_VERSION` — L2
+Рендерит React-компонент VaultGate и связывает его props с соответствующей UI-поверхностью.
 
-### `client/src/lib/storage.ts`
+- Параметры: `{ activeProfileId, error, isBusy, profiles, onCreateProfile, onSelectProfile, onUnlock, }`.
 
-Главный browser persistence gateway: IndexedDB entries/drafts, profile-scoped localStorage, шифрование и локальные миграции.
+- Основные вызовы: `useI18n`, `useState`, `useRef`, `useEffect`, `contains`, `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`, `addEventListener`.
 
-#### `getDebugMode` — L90–L92 · public API
+#### `handlePointerDown` — L49–L59 · nested helper в VaultGate
 
-Получает debug mode из принадлежащего модулю источника данных.
+Исполняет сценарий pointer down и координирует его побочные эффекты.
 
-- Основные вызовы: `getItem`, `getStorageKey`.
+- Параметры: `event`.
 
-#### `setDebugMode` — L94–L96 · public API
+- Основные вызовы: `contains`, `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`.
 
-Изменяет debug mode, сохраняя инварианты данного модуля.
+#### `handleKeyDown` — L61–L66 · nested helper в VaultGate
 
-- Параметры: `value`.
+Исполняет сценарий key down и координирует его побочные эффекты.
 
-- Основные вызовы: `setItem`, `getStorageKey`, `String`.
+- Параметры: `event`.
 
-#### `getPersonaTextEnabled` — L98–L100 · public API
+- Основные вызовы: `setIsProfileMenuOpen`, `setIsLanguageMenuOpen`.
 
-Получает persona text enabled из принадлежащего модулю источника данных.
+#### `handleSubmit` — L77–L96 · nested helper в VaultGate
 
-- Основные вызовы: `getItem`, `getStorageKey`.
+Исполняет сценарий submit и координирует его побочные эффекты.
 
-#### `setPersonaTextEnabled` — L102–L104 · public API
+- Параметры: `event`.
 
-Изменяет persona text enabled, сохраняя инварианты данного модуля.
+- Основные вызовы: `preventDefault`, `setLocalError`, `t`, `onUnlock`, `composeVaultSecret`.
 
-- Параметры: `value`.
+#### `handleLanguageSelect` — L98–L101 · nested helper в VaultGate
 
-- Основные вызовы: `setItem`, `getStorageKey`, `String`.
+Исполняет сценарий language select и координирует его побочные эффекты.
 
-#### `getExtractionSettings` — L106–L123 · public API
+- Параметры: `nextLanguage`.
 
-Получает extraction settings из принадлежащего модулю источника данных.
+- Основные вызовы: `setLanguage`, `setIsLanguageMenuOpen`.
 
-- Основные вызовы: `getItem`, `getStorageKey`.
+#### `formatVaultError` — L324–L338 · internal helper
 
-#### `setExtractionSettings` — L125–L130 · public API
+Преобразует vault error в стабильное представление для UI, сети или хранения.
 
-Изменяет extraction settings, сохраняя инварианты данного модуля.
+- Параметры: `error`, `t`.
 
-- Параметры: `value`.
+- Основные вызовы: `t`.
 
-- Основные вызовы: `setItem`, `getStorageKey`.
+### `client/src/features/vault/useLocalVault.ts`
 
-#### `getEntrySortDirection` — L132–L136 · public API
+React/API-адаптеры локального vault: use local vault.
 
-Получает entry sort direction из принадлежащего модулю источника данных.
+#### `toUserMessage` — L26–L42 · internal helper
 
-- Основные вызовы: `getItem`, `getStorageKey`.
+Возвращает вычисленное значение to user message для использования внутри данного модуля.
 
-#### `setEntrySortDirection` — L138–L140 · public API
+- Параметры: `error`.
 
-Изменяет entry sort direction, сохраняя инварианты данного модуля.
+#### `useLocalVault` — L44–L207 · public API
 
-- Параметры: `value`.
+Управляет React-состоянием, derived values и side effects для local vault.
 
-- Основные вызовы: `setItem`, `getStorageKey`.
-
-#### `getLocalEmotionSpikeEnabled` — L142–L147 · public API
-
-Получает local emotion spike enabled из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getItem`, `getStorageKey`.
-
-#### `setLocalEmotionSpikeEnabled` — L149–L154 · public API
-
-Изменяет local emotion spike enabled, сохраняя инварианты данного модуля.
-
-- Параметры: `value`.
-
-- Основные вызовы: `setItem`, `getStorageKey`, `String`.
-
-#### `getGeminiDailyExtractionUsage` — L156–L182 · public API
-
-Получает gemini daily extraction usage из принадлежащего модулю источника данных.
-
-- Основные вызовы: `localDateKey`, `getItem`, `getStorageKey`, `isFinite`, `Math.max`, `Math.floor`, `Math.min`.
-
-#### `getRemainingGeminiDailyExtractions` — L184–L188 · public API
-
-Получает remaining gemini daily extractions из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getGeminiDailyExtractionUsage`, `Math.max`.
-
-#### `reserveGeminiDailyExtraction` — L190–L204 · public API
-
-Возвращает вычисленное значение reserve gemini daily extraction для использования внутри данного модуля.
-
-- Основные вызовы: `getGeminiDailyExtractionUsage`, `setItem`, `getStorageKey`.
-
-#### `releaseGeminiDailyExtraction` — L206–L218 · public API
-
-Исполняет сценарий release gemini daily extraction и координирует его побочные эффекты.
-
-- Основные вызовы: `getGeminiDailyExtractionUsage`, `setItem`, `getStorageKey`.
-
-#### `getSeenEditorInsightIds` — L220–L238 · public API
-
-Получает seen editor insight ids из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getItem`, `getStorageKey`, `Array.isArray`, `isInteger`.
-
-#### `markEditorInsightSeen` — L240–L248 · public API
-
-Изменяет editor insight seen, сохраняя инварианты данного модуля.
-
-- Параметры: `id`.
-
-- Основные вызовы: `getSeenEditorInsightIds`, `add`, `setItem`, `getStorageKey`, `Array.from`.
-
-#### `getAllLocalEntries` — L250–L260 · public API
-
-Получает all local entries из принадлежащего модулю источника данных.
-
-- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `getAll`, `objectStore`, `Promise.all`.
-
-#### `getLocalEntry` — L262–L271 · public API
-
-Получает local entry из принадлежащего модулю источника данных.
-
-- Параметры: `id`.
-
-- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `get`, `objectStore`, `normalizeLocalEntry`, `readStoredLocalEntry`.
-
-#### `saveLocalEntry` — L273–L279 · public API
-
-Шифрует запись при активном vault и атомарно сохраняет её в локальный entries store.
-
-- Параметры: `entry`.
-
-- Основные вызовы: `encryptLocalEntry`, `openAthenaLocalDb`, `transaction`, `idbRequest`, `put`, `objectStore`.
-
-#### `updateLocalEntry` — L281–L294 · public API
-
-Изменяет local entry, сохраняя инварианты данного модуля.
-
-- Параметры: `id`, `patch`.
-
-- Основные вызовы: `getLocalEntry`, `toISOString`, `saveLocalEntry`.
-
-#### `deleteLocalEntry` — L296–L301 · public API
-
-Удаляет или очищает local entry с необходимыми связанными действиями.
-
-- Параметры: `id`.
-
-- Основные вызовы: `openAthenaLocalDb`, `transaction`, `idbRequest`, `delete`, `objectStore`.
-
-#### `replaceAllLocalEntries` — L303–L314 · public API
-
-Сохраняет replace all local entries в принадлежащем модулю хранилище или read model.
-
-- Параметры: `entries`.
-
-- Основные вызовы: `Promise.all`, `openAthenaLocalDb`, `transaction`, `objectStore`, `idbRequest`, `clear`, `put`.
-
-#### `saveLocalDraft` — L316–L328 · public API
-
-Сохраняет local draft в принадлежащем модулю хранилище или read model.
-
-- Параметры: `text`.
-
-- Основные вызовы: `toISOString`, `encryptLocalDraft`, `openAthenaLocalDb`, `transaction`, `idbRequest`, `put`, `objectStore`.
-
-#### `clearLocalDraft` — L330–L332 · public API
-
-Удаляет или очищает local draft с необходимыми связанными действиями.
-
-- Основные вызовы: `saveLocalDraft`.
-
-#### `migrateLegacyDraftToIndexedDb` — L334–L340 · public API
-
-Переводит legacy draft to indexed db из legacy-формы в текущую без потери поддерживаемых данных.
-
-- Основные вызовы: `getItem`, `removeItem`.
-
-#### `migrateLocalStorageToVault` — L342–L346 · public API
-
-Переводит local storage to vault из legacy-формы в текущую без потери поддерживаемых данных.
-
-- Основные вызовы: `openAthenaLocalDb`, `migrateEntriesToVault`, `migrateDraftsToVault`.
-
-#### `deleteAthenaLocalData` — L348–L376 · public API
-
-Удаляет или очищает athena local data с необходимыми связанными действиями.
-
-- Основные вызовы: `catch`, `close`, `removeItem`, `getStorageKey`, `deleteDatabase`, `getAthenaLocalDbName`, `resolve`, `reject`.
-
-#### `deleteAthenaProfileData` — L378–L381 · public API
-
-Удаляет или очищает athena profile data с необходимыми связанными действиями.
-
-- Параметры: `profileId`.
-
-- Основные вызовы: `deleteAthenaLocalDatabase`, `deleteProfileLocalStorage`.
-
-#### `createClientEntryId` — L383–L386 · public API
-
-Создаёт client entry id из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Основные вызовы: `crypto.randomUUID`, `now`, `Math.random`.
-
-#### `createTextHash` — L388–L395 · public API
-
-Создаёт text hash из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `text`.
-
-- Основные вызовы: `encode`, `digest`, `Array.from`, `padStart`.
-
-#### `openAthenaLocalDb` — L397–L462 · public API
-
-Открывает profile-scoped IndexedDB и создаёт stores/indexes текущей локальной схемы при upgrade.
-
-- Основные вызовы: `getAthenaLocalDbName`, `open`, `contains`, `createObjectStore`, `createIndex`, `resolve`, `reject`.
-
-#### `deleteAthenaLocalDatabase` — L464–L487 · internal helper
-
-Удаляет или очищает athena local database с необходимыми связанными действиями.
-
-- Параметры: `profileId`.
-
-- Основные вызовы: `getProfileScopedDatabaseName`, `catch`, `close`, `deleteDatabase`, `resolve`, `reject`.
-
-#### `deleteProfileLocalStorage` — L489–L504 · internal helper
-
-Удаляет или очищает profile local storage с необходимыми связанными действиями.
-
-- Параметры: `profileId`.
-
-- Основные вызовы: `isDefaultVaultProfile`, `deleteDefaultProfileLocalStorage`, `getLocalStorageKeys`, `endsWith`, `removeItem`.
-
-#### `deleteDefaultProfileLocalStorage` — L506–L528 · internal helper
-
-Удаляет или очищает default profile local storage с необходимыми связанными действиями.
-
-- Параметры: `profileId`.
-
-- Основные вызовы: `removeItem`, `getProfileScopedStorageKey`, `getVaultProfiles`, `getLocalStorageKeys`, `startsWith`, `endsWith`.
-
-#### `getLocalStorageKeys` — L530–L534 · internal helper
-
-Получает local storage keys из принадлежащего модулю источника данных.
-
-- Основные вызовы: `Array.from`, `key`, `Boolean`.
-
-#### `idbRequest` — L536–L541 · internal helper
-
-Возвращает вычисленное значение idb request для использования внутри данного модуля.
-
-- Параметры: `request`.
-
-- Основные вызовы: `resolve`, `reject`.
-
-#### `compareLocalEntries` — L543–L548 · internal helper
-
-Сравнивает local entries для стабильного детерминированного порядка.
-
-- Параметры: `left`, `right`.
-
-- Основные вызовы: `localeCompare`.
-
-#### `normalizeLocalEntry` — L550–L555 · internal helper
-
-Приводит local entry к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `entry`.
-
-- Основные вызовы: `normalizeSignal`.
-
-#### `migrateEntriesToVault` — L557–L572 · internal helper
-
-Переводит entries to vault из legacy-формы в текущую без потери поддерживаемых данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `transaction`, `idbRequest`, `getAll`, `objectStore`, `isEncryptedLocalEntryRecord`, `encryptLocalEntry`, `put`.
-
-#### `migrateDraftsToVault` — L574–L589 · internal helper
-
-Переводит drafts to vault из legacy-формы в текущую без потери поддерживаемых данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `transaction`, `idbRequest`, `getAll`, `objectStore`, `isEncryptedDraftRecord`, `encryptLocalDraft`, `put`.
-
-#### `readStoredLocalEntry` — L591–L600 · internal helper
-
-Получает stored local entry из принадлежащего модулю источника данных.
-
-- Параметры: `record`.
-
-- Основные вызовы: `isEncryptedLocalEntryRecord`, `decryptVaultJson`, `createEntryVaultAssociatedData`.
-
-#### `encryptLocalEntry` — L602–L615 · internal helper
-
-Выполняет криптографическое преобразование local entry в рамках локальной privacy boundary.
-
-- Параметры: `entry`.
-
-- Основные вызовы: `encryptVaultJson`, `createEntryVaultAssociatedData`.
-
-#### `encryptLocalDraft` — L617–L629 · internal helper
-
-Выполняет криптографическое преобразование local draft в рамках локальной privacy boundary.
-
-- Параметры: `draft`.
-
-- Основные вызовы: `encryptVaultJson`, `createDraftVaultAssociatedData`.
-
-#### `isEncryptedLocalEntryRecord` — L631–L640 · internal helper
-
-Проверяет условие encrypted local entry record и возвращает логический результат без изменения состояния.
-
-- Параметры: `record`.
-
-- Основные вызовы: `isVaultEncryptedPayload`.
-
-#### `isEncryptedDraftRecord` — L642–L651 · internal helper
-
-Проверяет условие encrypted draft record и возвращает логический результат без изменения состояния.
-
-- Параметры: `record`.
-
-- Основные вызовы: `isVaultEncryptedPayload`.
-
-#### `createEntryVaultAssociatedData` — L653–L655 · internal helper
-
-Создаёт entry vault associated data из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entryId`.
-
-#### `createDraftVaultAssociatedData` — L657–L659 · internal helper
-
-Создаёт draft vault associated data из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `draftId`.
-
-#### `localDateKey` — L661–L668 · internal helper
-
-Возвращает вычисленное значение local date key для использования внутри данного модуля.
-
-- Основные вызовы: `getFullYear`, `padStart`, `String`, `getMonth`, `getDate`.
-
-#### `getStorageKey` — L670–L672 · internal helper
-
-Получает storage key из принадлежащего модулю источника данных.
-
-- Параметры: `key`.
-
-- Основные вызовы: `getProfileScopedStorageKey`.
-
-#### `getAthenaLocalDbName` — L674–L676 · internal helper
-
-Получает athena local db name из принадлежащего модулю источника данных.
-
-- Основные вызовы: `getProfileScopedDatabaseName`.
+- Основные вызовы: `useState`, `getVaultStatus`, `getVaultCredentialSummaries`, `useEffect`, `subscribeVault`, `setPhase`, `setCredentials`, `useCallback`.
 
 #### Публичные типы, классы и константы
 
-- `const QUEUE_JOBS_STORE` — L22
-- `const SELF_REPORT_STORE` — L23
-- `const SELF_REPORT_DAILY_AGGREGATES_STORE` — L24
-- `const GEMINI_DAILY_EXTRACTION_LIMIT` — L55
+- `type LocalVaultPhase` — L19
+- `type LocalVaultError` — L20
 
-### `client/src/lib/text.ts`
+### `client/src/features/vault/vault.ts`
 
-Низкоуровневая клиентская библиотека: text.
+React/API-адаптеры локального vault: vault.
 
-#### `excerpt` — L1–L7 · public API
-
-Возвращает вычисленное значение excerpt для использования внутри данного модуля.
-
-- Параметры: `text`, `maxLength`.
-
-- Основные вызовы: `replace`, `trimEnd`.
-
-#### `extractTags` — L9–L14 · public API
-
-Извлекает tags из входных данных без самостоятельного сохранения результата.
-
-- Параметры: `text`.
-
-- Основные вызовы: `match`, `toLowerCase`, `Array.from`.
-
-### `client/src/lib/vault.ts`
-
-Криптографическое ядро локального vault: credentials, data key, PBKDF2, AES-GCM, lock/unlock и шифрование JSON.
-
-#### `getVaultStatus` — L74–L77 · public API
+#### `getVaultStatus` — L81–L84 · public API
 
 Получает vault status из принадлежащего модулю источника данных.
 
 - Основные вызовы: `readVaultConfig`.
 
-#### `isVaultConfigured` — L79–L81 · public API
+#### `isVaultConfigured` — L86–L88 · public API
 
 Проверяет условие vault configured и возвращает логический результат без изменения состояния.
 
 - Основные вызовы: `Boolean`, `readVaultConfig`.
 
-#### `isVaultUnlocked` — L83–L85 · public API
+#### `isVaultUnlocked` — L90–L92 · public API
 
 Проверяет условие vault unlocked и возвращает логический результат без изменения состояния.
 
 - Основные вызовы: `Boolean`.
 
-#### `getVaultCredentialSummaries` — L87–L99 · public API
+#### `getVaultCredentialSummaries` — L94–L106 · public API
 
 Получает vault credential summaries из принадлежащего модулю источника данных.
 
 - Основные вызовы: `readVaultConfig`.
 
-#### `subscribeVault` — L101–L108 · public API
+#### `subscribeVault` — L108–L115 · public API
 
 Возвращает вычисленное значение vault для использования внутри данного модуля.
 
@@ -6332,15 +6024,15 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `add`, `listener`, `getVaultStatus`, `delete`.
 
-#### `setupVault` — L110–L130 · public API
+#### `setupVault` — L117–L137 · public API
 
-Создаёт новый vault, data key и первое credential envelope, затем оставляет data key разблокированным в памяти.
+Изменяет up vault, сохраняя инварианты данного модуля.
 
 - Параметры: `passphrase`, `profileId`.
 
 - Основные вызовы: `isVaultConfigured`, `assertUsablePassphrase`, `createVaultConfigForPassphrase`, `toISOString`, `setItem`, `getVaultConfigKey`, `emitVaultStatus`.
 
-#### `setupVaultWithoutSecret` — L132–L146 · public API
+#### `setupVaultWithoutSecret` — L139–L153 · public API
 
 Изменяет up vault without secret, сохраняя инварианты данного модуля.
 
@@ -6348,7 +6040,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `isVaultConfigured`, `createVaultConfigWithoutSecret`, `toISOString`, `setItem`, `getVaultConfigKey`, `emitVaultStatus`.
 
-#### `unlockVault` — L148–L165 · public API
+#### `unlockVault` — L155–L172 · public API
 
 Управляет состоянием vault и соответствующей границей доступа.
 
@@ -6356,7 +6048,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `readVaultConfig`, `assertUsablePassphrase`, `unlockVaultKeyFromConfig`, `emitVaultStatus`.
 
-#### `unlockVaultWithoutSecret` — L167–L184 · public API
+#### `unlockVaultWithoutSecret` — L174–L191 · public API
 
 Управляет состоянием vault without secret и соответствующей границей доступа.
 
@@ -6364,7 +6056,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `readVaultConfig`, `unlockVaultKeyFromPasswordlessConfig`, `emitVaultStatus`.
 
-#### `rotateVaultSecret` — L186–L235 · public API
+#### `rotateVaultSecret` — L193–L242 · public API
 
 Выполняет локальную операцию rotate vault secret внутри ответственности этого файла.
 
@@ -6372,7 +6064,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `readVaultConfig`, `assertUsablePassphrase`, `findCredentialForSecret`, `createVaultCredential`, `toISOString`, `setItem`, `getVaultConfigKey`, `emitVaultStatus`.
 
-#### `addVaultCredential` — L237–L279 · public API
+#### `addVaultCredential` — L244–L286 · public API
 
 Выполняет локальную операцию vault credential внутри ответственности этого файла.
 
@@ -6380,7 +6072,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `readVaultConfig`, `assertUsablePassphrase`, `findCredentialForSecret`, `createVaultCredential`, `toISOString`, `setItem`, `getVaultConfigKey`, `emitVaultStatus`.
 
-#### `deleteVaultCredential` — L281–L347 · public API
+#### `deleteVaultCredential` — L288–L354 · public API
 
 Удаляет или очищает vault credential с необходимыми связанными действиями.
 
@@ -6388,21 +6080,21 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `readVaultConfig`, `assertUsablePassphrase`, `findCredentialForSecret`, `createVaultPasswordlessCredential`, `toISOString`, `setItem`, `getVaultConfigKey`, `emitVaultStatus`.
 
-#### `lockVault` — L349–L352 · public API
+#### `lockVault` — L356–L359 · public API
 
 Управляет состоянием vault и соответствующей границей доступа.
 
 - Основные вызовы: `emitVaultStatus`.
 
-#### `encryptVaultJson` — L354–L359 · public API
+#### `encryptVaultJson` — L361–L366 · public API
 
-Шифрует JSON текущим in-memory data key и привязывает ciphertext к associated data.
+Выполняет криптографическое преобразование vault json в рамках локальной privacy boundary.
 
 - Параметры: `value`, `associatedData`.
 
 - Основные вызовы: `encryptVaultJsonWithKey`, `requireVaultKey`.
 
-#### `decryptVaultJson` — L361–L366 · public API
+#### `decryptVaultJson` — L368–L373 · public API
 
 Выполняет криптографическое преобразование vault json в рамках локальной privacy boundary.
 
@@ -6410,7 +6102,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `decryptVaultJsonWithKey`, `requireVaultKey`.
 
-#### `createVaultConfigForPassphrase` — L368–L392 · public API
+#### `createVaultConfigForPassphrase` — L375–L399 · public API
 
 Создаёт vault config for passphrase из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -6418,7 +6110,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `toISOString`, `generateDataKey`, `createVaultCredential`.
 
-#### `createVaultConfigWithoutSecret` — L394–L414 · public API
+#### `createVaultConfigWithoutSecret` — L401–L421 · public API
 
 Создаёт vault config without secret из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -6426,7 +6118,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `toISOString`, `generateDataKey`, `createVaultPasswordlessCredential`.
 
-#### `unlockVaultKeyFromConfig` — L416–L425 · public API
+#### `unlockVaultKeyFromConfig` — L423–L432 · public API
 
 Управляет состоянием vault key from config и соответствующей границей доступа.
 
@@ -6434,7 +6126,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `normalizeStoredVaultConfig`, `assertValidVaultConfig`, `then`, `findCredentialForSecret`.
 
-#### `unlockVaultKeyFromPasswordlessConfig` — L427–L436 · public API
+#### `unlockVaultKeyFromPasswordlessConfig` — L434–L443 · public API
 
 Управляет состоянием vault key from passwordless config и соответствующей границей доступа.
 
@@ -6442,7 +6134,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `normalizeStoredVaultConfig`, `assertValidVaultConfig`, `then`, `findPasswordlessCredential`.
 
-#### `findCredentialForSecret` — L438–L454 · internal helper
+#### `findCredentialForSecret` — L445–L461 · internal helper
 
 Выбирает credential for secret, удовлетворяющий ограничениям текущего сценария.
 
@@ -6450,7 +6142,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `assertValidVaultConfig`, `unlockVaultKeyFromCredential`.
 
-#### `findPasswordlessCredential` — L456–L482 · internal helper
+#### `findPasswordlessCredential` — L463–L489 · internal helper
 
 Выбирает passwordless credential, удовлетворяющий ограничениям текущего сценария.
 
@@ -6458,7 +6150,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `assertValidVaultConfig`, `normalizeProfileId`, `unlockVaultKeyFromCredential`, `getPasswordlessSecret`.
 
-#### `unlockVaultKeyFromCredential` — L484–L506 · internal helper
+#### `unlockVaultKeyFromCredential` — L491–L513 · internal helper
 
 Управляет состоянием vault key from credential и соответствующей границей доступа.
 
@@ -6466,7 +6158,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `deriveVaultKey`, `decryptVaultJsonWithKey`, `importRawKey`, `decodeBase64Url`.
 
-#### `createVaultCredential` — L508–L551 · internal helper
+#### `createVaultCredential` — L515–L558 · internal helper
 
 Создаёт vault credential из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -6474,7 +6166,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `getRandomValues`, `getCrypto`, `encodeBase64Url`, `deriveVaultKey`, `encryptVaultJsonWithKey`, `exportRawKey`, `createCredentialId`, `normalizeProfileId`.
 
-#### `createVaultPasswordlessCredential` — L553–L572 · internal helper
+#### `createVaultPasswordlessCredential` — L560–L579 · internal helper
 
 Создаёт vault passwordless credential из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -6482,7 +6174,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `normalizeProfileId`, `createVaultCredential`, `getPasswordlessSecret`.
 
-#### `getPasswordlessSecret` — L574–L576 · internal helper
+#### `getPasswordlessSecret` — L581–L583 · internal helper
 
 Получает passwordless secret из принадлежащего модулю источника данных.
 
@@ -6490,105 +6182,47 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `normalizeProfileId`.
 
-#### `normalizeProfileId` — L578–L580 · internal helper
+#### `normalizeProfileId` — L585–L587 · internal helper
 
 Приводит profile id к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `profileId`.
 
-#### `normalizeCredentialLabel` — L582–L584 · internal helper
+#### `normalizeCredentialLabel` — L589–L591 · internal helper
 
 Приводит credential label к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `label`.
 
-#### `createCredentialId` — L586–L589 · internal helper
+#### `createCredentialId` — L593–L596 · internal helper
 
 Создаёт credential id из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Основные вызовы: `getCrypto`, `randomUUID`, `now`, `Math.random`.
 
-#### `encryptVaultJsonWithKey` — L591–L615 · public API
-
-Выполняет криптографическое преобразование vault json with key в рамках локальной privacy boundary.
-
-- Параметры: `key`, `value`, `associatedData`.
-
-- Основные вызовы: `getRandomValues`, `getCrypto`, `encode`, `encrypt`, `toArrayBuffer`, `encodeAssociatedData`, `encodeBase64Url`.
-
-#### `decryptVaultJsonWithKey` — L617–L635 · public API
-
-Выполняет криптографическое преобразование vault json with key в рамках локальной privacy boundary.
-
-- Параметры: `key`, `payload`, `associatedData`.
-
-- Основные вызовы: `assertValidVaultPayload`, `decrypt`, `getCrypto`, `toArrayBuffer`, `decodeBase64Url`, `encodeAssociatedData`, `decode`.
-
-#### `isVaultEncryptedPayload` — L637–L646 · public API
-
-Проверяет условие vault encrypted payload и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-#### `readVaultConfig` — L648–L666 · internal helper
+#### `readVaultConfig` — L598–L616 · internal helper
 
 Получает vault config из принадлежащего модулю источника данных.
 
 - Основные вызовы: `getVaultConfigKey`, `getItem`, `normalizeStoredVaultConfig`, `assertValidVaultConfig`, `setItem`.
 
-#### `getVaultConfigKey` — L668–L670 · internal helper
+#### `getVaultConfigKey` — L618–L620 · internal helper
 
 Получает vault config key из принадлежащего модулю источника данных.
 
 - Основные вызовы: `getProfileScopedStorageKey`.
 
-#### `normalizeStoredVaultConfig` — L672–L701 · internal helper
+#### `normalizeStoredVaultConfig` — L622–L651 · internal helper
 
 Приводит stored vault config к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
 - Параметры: `config`.
 
-#### `requireVaultKey` — L703–L709 · internal helper
+#### `requireVaultKey` — L653–L659 · internal helper
 
 Возвращает вычисленное значение require vault key для использования внутри данного модуля.
 
-#### `deriveVaultKey` — L711–L742 · internal helper
-
-Возвращает вычисленное значение derive vault key для использования внутри данного модуля.
-
-- Параметры: `passphrase`, `kdf`.
-
-- Основные вызовы: `importKey`, `getCrypto`, `toArrayBuffer`, `encode`, `deriveKey`, `decodeBase64Url`.
-
-#### `generateDataKey` — L744–L753 · internal helper
-
-Создаёт data key из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Основные вызовы: `generateKey`, `getCrypto`.
-
-#### `exportRawKey` — L755–L757 · internal helper
-
-Возвращает вычисленное значение export raw key для использования внутри данного модуля.
-
-- Параметры: `key`.
-
-- Основные вызовы: `exportKey`, `getCrypto`.
-
-#### `importRawKey` — L759–L770 · internal helper
-
-Возвращает вычисленное значение import raw key для использования внутри данного модуля.
-
-- Параметры: `rawKey`.
-
-- Основные вызовы: `importKey`, `getCrypto`, `toArrayBuffer`.
-
-#### `assertUsablePassphrase` — L772–L776 · internal helper
-
-Проверяет корректность usable passphrase и явно отклоняет нарушение контракта.
-
-- Параметры: `passphrase`.
-
-#### `assertValidVaultConfig` — L778–L802 · internal helper
+#### `assertValidVaultConfig` — L661–L685 · internal helper
 
 Проверяет корректность valid vault config и явно отклоняет нарушение контракта.
 
@@ -6596,7 +6230,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `Array.isArray`, `assertValidVaultCredential`, `has`, `add`.
 
-#### `assertValidVaultCredential` — L804–L829 · internal helper
+#### `assertValidVaultCredential` — L687–L712 · internal helper
 
 Проверяет корректность valid vault credential и явно отклоняет нарушение контракта.
 
@@ -6604,7 +6238,89 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `isInteger`, `assertValidVaultPayload`.
 
-#### `assertValidVaultPayload` — L831–L841 · internal helper
+#### `emitVaultStatus` — L714–L720 · internal helper
+
+Выполняет локальную операцию vault status внутри ответственности этого файла.
+
+- Основные вызовы: `getVaultStatus`, `listener`.
+
+#### Публичные типы, классы и константы
+
+- `type VaultCredentialKind` — L42
+- `type VaultCredential` — L52
+- `type VaultCredentialSummary` — L63
+- `type VaultConfig` — L68
+- `type VaultStatus` — L74
+
+### `client/src/features/vault/vaultApi.ts`
+
+React/API-адаптеры локального vault: vault api.
+
+Именованных функций нет: файл служит re-export границей.
+
+### `client/src/features/vault/vaultCrypto.ts`
+
+Низкоуровневые Web Crypto primitives без React и продуктовой оркестрации.
+
+#### `encryptVaultJsonWithKey` — L25–L49 · public API
+
+Выполняет криптографическое преобразование vault json with key в рамках локальной privacy boundary.
+
+- Параметры: `key`, `value`, `associatedData`.
+
+- Основные вызовы: `getRandomValues`, `getCrypto`, `encode`, `encrypt`, `toArrayBuffer`, `encodeAssociatedData`, `encodeBase64Url`.
+
+#### `decryptVaultJsonWithKey` — L51–L69 · public API
+
+Выполняет криптографическое преобразование vault json with key в рамках локальной privacy boundary.
+
+- Параметры: `key`, `payload`, `associatedData`.
+
+- Основные вызовы: `assertValidVaultPayload`, `decrypt`, `getCrypto`, `toArrayBuffer`, `decodeBase64Url`, `encodeAssociatedData`, `decode`.
+
+#### `isVaultEncryptedPayload` — L71–L80 · public API
+
+Проверяет условие vault encrypted payload и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+#### `deriveVaultKey` — L82–L113 · public API
+
+Возвращает вычисленное значение derive vault key для использования внутри данного модуля.
+
+- Параметры: `passphrase`, `kdf`.
+
+- Основные вызовы: `importKey`, `getCrypto`, `toArrayBuffer`, `encode`, `deriveKey`, `decodeBase64Url`.
+
+#### `generateDataKey` — L115–L124 · public API
+
+Создаёт data key из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Основные вызовы: `generateKey`, `getCrypto`.
+
+#### `exportRawKey` — L126–L128 · public API
+
+Возвращает вычисленное значение export raw key для использования внутри данного модуля.
+
+- Параметры: `key`.
+
+- Основные вызовы: `exportKey`, `getCrypto`.
+
+#### `importRawKey` — L130–L141 · public API
+
+Возвращает вычисленное значение import raw key для использования внутри данного модуля.
+
+- Параметры: `rawKey`.
+
+- Основные вызовы: `importKey`, `getCrypto`, `toArrayBuffer`.
+
+#### `assertUsablePassphrase` — L143–L147 · public API
+
+Проверяет корректность usable passphrase и явно отклоняет нарушение контракта.
+
+- Параметры: `passphrase`.
+
+#### `assertValidVaultPayload` — L149–L159 · public API
 
 Проверяет корректность valid vault payload и явно отклоняет нарушение контракта.
 
@@ -6612,13 +6328,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `isVaultEncryptedPayload`.
 
-#### `emitVaultStatus` — L843–L849 · internal helper
-
-Выполняет локальную операцию vault status внутри ответственности этого файла.
-
-- Основные вызовы: `getVaultStatus`, `listener`.
-
-#### `encodeAssociatedData` — L851–L853 · internal helper
+#### `encodeAssociatedData` — L161–L163 · internal helper
 
 Возвращает вычисленное значение encode associated data для использования внутри данного модуля.
 
@@ -6626,7 +6336,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `encode`.
 
-#### `encodeBase64Url` — L855–L866 · internal helper
+#### `encodeBase64Url` — L165–L176 · public API
 
 Возвращает вычисленное значение encode base64 url для использования внутри данного модуля.
 
@@ -6634,7 +6344,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `fromCharCode`, `replace`, `btoa`.
 
-#### `decodeBase64Url` — L868–L882 · internal helper
+#### `decodeBase64Url` — L178–L192 · public API
 
 Возвращает вычисленное значение decode base64 url для использования внутри данного модуля.
 
@@ -6642,7 +6352,7 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `replace`, `padEnd`, `atob`, `charCodeAt`.
 
-#### `toArrayBuffer` — L884–L888 · internal helper
+#### `toArrayBuffer` — L194–L198 · internal helper
 
 Возвращает вычисленное значение to array buffer для использования внутри данного модуля.
 
@@ -6650,32 +6360,30 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 
 - Основные вызовы: `set`.
 
-#### `getCrypto` — L890–L896 · internal helper
+#### `getCrypto` — L200–L206 · public API
 
 Получает crypto из принадлежащего модулю источника данных.
 
 #### Публичные типы, классы и константы
 
-- `type VaultEncryptedPayload` — L27
-- `type VaultCredentialKind` — L35
-- `type VaultCredential` — L45
-- `type VaultCredentialSummary` — L56
-- `type VaultConfig` — L61
-- `type VaultStatus` — L67
+- `const VAULT_KDF_ITERATIONS` — L5
+- `const VAULT_SALT_BYTES` — L7
+- `type VaultKdfConfig` — L11
+- `type VaultEncryptedPayload` — L17
 
-### `client/src/lib/vaultMigration.ts`
+### `client/src/features/vault/vaultMigration.ts`
 
-Низкоуровневая клиентская библиотека: vault migration.
+React/API-адаптеры локального vault: vault migration.
 
-#### `migrateLocalDataToVault` — L4–L7 · public API
+#### `migrateLocalDataToVault` — L5–L9 · public API
 
 Переводит local data to vault из legacy-формы в текущую без потери поддерживаемых данных.
 
-- Основные вызовы: `migrateLocalStorageToVault`, `migrateSelfReportsToVault`.
+- Основные вызовы: `migrateEntriesToVault`, `migrateDraftsToVault`, `migrateSelfReportsToVault`.
 
-### `client/src/lib/vaultProfiles.ts`
+### `client/src/features/vault/vaultProfiles.ts`
 
-Низкоуровневая клиентская библиотека: vault profiles.
+React/API-адаптеры локального vault: vault profiles.
 
 #### `composeVaultSecret` — L25–L34 · public API
 
@@ -6817,148 +6525,329 @@ IndexedDB-репозиторий durable queue и операции обслуж�
 - `type VaultSecretInput` — L8
 - `const DEFAULT_VAULT_PROFILES` — L16
 
+### `client/src/i18n/i18nContext.ts`
+
+Интернационализация интерфейса: i18n context.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `type I18nContextValue` — L7
+- `const I18nContext` — L13
+
+### `client/src/i18n/I18nProvider.tsx`
+
+Интернационализация интерфейса: i18n provider.
+
+#### `I18nProvider` — L18–L49 · public API
+
+Рендерит React-компонент I18nProvider и связывает его props с соответствующей UI-поверхностью.
+
+- Параметры: `{ children }`.
+
+- Основные вызовы: `useState`, `readStoredLanguage`, `useCallback`, `setLanguageState`, `setItem`, `getLanguageStorageKey`, `translateMessage`, `useEffect`.
+
+#### `readStoredLanguage` — L51–L58 · internal helper
+
+Получает stored language из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getItem`, `getLanguageStorageKey`, `isSupportedLanguage`.
+
+#### `getLanguageStorageKey` — L60–L62 · internal helper
+
+Получает language storage key из принадлежащего модулю источника данных.
+
+- Основные вызовы: `getProfileScopedStorageKey`.
+
+### `client/src/i18n/languages.ts`
+
+Интернационализация интерфейса: languages.
+
+#### `isSupportedLanguage` — L16–L18 · public API
+
+Проверяет условие supported language и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+#### `detectBrowserLanguage` — L20–L31 · public API
+
+Возвращает вычисленное значение browser language для использования внутри данного модуля.
+
+- Основные вызовы: `split`, `toLowerCase`, `isSupportedLanguage`.
+
+#### Публичные типы, классы и константы
+
+- `const SUPPORTED_LANGUAGES` — L1
+- `type Language` — L3
+- `const DEFAULT_LANGUAGE` — L5
+- `const LANGUAGE_LABELS` — L7
+- `const LANGUAGE_STORAGE_KEY` — L14
+
+### `client/src/i18n/messages.ts`
+
+Интернационализация интерфейса: messages.
+
+#### `translateMessage` — L1143–L1153 · public API
+
+Возвращает вычисленное значение translate message для использования внутри данного модуля.
+
+- Параметры: `language`, `key`, `values`.
+
+- Основные вызовы: `replace`, `String`.
+
+#### Публичные типы, классы и константы
+
+- `const en` — L3
+- `type MessageKey` — L294
+- `const messages` — L1136
+
+### `client/src/i18n/useI18n.ts`
+
+Интернационализация интерфейса: use i18n.
+
+#### `useI18n` — L4–L12 · public API
+
+Управляет React-состоянием, derived values и side effects для i18n.
+
+- Основные вызовы: `useContext`.
+
 ### `client/src/main.tsx`
 
 Точка запуска React-клиента: подключает стили, i18n, корневой App и service worker.
 
 Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
 
-### `client/src/types.ts`
+### `client/src/platform/storage/athenaDb.ts`
 
-Проектный файл: types.
+Единственная точка владения IndexedDB schema, object stores и profile-scoped соединением.
+
+#### `openAthenaLocalDb` — L16–L30 · public API
+
+Управляет состоянием athena local db и соответствующей границей доступа.
+
+- Основные вызовы: `getProfileScopedDatabaseName`, `open`, `initializeSchema`, `resolve`, `reject`.
+
+#### `deleteCurrentAthenaDatabase` — L32–L36 · public API
+
+Удаляет или очищает current athena database с необходимыми связанными действиями.
+
+- Основные вызовы: `getProfileScopedDatabaseName`, `closeConnection`, `deleteDatabase`.
+
+#### `deleteAthenaDatabaseForProfile` — L38–L48 · public API
+
+Удаляет или очищает athena database for profile с необходимыми связанными действиями.
+
+- Параметры: `profileId`.
+
+- Основные вызовы: `getProfileScopedDatabaseName`, `closeConnection`, `deleteDatabase`.
+
+#### `idbRequest` — L50–L55 · public API
+
+Возвращает вычисленное значение idb request для использования внутри данного модуля.
+
+- Параметры: `request`.
+
+- Основные вызовы: `resolve`, `reject`.
+
+#### `initializeSchema` — L57–L94 · internal helper
+
+Выполняет локальную операцию initialize schema внутри ответственности этого файла.
+
+- Параметры: `db`.
+
+- Основные вызовы: `contains`, `createObjectStore`, `createIndex`.
+
+#### `closeConnection` — L96–L102 · internal helper
+
+Управляет состоянием connection и соответствующей границей доступа.
+
+- Параметры: `databaseName`.
+
+- Основные вызовы: `catch`, `close`.
+
+#### `deleteDatabase` — L104–L112 · internal helper
+
+Удаляет или очищает database с необходимыми связанными действиями.
+
+- Параметры: `databaseName`.
+
+- Основные вызовы: `deleteDatabase`, `resolve`, `reject`.
+
+#### Публичные типы, классы и константы
+
+- `const ATHENA_LOCAL_DB_NAME` — L3
+- `const ENTRY_STORE` — L6
+- `const DRAFT_STORE` — L7
+- `const QUEUE_JOBS_STORE` — L8
+- `const SELF_REPORT_STORE` — L9
+- `const SELF_REPORT_DAILY_AGGREGATES_STORE` — L10
+
+### `client/src/shared/contracts.ts`
+
+Действительно общая клиентская инфраструктура и примитивы: contracts.
 
 Именованных функций нет: файл служит re-export границей.
+
+### `client/src/shared/http/httpClient.ts`
+
+Общие HTTP-механизмы: CSRF, auth-required event и типизированные ошибки.
+
+#### `jsonHeaders` — L22–L24 · public API
+
+Возвращает вычисленное значение json headers для использования внутри данного модуля.
+
+#### `csrfJsonHeaders` — L26–L28 · public API
+
+Возвращает вычисленное значение csrf json headers для использования внутри данного модуля.
+
+- Основные вызовы: `jsonHeaders`, `csrfHeaders`.
+
+#### `csrfHeaders` — L30–L33 · public API
+
+Возвращает вычисленное значение csrf headers для использования внутри данного модуля.
+
+- Основные вызовы: `readBrowserCookie`.
+
+#### `createApiHttpError` — L35–L45 · public API
+
+Создаёт api http error из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `response`, `prefix`.
+
+- Основные вызовы: `text`, `classifyHttpErrorCode`.
+
+#### `handleUnauthorized` — L47–L50 · public API
+
+Исполняет сценарий unauthorized и координирует его побочные эффекты.
+
+- Параметры: `response`.
+
+- Основные вызовы: `window.dispatchEvent`.
+
+#### `readBrowserCookie` — L52–L68 · internal helper
+
+Получает browser cookie из принадлежащего модулю источника данных.
+
+- Параметры: `name`.
+
+- Основные вызовы: `split`, `startsWith`, `decodeURIComponent`.
+
+#### `classifyHttpErrorCode` — L70–L75 · internal helper
+
+Возвращает вычисленное значение classify http error code для использования внутри данного модуля.
+
+- Параметры: `status`.
+
 #### Публичные типы, классы и константы
 
-- `type Page` — L39
-- `type EntrySortDirection` — L40
-- `type LocalEntry` — L42
-- `type EntryView` — L57
+- `const SERVER_AUTH_REQUIRED_EVENT` — L6
+- `class ApiHttpError` — L10
+
+### `client/src/shared/lib/dates.ts`
+
+Действительно общая клиентская инфраструктура и примитивы: dates.
+
+#### `todayDateOnly` — L10–L12 · public API
+
+Возвращает вычисленное значение today date only для использования внутри данного модуля.
+
+- Основные вызовы: `toDateOnly`.
+
+#### `formatLongDate` — L14–L20 · public API
+
+Преобразует long date в стабильное представление для UI, сети или хранения.
+
+- Параметры: `dateOnly`, `language`.
+
+- Основные вызовы: `toLocaleDateString`, `parseDateOnly`, `getLocale`.
+
+#### `formatShortDate` — L22–L27 · public API
+
+Преобразует short date в стабильное представление для UI, сети или хранения.
+
+- Параметры: `dateOnly`, `language`.
+
+- Основные вызовы: `toLocaleDateString`, `parseDateOnly`, `getLocale`.
+
+#### `getLocale` — L29–L31 · public API
+
+Получает locale из принадлежащего модулю источника данных.
+
+- Параметры: `language`.
+
+#### `toDateOnly` — L33–L39 · internal helper
+
+Возвращает вычисленное значение to date only для использования внутри данного модуля.
+
+- Параметры: `date`.
+
+- Основные вызовы: `getFullYear`, `padStart`, `String`, `getMonth`, `getDate`.
+
+#### `parseDateOnly` — L41–L44 · internal helper
+
+Разбирает date only и преобразует вход в типизированное представление.
+
+- Параметры: `dateOnly`.
+
+- Основные вызовы: `split`.
+
+### `client/src/shared/lib/offline.ts`
+
+Действительно общая клиентская инфраструктура и примитивы: offline.
+
+#### `getOnlineStatus` — L3–L5 · public API
+
+Получает online status из принадлежащего модулю источника данных.
+
+#### `useOnlineStatus` — L7–L29 · public API
+
+Управляет React-состоянием, derived values и side effects для online status.
+
+- Основные вызовы: `useState`, `getOnlineStatus`, `useEffect`, `setIsOnline`, `window.addEventListener`, `window.removeEventListener`.
+
+#### `handleOnline` — L11–L13 · nested helper в useOnlineStatus
+
+Исполняет сценарий online и координирует его побочные эффекты.
+
+- Основные вызовы: `setIsOnline`.
+
+#### `handleOffline` — L15–L17 · nested helper в useOnlineStatus
+
+Исполняет сценарий offline и координирует его побочные эффекты.
+
+- Основные вызовы: `setIsOnline`.
+
+### `client/src/shared/lib/serviceWorker.ts`
+
+Действительно общая клиентская инфраструктура и примитивы: service worker.
+
+#### `registerServiceWorker` — L1–L17 · public API
+
+Оркестрирует service worker в инфраструктуре синхронизации или фоновой очереди.
+
+- Основные вызовы: `window.addEventListener`, `catch`, `then`, `register`, `console.error`.
+
+### `client/src/shared/lib/text.ts`
+
+Действительно общая клиентская инфраструктура и примитивы: text.
+
+#### `excerpt` — L1–L7 · public API
+
+Возвращает вычисленное значение excerpt для использования внутри данного модуля.
+
+- Параметры: `text`, `maxLength`.
+
+- Основные вызовы: `replace`, `trimEnd`.
+
+#### `extractTags` — L9–L14 · public API
+
+Извлекает tags из входных данных без самостоятельного сохранения результата.
+
+- Параметры: `text`.
+
+- Основные вызовы: `match`, `toLowerCase`, `Array.from`.
 
 ## Server runtime: функции
-
-### `server/api/analytics.route.ts`
-
-Express router HTTP API: analytics route.
-
-#### `subtractDays` — L49–L55 · internal helper
-
-Возвращает вычисленное значение subtract days для использования внутри данного модуля.
-
-- Параметры: `dateOnly`, `days`.
-
-- Основные вызовы: `split`, `UTC`, `setUTCDate`, `getUTCDate`, `toISOString`.
-
-#### HTTP routes
-
-- `GET /analytics/summary (L13)`
-- `GET /analytics/v2/summary (L38)`
-
-### `server/api/auth.route.ts`
-
-Express router HTTP API: auth route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /auth/me (L26)`
-- `POST /auth/setup (L77)`
-- `POST /auth/login (L124)`
-- `POST /auth/logout (L171)`
-
-### `server/api/config.route.ts`
-
-Express router HTTP API: config route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /config (L10)`
-
-### `server/api/entries.route.ts`
-
-Express router HTTP API: entries route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /entries (L17)`
-- `GET /entries/:id (L26)`
-- `POST /entries (L42)`
-- `PATCH /entries/:id (L70)`
-- `DELETE /entries/:id (L96)`
-- `POST /entries/:id/signals (L112)`
-
-### `server/api/exports.route.ts`
-
-Express router HTTP API: exports route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /exports/backend-metadata (L8)`
-
-### `server/api/extractions.route.ts`
-
-Express router HTTP API: extractions route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /extractions/config (L12)`
-- `GET /extractions/status (L16)`
-- `POST /extractions (L28)`
-
-### `server/api/http.ts`
-
-Express router HTTP API: http.
-
-#### `asyncHandler` — L8–L18 · public API
-
-Возвращает вычисленное значение async handler для использования внутри данного модуля.
-
-- Параметры: `handler`.
-
-- Основные вызовы: `catch`, `handler`.
-
-#### `sendValidationError` — L20–L29 · public API
-
-Выполняет внешний запрос для validation error и нормализует результат или ошибку.
-
-- Параметры: `res`, `message`, `error`.
-
-- Основные вызовы: `json`, `status`, `flatten`.
-
-#### `isCodedError` — L31–L33 · public API
-
-Проверяет условие coded error и возвращает логический результат без изменения состояния.
-
-- Параметры: `error`.
-
-#### Публичные типы, классы и константы
-
-- `type CodedError` — L4
-
-### `server/api/insights.route.ts`
-
-Express router HTTP API: insights route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `GET /insights/current (L12)`
-- `GET /insights (L24)`
-- `DELETE /insights/:id (L34)`
-
-### `server/api/self-reports.route.ts`
-
-Express router HTTP API: self reports route.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### HTTP routes
-
-- `PUT /self-reports/daily-aggregates/:localDay (L12)`
-- `GET /self-reports/daily-aggregates/:localDay (L46)`
 
 ### `server/app.ts`
 
@@ -7043,251 +6932,6 @@ Express router HTTP API: self reports route.
 - `const ACTIVE_MODEL` — L6
 - `const DEFAULT_OLLAMA_MODEL` — L7
 - `const DEFAULT_GEMINI_MODEL` — L8
-
-### `server/core/analytics-v2.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: analytics v2 schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const ANALYTICS_V2_VERSION` — L1
-- `const EXTRACTED_ANALYTICS_AXES` — L3
-- `const SELF_REPORT_ANALYTICS_AXES` — L4
-- `const ANALYTICS_V2_AXES` — L11
-- `type ExtractedAnalyticsAxis` — L16
-- `type SelfReportAnalyticsAxis` — L17
-- `type AnalyticsV2Axis` — L19
-- `type AnalyticsV2WindowKind` — L21
-- `type AnalyticsV2AxisSource` — L22
-- `type AnalyticsV2BaselineQuality` — L23
-- `type AnalyticsV2Direction` — L28
-- `type AnalyticsV2TrendDirection` — L29
-- `type AnalyticsV2VolatilityDirection` — L34
-- `type AnalyticsV2QualityGrade` — L39
-- `type AnalyticsV2QualityReason` — L44
-- `type AnalyticsV2NoDataReason` — L50
-- `type AnalyticsV2AssociationDirection` — L51
-- `type AnalyticsV2AssociationStrength` — L56
-- `type AnalyticsV2Window` — L62
-- `type AnalyticsV2Density` — L69
-- `type AnalyticsV2AxisSummary` — L81
-- `type AnalyticsV2ContextItem` — L102
-- `type AnalyticsV2Context` — L108
-- `type AnalyticsV2Quality` — L120
-- `type AnalyticsV2Versions` — L126
-- `type AnalyticsV2Association` — L143
-- `type AnalyticsV2Summary` — L153
-- `type AnalyticsV2WindowResponse` — L165
-- `type AnalyticsV2Overview` — L170
-
-### `server/core/auth.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: auth schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const setupOwnerSchema` — L12
-- `const loginSchema` — L19
-- `type SetupOwnerInput` — L21
-- `type LoginInput` — L22
-
-### `server/core/entry.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: entry schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const createEntrySchema` — L5
-- `const updateEntrySchema` — L14
-
-### `server/core/extraction.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: extraction schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const extractionProviderSchema` — L4
-- `const extractionRequestSchema` — L6
-- `const signalMetadataPayloadSchema` — L14
-- `const appendSignalSchema` — L23
-
-### `server/core/markers.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: markers.
-
-#### `markerLabel` — L56–L58 · public API
-
-Изменяет er label, сохраняя инварианты данного модуля.
-
-- Параметры: `marker`.
-
-#### `markerPriority` — L60–L62 · public API
-
-Изменяет er priority, сохраняя инварианты данного модуля.
-
-- Параметры: `marker`.
-
-#### Публичные типы, классы и константы
-
-- `const MARKERS` — L1
-- `type Marker` — L22
-- `const MARKER_LABELS` — L24
-
-### `server/core/self-report.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: self report schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const selfReportAxisSchema` — L3
-- `const selfReportDailyAggregateSchema` — L11
-- `const syncSelfReportDailyAggregatesSchema` — L31
-
-### `server/core/signal.mapper.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: signal mapper.
-
-#### `mapSignalCandidate` — L85–L127 · public API
-
-Преобразует или объединяет signal candidate по правилам домена.
-
-- Параметры: `candidate`.
-
-- Основные вызовы: `createDefaultSignalContext`, `extractEmotionLabels`, `mapMetric`, `Object.keys`, `getQualityReason`.
-
-#### `createEmptyMetricConfidence` — L129–L131 · public API
-
-Создаёт empty metric confidence из переданных данных, не отдавая вызывающему коду детали сборки.
-
-#### `mapMetric` — L133–L182 · internal helper
-
-Преобразует или объединяет metric по правилам домена.
-
-- Параметры: `metric`, `stateInference`, `emotionLabels`.
-
-- Основные вызовы: `scoreLevel`, `confidenceWeight`, `clampScore`, `Math.round`, `highestConfidence`, `getEmotionMetricAdjustment`, `adjustConfidence`.
-
-#### `scoreLevel` — L184–L189 · internal helper
-
-Детерминированно вычисляет level из входных данных.
-
-- Параметры: `level`, `direction`.
-
-#### `confidenceWeight` — L191–L195 · internal helper
-
-Возвращает вычисленное значение confidence weight для использования внутри данного модуля.
-
-- Параметры: `confidence`.
-
-#### `highestConfidence` — L197–L201 · internal helper
-
-Возвращает вычисленное значение highest confidence для использования внутри данного модуля.
-
-- Параметры: `confidences`.
-
-#### `adjustConfidence` — L203–L212 · internal helper
-
-Возвращает вычисленное значение adjust confidence для использования внутри данного модуля.
-
-- Параметры: `confidence`, `emotionAdjustment`.
-
-#### `clampScore` — L214–L216 · internal helper
-
-Ограничивает score допустимым диапазоном или точностью.
-
-- Параметры: `score`.
-
-- Основные вызовы: `Math.max`, `Math.min`.
-
-#### `getQualityReason` — L218–L246 · internal helper
-
-Получает quality reason из принадлежащего модулю источника данных.
-
-- Параметры: `stateInference`, `hasMetric`, `hasTextSignal`, `hasEmotionSignal`, `metrics`.
-
-- Основные вызовы: `Object.entries`, `localeCompare`, `withEmotionReason`.
-
-#### `withEmotionReason` — L248–L263 · internal helper
-
-Возвращает вычисленное значение with emotion reason для использования внутри данного модуля.
-
-- Параметры: `reason`, `metrics`.
-
-#### `extractEmotionLabels` — L265–L280 · internal helper
-
-Извлекает emotion labels из входных данных без самостоятельного сохранения результата.
-
-- Параметры: `signals`.
-
-- Основные вызовы: `isRecord`, `Object.entries`, `isFinite`, `normalizeEmotionLabel`, `Math.max`, `Math.min`.
-
-#### `getEmotionMetricAdjustment` — L282–L291 · internal helper
-
-Получает emotion metric adjustment из принадлежащего модулю источника данных.
-
-- Параметры: `metric`, `labels`.
-
-- Основные вызовы: `getEmotionAdjustmentCandidates`.
-
-#### `getEmotionAdjustmentCandidates` — L293–L325 · internal helper
-
-Получает emotion adjustment candidates из принадлежащего модулю источника данных.
-
-- Параметры: `metric`, `labels`.
-
-- Основные вызовы: `emotionCandidate`.
-
-#### `emotionCandidate` — L327–L339 · internal helper
-
-Возвращает вычисленное значение emotion candidate для использования внутри данного модуля.
-
-- Параметры: `metric`, `label`, `labels`, `direction`.
-
-#### `normalizeEmotionLabel` — L341–L348 · internal helper
-
-Приводит emotion label к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `label`.
-
-- Основные вызовы: `replace`, `toLocaleLowerCase`.
-
-#### `isRecord` — L350–L352 · internal helper
-
-Проверяет условие record и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Array.isArray`.
-
-### `server/core/signal.schema.ts`
-
-Доменные схемы, типы и чистые mapper-функции backend: signal schema.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-#### Публичные типы, классы и константы
-
-- `const SIGNAL_AXES` — L4
-- `const markerSchema` — L24
-- `const signalAxisSchema` — L25
-- `const signalLevelSchema` — L26
-- `const confidenceLevelSchema` — L27
-- `const entryIntentSchema` — L28
-- `const structureDensitySchema` — L37
-- `const temporalBucketSchema` — L38
-- `const temporalContextSourceSchema` — L45
-- `const stateInferenceSchema` — L113
-- `const emotionSignalsSchema` — L116
-- `const extractedSignalCandidateSchema` — L119
-- `const sanitizedSignalSchema` — L152
-- `const fallbackSignalSchema` — L163
-- `const clientFallbackSignalSchema` — L191
-- `const clientSignalPayloadSchema` — L210
-- `const overridePayloadSchema` — L215
 
 ### `server/core/types.ts`
 
@@ -7381,179 +7025,9 @@ SQLite bootstrap и миграции: migrate.
 - `type AthenaDb` — L7
 - `type DbWriteTransaction` — L8
 
-### `server/middleware/auth.middleware.ts`
+### `server/modules/analytics/analytics.repository.ts`
 
-Express middleware: auth middleware.
-
-#### `requireAuth` — L23–L46 · public API
-
-Выполняет локальную операцию require auth внутри ответственности этого файла.
-
-- Параметры: `req`, `res`, `next`.
-
-- Основные вызовы: `isServerAuthRequired`, `next`, `authenticateRequest`, `json`, `status`.
-
-#### `requireProtectedApiAuth` — L48–L64 · public API
-
-Выполняет локальную операцию require protected api auth внутри ответственности этого файла.
-
-- Параметры: `req`, `res`, `next`.
-
-- Основные вызовы: `isServerAuthRequired`, `next`, `isProtectedApiPath`, `requireAuth`.
-
-#### `requireProtectedApiCsrf` — L66–L82 · public API
-
-Выполняет локальную операцию require protected api csrf внутри ответственности этого файла.
-
-- Параметры: `req`, `res`, `next`.
-
-- Основные вызовы: `isServerAuthRequired`, `next`, `isProtectedApiPath`, `has`, `requireCsrf`.
-
-#### `requireCsrf` — L84–L108 · public API
-
-Выполняет локальную операцию require csrf внутри ответственности этого файла.
-
-- Параметры: `req`, `res`, `next`.
-
-- Основные вызовы: `isServerAuthRequired`, `next`, `get`, `json`, `status`, `verifyCsrfToken`.
-
-#### `readCookie` — L110–L114 · public API
-
-Получает cookie из принадлежащего модулю источника данных.
-
-- Параметры: `req`, `name`.
-
-- Основные вызовы: `parseCookieHeader`, `get`.
-
-#### `setAuthCookies` — L116–L139 · public API
-
-Изменяет auth cookies, сохраняя инварианты данного модуля.
-
-- Параметры: `res`, `input`.
-
-- Основные вызовы: `isProduction`, `cookie`.
-
-#### `clearAuthCookies` — L141–L156 · public API
-
-Удаляет или очищает auth cookies с необходимыми связанными действиями.
-
-- Параметры: `res`.
-
-- Основные вызовы: `isProduction`, `clearCookie`.
-
-#### `authenticateRequest` — L158–L162 · internal helper
-
-Возвращает вычисленное значение authenticate request для использования внутри данного модуля.
-
-- Параметры: `req`.
-
-- Основные вызовы: `getDb`, `authenticateSessionToken`, `readCookie`.
-
-#### `isProtectedApiPath` — L164–L168 · internal helper
-
-Проверяет условие protected api path и возвращает логический результат без изменения состояния.
-
-- Параметры: `pathname`.
-
-- Основные вызовы: `startsWith`.
-
-#### `parseCookieHeader` — L170–L188 · internal helper
-
-Разбирает cookie header и преобразует вход в типизированное представление.
-
-- Параметры: `header`.
-
-- Основные вызовы: `Object.fromEntries`, `split`, `indexOf`, `decodeCookieValue`.
-
-#### `decodeCookieValue` — L190–L196 · internal helper
-
-Возвращает вычисленное значение decode cookie value для использования внутри данного модуля.
-
-- Параметры: `value`.
-
-- Основные вызовы: `decodeURIComponent`.
-
-#### `isProduction` — L198–L200 · internal helper
-
-Проверяет условие production и возвращает логический результат без изменения состояния.
-
-#### Публичные типы, классы и константы
-
-- `const SESSION_COOKIE_NAME` — L10
-- `const CSRF_COOKIE_NAME` — L11
-
-### `server/middleware/error.middleware.ts`
-
-Express middleware: error middleware.
-
-#### `jsonErrorHandler` — L3–L18 · public API
-
-Возвращает вычисленное значение json error handler для использования внутри данного модуля.
-
-- Параметры: `error`, `_req`, `res`, `next`.
-
-- Основные вызовы: `isEntityTooLargeError`, `json`, `status`, `next`.
-
-#### `apiErrorHandler` — L20–L33 · public API
-
-Возвращает вычисленное значение api error handler для использования внутри данного модуля.
-
-- Параметры: `error`, `_req`, `res`, `_next`.
-
-- Основные вызовы: `console.error`, `json`, `status`.
-
-#### `isEntityTooLargeError` — L35–L42 · internal helper
-
-Проверяет условие entity too large error и возвращает логический результат без изменения состояния.
-
-- Параметры: `error`.
-
-### `server/repositories/analytics-v2.repository.ts`
-
-SQL repository без продуктовой оркестрации: analytics v2 repository.
-
-#### `getLatestAnalyticsV2Date` — L80–L89 · public API
-
-Получает latest analytics v2 date из принадлежащего модулю источника данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `get`.
-
-#### `getAnalyticsV2RowsInRange` — L91–L101 · public API
-
-Получает analytics v2 rows in range из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `{ from, to }`.
-
-- Основные вызовы: `Promise.all`, `getEntrySignalRowsInRange`, `getSelfReportAggregateRowsInRange`.
-
-#### `getEntrySignalRowsInRange` — L103–L111 · internal helper
-
-Получает entry signal rows in range из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `{ from, to }`.
-
-- Основные вызовы: `all`.
-
-#### `getSelfReportAggregateRowsInRange` — L113–L132 · internal helper
-
-Получает self report aggregate rows in range из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `{ from, to }`.
-
-- Основные вызовы: `all`.
-
-#### Публичные типы, классы и константы
-
-- `type AnalyticsV2EntrySignalRow` — L12
-- `type AnalyticsV2SelfReportAggregateRow` — L29
-- `type AnalyticsV2RangeRows` — L38
-- `const ANALYTICS_V2_ENTRY_SIGNAL_ROWS_IN_RANGE_SQL` — L43
-
-### `server/repositories/analytics.repository.ts`
-
-SQL repository без продуктовой оркестрации: analytics repository.
+Вертикальный backend-модуль analytics: analytics repository.
 
 #### `getEntriesWithSignalsInRange` — L25–L70 · public API
 
@@ -7567,714 +7041,26 @@ SQL repository без продуктовой оркестрации: analytics r
 
 - `type EntryWithSignalRangeRow` — L8
 
-### `server/repositories/auth.repository.ts`
+### `server/modules/analytics/analytics.route.ts`
 
-SQL repository без продуктовой оркестрации: auth repository.
+Вертикальный backend-модуль analytics: analytics route.
 
-#### `countAuthUsers` — L30–L36 · public API
-
-Детерминированно вычисляет auth users из входных данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `get`.
-
-#### `createAuthUser` — L38–L55 · public API
-
-Создаёт auth user из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `db`, `input`.
-
-- Основные вызовы: `run`, `getAuthUserById`.
-
-#### `getAuthUserById` — L57–L71 · public API
-
-Получает auth user by id из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `id`.
-
-- Основные вызовы: `get`.
-
-#### `getAuthUserByUsername` — L73–L87 · public API
-
-Получает auth user by username из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `username`.
-
-- Основные вызовы: `get`.
-
-#### `createAuthSession` — L89–L122 · public API
-
-Создаёт auth session из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `db`, `input`.
-
-- Основные вызовы: `run`, `getAuthSessionById`.
-
-#### `getAuthSessionById` — L124–L146 · public API
-
-Получает auth session by id из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `id`.
-
-- Основные вызовы: `get`.
-
-#### `getActiveAuthSessionByTokenHash` — L148–L174 · public API
-
-Получает active auth session by token hash из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `tokenHash`.
-
-- Основные вызовы: `get`.
-
-#### `touchAuthSession` — L176–L190 · public API
-
-Изменяет auth session, сохраняя инварианты данного модуля.
-
-- Параметры: `db`, `sessionId`, `now`.
-
-- Основные вызовы: `run`.
-
-#### `updateAuthSessionCsrfTokenHash` — L192–L210 · public API
-
-Изменяет auth session csrf token hash, сохраняя инварианты данного модуля.
-
-- Параметры: `db`, `input`.
-
-- Основные вызовы: `run`.
-
-#### `revokeAuthSessionByTokenHash` — L212–L229 · public API
-
-Удаляет или очищает auth session by token hash с необходимыми связанными действиями.
-
-- Параметры: `db`, `input`.
-
-- Основные вызовы: `run`.
-
-#### Публичные типы, классы и константы
-
-- `type AuthUserRole` — L3
-- `type AuthUserRow` — L5
-- `type AuthSessionRow` — L14
-- `type AuthSessionWithUserRow` — L25
-
-### `server/repositories/entry.repository.ts`
-
-SQL repository без продуктовой оркестрации: entry repository.
-
-#### `createEntry` — L71–L100 · public API
-
-Создаёт entry из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `db`, `entry`.
-
-- Основные вызовы: `run`.
-
-#### `listEntries` — L102–L147 · public API
-
-Получает entries из принадлежащего модулю источника данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `all`.
-
-#### `getEntryById` — L149–L202 · public API
-
-Получает entry by id из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `id`.
-
-- Основные вызовы: `get`, `mapEntryRow`.
-
-#### `updateEntry` — L204–L230 · public API
-
-Изменяет entry, сохраняя инварианты данного модуля.
-
-- Параметры: `db`, `entryId`, `entry`.
-
-- Основные вызовы: `run`.
-
-#### `deleteEntry` — L232–L242 · public API
-
-Удаляет или очищает entry с необходимыми связанными действиями.
-
-- Параметры: `db`, `entryId`.
-
-- Основные вызовы: `run`.
-
-#### `updateEntryStatus` — L244–L258 · public API
-
-Изменяет entry status, сохраняя инварианты данного модуля.
-
-- Параметры: `db`, `entryId`, `status`.
-
-- Основные вызовы: `run`, `toISOString`.
-
-#### `markEntryFailed` — L260–L265 · public API
-
-Изменяет entry failed, сохраняя инварианты данного модуля.
-
-- Параметры: `db`, `entryId`.
-
-- Основные вызовы: `updateEntryStatus`.
-
-#### `mapEntryRow` — L267–L326 · internal helper
-
-Преобразует или объединяет entry row по правилам домена.
-
-- Параметры: `row`.
-
-- Основные вызовы: `createDefaultSignalContext`, `parseStringArray`, `parseRecord`, `createEmptyMetricConfidence`.
-
-#### `parseStringArray` — L328–L331 · internal helper
-
-Разбирает string array и преобразует вход в типизированное представление.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Array.isArray`.
-
-#### `parseRecord` — L333–L345 · internal helper
-
-Разбирает record и преобразует вход в типизированное представление.
-
-- Параметры: `value`, `fallback`.
-
-- Основные вызовы: `Array.isArray`.
-
-### `server/repositories/insight.repository.ts`
-
-SQL repository без продуктовой оркестрации: insight repository.
-
-#### `countInsightEvidenceDays` — L37–L70 · public API
-
-Детерминированно вычисляет insight evidence days из входных данных.
-
-- Параметры: `db`, `{ from, to }`.
-
-- Основные вызовы: `get`.
-
-#### `getSnapshot` — L72–L96 · public API
-
-Получает snapshot из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `{ layer, periodStart, periodEnd }`.
-
-- Основные вызовы: `get`.
-
-#### `getLatestVisibleSnapshot` — L98–L122 · public API
-
-Получает latest visible snapshot из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `{ layer, today }`.
-
-- Основные вызовы: `get`.
-
-#### `listVisibleSnapshots` — L124–L151 · public API
-
-Получает visible snapshots из принадлежащего модулю источника данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `all`.
-
-#### `softDeleteSnapshot` — L153–L168 · public API
-
-Возвращает вычисленное значение soft delete snapshot для использования внутри данного модуля.
-
-- Параметры: `db`, `id`.
-
-- Основные вызовы: `run`, `toISOString`.
-
-#### `upsertSnapshot` — L170–L243 · public API
-
-Сохраняет upsert snapshot в принадлежащем модулю хранилище или read model.
-
-- Параметры: `db`, `{ layer, periodStart, periodEnd, text, topic, generatedAt, expiresAt, schemaVersion, promptVersion, }`.
-
-- Основные вызовы: `getSnapshot`, `run`.
-
-### `server/repositories/self-report.repository.ts`
-
-SQL repository без продуктовой оркестрации: self report repository.
-
-#### `replaceSelfReportDailyAggregates` — L11–L52 · public API
-
-Сохраняет replace self report daily aggregates в принадлежащем модулю хранилище или read model.
-
-- Параметры: `db`, `localDay`, `aggregates`.
-
-- Основные вызовы: `run`.
-
-#### `listSelfReportDailyAggregates` — L54–L79 · public API
-
-Получает self report daily aggregates из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `localDay`.
-
-- Основные вызовы: `all`.
-
-#### `getSelfReportDailyAggregate` — L81–L106 · public API
-
-Получает self report daily aggregate из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `localDay`, `axis`.
-
-- Основные вызовы: `get`.
-
-### `server/repositories/signal.repository.ts`
-
-SQL repository без продуктовой оркестрации: signal repository.
-
-#### `hasSignalForEntryHash` — L30–L47 · public API
-
-Проверяет условие signal for entry hash и возвращает логический результат без изменения состояния.
-
-- Параметры: `db`, `entryId`, `sourceTextHash`.
-
-- Основные вызовы: `get`, `Boolean`.
-
-#### `getSignalStatusForEntryHash` — L49–L69 · public API
-
-Получает signal status for entry hash из принадлежащего модулю источника данных.
-
-- Параметры: `db`, `entryId`, `sourceTextHash`.
-
-- Основные вызовы: `get`.
-
-#### `insertSignalAndFinalizeEntry` — L71–L109 · public API
-
-Сохраняет insert signal and finalize entry в принадлежащем модулю хранилище или read model.
-
-- Параметры: `db`, `{ entryId, sourceTextHash, signal, finalStatus, schemaVersion, promptVersion, provider = "ollama", model, errorCode = null, createdAt, }`.
-
-- Основные вызовы: `withDbWriteTransaction`, `insertSignalRow`, `run`.
-
-#### `insertSignalRow` — L111–L177 · public API
-
-Сохраняет insert signal row в принадлежащем модулю хранилище или read model.
-
-- Параметры: `db`, `{ entryId, sourceTextHash, signal, schemaVersion, promptVersion, provider = "ollama", model, errorCode = null, createdAt, }`.
-
-- Основные вызовы: `run`.
-
-### `server/server.ts`
-
-Исполняемая точка запуска Express-сервера.
-
-Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
-
-### `server/services/analytics-v2.service.ts`
-
-Детерминированный Analytics V2 pipeline: окна, baseline, оси, density, context, associations, quality и uncertainty.
-
-#### `buildAnalyticsV2Overview` — L117–L143 · public API
-
-Строит согласованные week/month summaries относительно одной последней даты данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `getLatestAnalyticsV2Date`, `noDataResponse`, `Promise.all`, `buildAnalyticsV2Summary`, `subtractDays`.
-
-#### `buildAnalyticsV2Summary` — L145–L220 · public API
-
-Собирает одну Analytics V2 summary: baseline, current axes, density, versions, context, associations, quality и uncertainty.
-
-- Параметры: `db`, `{ from, kind, to }`.
-
-- Основные вызовы: `assertDateRange`, `subtractDays`, `getAnalyticsV2RowsInRange`, `normalizeEntryRows`, `normalizeSelfReportRows`, `isDateInRange`, `noDataResponse`, `eachDateInRange`.
-
-#### `noDataResponse` — L222–L227 · internal helper
-
-Возвращает вычисленное значение no data response для использования внутри данного модуля.
-
-#### `normalizeEntryRows` — L229–L252 · internal helper
-
-Приводит entry rows к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `rows`.
-
-- Основные вызовы: `parseJsonArray`, `normalizeScore`.
-
-#### `normalizeSelfReportRows` — L254–L271 · internal helper
-
-Приводит self report rows к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `rows`.
-
-- Основные вызовы: `flatMap`, `isSelfReportAxis`.
-
-#### `buildAxes` — L273–L318 · internal helper
-
-Создаёт axes из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ baselineDates, baselineEntries, baselineSelfReports, currentDates, currentEntries, currentSelfReports, extractedComparisonBlocked, }`.
-
-- Основные вызовы: `buildExtractedSeries`, `buildAxisSummary`, `buildSelfReportSeries`.
-
-#### `buildAxisSummary` — L320–L388 · internal helper
-
-Создаёт axis summary из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ baseline, comparisonBlocked, current, source, }`.
-
-- Основные вызовы: `numericValues`, `calculateAverage`, `getBaselineQuality`, `calculateSampleStandardDeviation`, `Math.max`, `calculateTrendSlope`, `calculateSuddenDelta`, `buildAxisUncertainty`.
-
-#### `buildExtractedSeries` — L390–L421 · internal helper
-
-Создаёт extracted series из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entries`, `dates`, `axis`.
-
-- Основные вызовы: `isScore`, `get`, `push`, `set`, `calculateAverage`.
-
-#### `buildSelfReportSeries` — L423–L456 · internal helper
-
-Создаёт self report series из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `aggregates`, `dates`, `axis`.
-
-- Основные вызовы: `isScore`, `get`, `set`.
-
-#### `buildAxisUncertainty` — L458–L484 · internal helper
-
-Создаёт axis uncertainty из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ baselineInvalidSampleSeen, baselineQuality, comparisonBlocked, currentInvalidSampleSeen, currentSampleDays, }`.
-
-- Основные вызовы: `push`.
-
-#### `buildDensity` — L486–L529 · internal helper
-
-Создаёт density из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entries`, `currentDates`.
-
-- Основные вызовы: `has`, `Math.max`, `roundRatio`.
-
-#### `buildVersions` — L531–L563 · internal helper
-
-Создаёт versions из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ baselineEntries, baselineSelfReports, currentEntries, currentSelfReports, }`.
-
-- Основные вызовы: `buildVersionSet`, `areSameStrings`, `uniqueSorted`.
-
-#### `buildVersionSet` — L565–L581 · internal helper
-
-Создаёт version set из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entries`, `selfReports`.
-
-- Основные вызовы: `uniqueSorted`, `flatMap`, `present`.
-
-#### `buildContext` — L583–L610 · internal helper
-
-Создаёт context из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entries`.
-
-- Основные вызовы: `buildCountItems`.
-
-#### `buildCountItems` — L612–L643 · internal helper
-
-Создаёт count items из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `entries`, `selectValues`, `compareItems`.
-
-- Основные вызовы: `selectValues`, `get`, `add`, `set`, `Array.from`, `values`.
-
-#### `buildAssociations` — L645–L682 · internal helper
-
-Создаёт associations из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `currentSeries`.
-
-- Основные вызовы: `pairSeries`, `calculatePearsonCorrelation`, `push`, `roundNullable`, `getAssociationDirection`, `getAssociationStrength`.
-
-#### `buildQuality` — L684–L738 · internal helper
-
-Создаёт quality из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `{ axes, currentEntries, density, versions, }`.
-
-- Основные вызовы: `Object.values`, `add`, `getQualityGrade`, `Array.from`, `getQualityReason`.
-
-#### `getQualityGrade` — L740–L786 · internal helper
-
-Получает quality grade из принадлежащего модулю источника данных.
-
-- Параметры: `{ density, relevantAxes, versions, }`.
-
-#### `getQualityReason` — L788–L809 · internal helper
-
-Получает quality reason из принадлежащего модулю источника данных.
-
-- Параметры: `{ currentEntries, density, grade, relevantAxes, versions, }`.
-
-#### `getBaselineQuality` — L811–L816 · internal helper
-
-Получает baseline quality из принадлежащего модулю источника данных.
-
-- Параметры: `sampleDays`.
-
-#### `getDirection` — L818–L822 · internal helper
-
-Получает direction из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Math.abs`.
-
-#### `getTrendDirection` — L824–L828 · internal helper
-
-Получает trend direction из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Math.abs`.
-
-#### `getVolatilityDirection` — L830–L836 · internal helper
-
-Получает volatility direction из принадлежащего модулю источника данных.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Math.abs`.
-
-#### `getAssociationDirection` — L838–L844 · internal helper
-
-Получает association direction из принадлежащего модулю источника данных.
-
-- Параметры: `correlation`.
-
-- Основные вызовы: `Math.abs`.
-
-#### `getAssociationStrength` — L846–L855 · internal helper
-
-Получает association strength из принадлежащего модулю источника данных.
-
-- Параметры: `correlation`.
-
-- Основные вызовы: `Math.abs`.
-
-#### `calculateTrendSlope` — L857–L880 · internal helper
-
-Детерминированно вычисляет trend slope из входных данных.
-
-- Параметры: `values`.
-
-- Основные вызовы: `flatMap`, `calculateAverage`.
-
-#### `calculateSuddenDelta` — L882–L896 · internal helper
-
-Детерминированно вычисляет sudden delta из входных данных.
-
-- Параметры: `values`.
-
-- Основные вызовы: `numericValues`, `calculateAverage`.
-
-#### `pairSeries` — L898–L914 · internal helper
-
-Возвращает вычисленное значение pair series для использования внутри данного модуля.
-
-- Параметры: `leftValues`, `rightValues`.
-
-- Основные вызовы: `flatMap`, `get`.
-
-#### `calculatePearsonCorrelation` — L916–L939 · internal helper
-
-Детерминированно вычисляет pearson correlation из входных данных.
-
-- Параметры: `pairs`.
-
-- Основные вызовы: `calculateAverage`, `Math.sqrt`.
-
-#### `calculateAverage` — L941–L945 · internal helper
-
-Детерминированно вычисляет average из входных данных.
-
-- Параметры: `values`.
-
-#### `calculateSampleStandardDeviation` — L947–L958 · internal helper
-
-Детерминированно вычисляет sample standard deviation из входных данных.
-
-- Параметры: `values`.
-
-- Основные вызовы: `calculateAverage`, `Math.sqrt`.
-
-#### `numericValues` — L960–L962 · internal helper
-
-Возвращает вычисленное значение numeric values для использования внутри данного модуля.
-
-- Параметры: `values`.
-
-- Основные вызовы: `flatMap`.
-
-#### `normalizeScore` — L964–L966 · internal helper
-
-Приводит score к безопасной канонической форме и отбрасывает неподдерживаемые значения.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isFinite`.
-
-#### `isScore` — L968–L970 · internal helper
-
-Проверяет условие score и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `isFinite`.
-
-#### `parseJsonArray` — L972–L984 · internal helper
-
-Разбирает json array и преобразует вход в типизированное представление.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Array.isArray`, `String`.
-
-#### `compareContextItems` — L986–L995 · internal helper
-
-Сравнивает context items для стабильного детерминированного порядка.
-
-- Параметры: `left`, `right`.
-
-- Основные вызовы: `localeCompare`.
-
-#### `compareMarkerItems` — L997–L1007 · internal helper
-
-Сравнивает marker items для стабильного детерминированного порядка.
-
-- Параметры: `left`, `right`.
-
-- Основные вызовы: `markerPriority`, `localeCompare`.
-
-#### `buildWindow` — L1009–L1020 · internal helper
-
-Создаёт window из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `kind`, `start`, `end`.
-
-- Основные вызовы: `daysBetween`.
-
-#### `assertDateRange` — L1022–L1026 · internal helper
-
-Проверяет корректность date range и явно отклоняет нарушение контракта.
-
-- Параметры: `from`, `to`.
-
-- Основные вызовы: `isDateOnly`.
-
-#### `isDateOnly` — L1028–L1030 · internal helper
-
-Проверяет условие date only и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `test`.
-
-#### `isDateInRange` — L1032–L1034 · internal helper
-
-Проверяет условие date in range и возвращает логический результат без изменения состояния.
-
-- Параметры: `date`, `from`, `to`.
-
-#### `eachDateInRange` — L1036–L1047 · internal helper
-
-Возвращает вычисленное значение each date in range для использования внутри данного модуля.
-
-- Параметры: `from`, `to`.
-
-- Основные вызовы: `parseDateOnly`, `push`, `formatDateOnly`, `setUTCDate`, `getUTCDate`.
-
-#### `subtractDays` — L1049–L1054 · internal helper
+#### `subtractDays` — L49–L55 · internal helper
 
 Возвращает вычисленное значение subtract days для использования внутри данного модуля.
 
 - Параметры: `dateOnly`, `days`.
 
-- Основные вызовы: `parseDateOnly`, `setUTCDate`, `getUTCDate`, `formatDateOnly`.
+- Основные вызовы: `split`, `UTC`, `setUTCDate`, `getUTCDate`, `toISOString`.
 
-#### `daysBetween` — L1056–L1058 · internal helper
+#### HTTP routes
 
-Возвращает вычисленное значение days between для использования внутри данного модуля.
+- `GET /analytics/summary (L13)`
+- `GET /analytics/v2/summary (L38)`
 
-- Параметры: `from`, `to`.
+### `server/modules/analytics/analytics.service.ts`
 
-- Основные вызовы: `getTime`, `parseDateOnly`.
-
-#### `parseDateOnly` — L1060–L1063 · internal helper
-
-Разбирает date only и преобразует вход в типизированное представление.
-
-- Параметры: `value`.
-
-- Основные вызовы: `split`, `UTC`.
-
-#### `formatDateOnly` — L1065–L1067 · internal helper
-
-Преобразует date only в стабильное представление для UI, сети или хранения.
-
-- Параметры: `date`.
-
-- Основные вызовы: `toISOString`.
-
-#### `roundRatio` — L1069–L1071 · internal helper
-
-Ограничивает ratio допустимым диапазоном или точностью.
-
-- Параметры: `value`.
-
-- Основные вызовы: `roundNumber`.
-
-#### `roundNullable` — L1073–L1075 · internal helper
-
-Ограничивает nullable допустимым диапазоном или точностью.
-
-- Параметры: `value`.
-
-- Основные вызовы: `roundNumber`.
-
-#### `roundNumber` — L1077–L1080 · internal helper
-
-Ограничивает number допустимым диапазоном или точностью.
-
-- Параметры: `value`.
-
-- Основные вызовы: `Number`, `toFixed`, `Object.is`.
-
-#### `isSelfReportAxis` — L1082–L1084 · internal helper
-
-Проверяет условие self report axis и возвращает логический результат без изменения состояния.
-
-- Параметры: `axis`.
-
-#### `uniqueSorted` — L1086–L1088 · internal helper
-
-Возвращает вычисленное значение unique sorted для использования внутри данного модуля.
-
-- Параметры: `values`.
-
-- Основные вызовы: `Array.from`.
-
-#### `present` — L1090–L1092 · internal helper
-
-Возвращает вычисленное значение present для использования внутри данного модуля.
-
-- Параметры: `value`.
-
-#### `areSameStrings` — L1094–L1098 · internal helper
-
-Возвращает вычисленное значение are same strings для использования внутри данного модуля.
-
-- Параметры: `left`, `right`.
-
-### `server/services/analytics.service.ts`
-
-Backend service с бизнес-оркестрацией: analytics service.
+Вертикальный backend-модуль analytics: analytics service.
 
 #### `normalizeRows` — L79–L81 · public API
 
@@ -8550,9 +7336,729 @@ Backend service с бизнес-оркестрацией: analytics service.
 
 - `const calculateMarkerCounts` — L154
 
-### `server/services/auth.service.ts`
+### `server/modules/analytics/analyticsCollections.ts`
 
-Backend service с бизнес-оркестрацией: auth service.
+Вертикальный backend-модуль analytics: analytics collections.
+
+#### `parseJsonArray` — L8–L21 · public API
+
+Разбирает json array и преобразует вход в типизированное представление.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`, `String`.
+
+#### `compareContextItems` — L23–L32 · public API
+
+Сравнивает context items для стабильного детерминированного порядка.
+
+- Параметры: `left`, `right`.
+
+- Основные вызовы: `localeCompare`.
+
+#### `compareMarkerItems` — L34–L44 · public API
+
+Сравнивает marker items для стабильного детерминированного порядка.
+
+- Параметры: `left`, `right`.
+
+- Основные вызовы: `markerPriority`, `localeCompare`.
+
+#### `isSelfReportAxis` — L46–L50 · public API
+
+Проверяет условие self report axis и возвращает логический результат без изменения состояния.
+
+- Параметры: `axis`.
+
+#### `uniqueSorted` — L52–L54 · public API
+
+Возвращает вычисленное значение unique sorted для использования внутри данного модуля.
+
+- Параметры: `values`.
+
+- Основные вызовы: `Array.from`.
+
+#### `present` — L56–L58 · public API
+
+Возвращает вычисленное значение present для использования внутри данного модуля.
+
+- Параметры: `value`.
+
+#### `areSameStrings` — L60–L65 · public API
+
+Возвращает вычисленное значение are same strings для использования внутри данного модуля.
+
+- Параметры: `left`, `right`.
+
+### `server/modules/analytics/analyticsDates.ts`
+
+Вертикальный backend-модуль analytics: analytics dates.
+
+#### `buildWindow` — L6–L12 · public API
+
+Создаёт window из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `kind`, `start`, `end`.
+
+- Основные вызовы: `daysBetween`.
+
+#### `assertDateRange` — L14–L18 · public API
+
+Проверяет корректность date range и явно отклоняет нарушение контракта.
+
+- Параметры: `from`, `to`.
+
+- Основные вызовы: `isDateOnly`.
+
+#### `isDateInRange` — L20–L22 · public API
+
+Проверяет условие date in range и возвращает логический результат без изменения состояния.
+
+- Параметры: `date`, `from`, `to`.
+
+#### `eachDateInRange` — L24–L33 · public API
+
+Возвращает вычисленное значение each date in range для использования внутри данного модуля.
+
+- Параметры: `from`, `to`.
+
+- Основные вызовы: `parseDateOnly`, `push`, `formatDateOnly`, `setUTCDate`, `getUTCDate`.
+
+#### `subtractDays` — L35–L39 · public API
+
+Возвращает вычисленное значение subtract days для использования внутри данного модуля.
+
+- Параметры: `dateOnly`, `days`.
+
+- Основные вызовы: `parseDateOnly`, `setUTCDate`, `getUTCDate`, `formatDateOnly`.
+
+#### `isDateOnly` — L41–L43 · internal helper
+
+Проверяет условие date only и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `test`.
+
+#### `daysBetween` — L45–L49 · internal helper
+
+Возвращает вычисленное значение days between для использования внутри данного модуля.
+
+- Параметры: `from`, `to`.
+
+- Основные вызовы: `getTime`, `parseDateOnly`.
+
+#### `parseDateOnly` — L51–L54 · internal helper
+
+Разбирает date only и преобразует вход в типизированное представление.
+
+- Параметры: `value`.
+
+- Основные вызовы: `split`, `UTC`.
+
+#### `formatDateOnly` — L56–L58 · internal helper
+
+Преобразует date only в стабильное представление для UI, сети или хранения.
+
+- Параметры: `date`.
+
+- Основные вызовы: `toISOString`.
+
+### `server/modules/analytics/analyticsStatistics.ts`
+
+Вертикальный backend-модуль analytics: analytics statistics.
+
+#### `calculateTrendSlope` — L3–L22 · public API
+
+Детерминированно вычисляет trend slope из входных данных.
+
+- Параметры: `values`.
+
+- Основные вызовы: `flatMap`, `calculateAverage`.
+
+#### `calculateSuddenDelta` — L24–L34 · public API
+
+Детерминированно вычисляет sudden delta из входных данных.
+
+- Параметры: `values`.
+
+- Основные вызовы: `numericValues`, `calculateAverage`.
+
+#### `pairSeries` — L36–L50 · public API
+
+Возвращает вычисленное значение pair series для использования внутри данного модуля.
+
+- Параметры: `leftValues`, `rightValues`.
+
+- Основные вызовы: `flatMap`, `get`.
+
+#### `calculatePearsonCorrelation` — L52–L72 · public API
+
+Детерминированно вычисляет pearson correlation из входных данных.
+
+- Параметры: `pairs`.
+
+- Основные вызовы: `calculateAverage`, `Math.sqrt`.
+
+#### `calculateAverage` — L74–L78 · public API
+
+Детерминированно вычисляет average из входных данных.
+
+- Параметры: `values`.
+
+#### `calculateSampleStandardDeviation` — L80–L90 · public API
+
+Детерминированно вычисляет sample standard deviation из входных данных.
+
+- Параметры: `values`.
+
+- Основные вызовы: `calculateAverage`, `Math.sqrt`.
+
+#### `numericValues` — L92–L94 · public API
+
+Возвращает вычисленное значение numeric values для использования внутри данного модуля.
+
+- Параметры: `values`.
+
+- Основные вызовы: `flatMap`.
+
+#### `normalizeScore` — L96–L98 · public API
+
+Приводит score к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isFinite`.
+
+#### `isScore` — L100–L102 · public API
+
+Проверяет условие score и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `isFinite`.
+
+#### `roundRatio` — L104–L106 · public API
+
+Ограничивает ratio допустимым диапазоном или точностью.
+
+- Параметры: `value`.
+
+- Основные вызовы: `roundNumber`.
+
+#### `roundNullable` — L108–L110 · public API
+
+Ограничивает nullable допустимым диапазоном или точностью.
+
+- Параметры: `value`.
+
+- Основные вызовы: `roundNumber`.
+
+#### `roundNumber` — L112–L115 · public API
+
+Ограничивает number допустимым диапазоном или точностью.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Number`, `toFixed`, `Object.is`.
+
+#### Публичные типы, классы и константы
+
+- `type DateValue` — L1
+
+### `server/modules/analytics/analyticsV2.repository.ts`
+
+Вертикальный backend-модуль analytics: analytics v2 repository.
+
+#### `getLatestAnalyticsV2Date` — L80–L89 · public API
+
+Получает latest analytics v2 date из принадлежащего модулю источника данных.
+
+- Параметры: `db`.
+
+- Основные вызовы: `get`.
+
+#### `getAnalyticsV2RowsInRange` — L91–L101 · public API
+
+Получает analytics v2 rows in range из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ from, to }`.
+
+- Основные вызовы: `Promise.all`, `getEntrySignalRowsInRange`, `getSelfReportAggregateRowsInRange`.
+
+#### `getEntrySignalRowsInRange` — L103–L111 · internal helper
+
+Получает entry signal rows in range из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ from, to }`.
+
+- Основные вызовы: `all`.
+
+#### `getSelfReportAggregateRowsInRange` — L113–L132 · internal helper
+
+Получает self report aggregate rows in range из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ from, to }`.
+
+- Основные вызовы: `all`.
+
+#### Публичные типы, классы и константы
+
+- `type AnalyticsV2EntrySignalRow` — L12
+- `type AnalyticsV2SelfReportAggregateRow` — L29
+- `type AnalyticsV2RangeRows` — L38
+- `const ANALYTICS_V2_ENTRY_SIGNAL_ROWS_IN_RANGE_SQL` — L43
+
+### `server/modules/analytics/analyticsV2.service.ts`
+
+Композиция Analytics V2 поверх отдельных date, statistics, collection и repository модулей.
+
+#### `buildAnalyticsV2Overview` — L142–L168 · public API
+
+Создаёт analytics v2 overview из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`.
+
+- Основные вызовы: `getLatestAnalyticsV2Date`, `noDataResponse`, `Promise.all`, `buildAnalyticsV2Summary`, `subtractDays`.
+
+#### `buildAnalyticsV2Summary` — L170–L245 · public API
+
+Создаёт analytics v2 summary из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`, `{ from, kind, to }`.
+
+- Основные вызовы: `assertDateRange`, `subtractDays`, `getAnalyticsV2RowsInRange`, `normalizeEntryRows`, `normalizeSelfReportRows`, `isDateInRange`, `noDataResponse`, `eachDateInRange`.
+
+#### `noDataResponse` — L247–L252 · internal helper
+
+Возвращает вычисленное значение no data response для использования внутри данного модуля.
+
+#### `normalizeEntryRows` — L254–L277 · internal helper
+
+Приводит entry rows к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `rows`.
+
+- Основные вызовы: `parseJsonArray`, `normalizeScore`.
+
+#### `normalizeSelfReportRows` — L279–L296 · internal helper
+
+Приводит self report rows к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `rows`.
+
+- Основные вызовы: `flatMap`, `isSelfReportAxis`.
+
+#### `buildAxes` — L298–L343 · internal helper
+
+Создаёт axes из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ baselineDates, baselineEntries, baselineSelfReports, currentDates, currentEntries, currentSelfReports, extractedComparisonBlocked, }`.
+
+- Основные вызовы: `buildExtractedSeries`, `buildAxisSummary`, `buildSelfReportSeries`.
+
+#### `buildAxisSummary` — L345–L413 · internal helper
+
+Создаёт axis summary из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ baseline, comparisonBlocked, current, source, }`.
+
+- Основные вызовы: `numericValues`, `calculateAverage`, `getBaselineQuality`, `calculateSampleStandardDeviation`, `Math.max`, `calculateTrendSlope`, `calculateSuddenDelta`, `buildAxisUncertainty`.
+
+#### `buildExtractedSeries` — L415–L446 · internal helper
+
+Создаёт extracted series из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entries`, `dates`, `axis`.
+
+- Основные вызовы: `isScore`, `get`, `push`, `set`, `calculateAverage`.
+
+#### `buildSelfReportSeries` — L448–L481 · internal helper
+
+Создаёт self report series из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `aggregates`, `dates`, `axis`.
+
+- Основные вызовы: `isScore`, `get`, `set`.
+
+#### `buildAxisUncertainty` — L483–L509 · internal helper
+
+Создаёт axis uncertainty из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ baselineInvalidSampleSeen, baselineQuality, comparisonBlocked, currentInvalidSampleSeen, currentSampleDays, }`.
+
+- Основные вызовы: `push`.
+
+#### `buildDensity` — L511–L554 · internal helper
+
+Создаёт density из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entries`, `currentDates`.
+
+- Основные вызовы: `has`, `Math.max`, `roundRatio`.
+
+#### `buildVersions` — L556–L588 · internal helper
+
+Создаёт versions из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ baselineEntries, baselineSelfReports, currentEntries, currentSelfReports, }`.
+
+- Основные вызовы: `buildVersionSet`, `areSameStrings`, `uniqueSorted`.
+
+#### `buildVersionSet` — L590–L606 · internal helper
+
+Создаёт version set из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entries`, `selfReports`.
+
+- Основные вызовы: `uniqueSorted`, `flatMap`, `present`.
+
+#### `buildContext` — L608–L635 · internal helper
+
+Создаёт context из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entries`.
+
+- Основные вызовы: `buildCountItems`.
+
+#### `buildCountItems` — L637–L668 · internal helper
+
+Создаёт count items из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `entries`, `selectValues`, `compareItems`.
+
+- Основные вызовы: `selectValues`, `get`, `add`, `set`, `Array.from`, `values`.
+
+#### `buildAssociations` — L670–L707 · internal helper
+
+Создаёт associations из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `currentSeries`.
+
+- Основные вызовы: `pairSeries`, `calculatePearsonCorrelation`, `push`, `roundNullable`, `getAssociationDirection`, `getAssociationStrength`.
+
+#### `buildQuality` — L709–L763 · internal helper
+
+Создаёт quality из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `{ axes, currentEntries, density, versions, }`.
+
+- Основные вызовы: `Object.values`, `add`, `getQualityGrade`, `Array.from`, `getQualityReason`.
+
+#### `getQualityGrade` — L765–L811 · internal helper
+
+Получает quality grade из принадлежащего модулю источника данных.
+
+- Параметры: `{ density, relevantAxes, versions, }`.
+
+#### `getQualityReason` — L813–L834 · internal helper
+
+Получает quality reason из принадлежащего модулю источника данных.
+
+- Параметры: `{ currentEntries, density, grade, relevantAxes, versions, }`.
+
+#### `getBaselineQuality` — L836–L841 · internal helper
+
+Получает baseline quality из принадлежащего модулю источника данных.
+
+- Параметры: `sampleDays`.
+
+#### `getDirection` — L843–L847 · internal helper
+
+Получает direction из принадлежащего модулю источника данных.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Math.abs`.
+
+#### `getTrendDirection` — L849–L853 · internal helper
+
+Получает trend direction из принадлежащего модулю источника данных.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Math.abs`.
+
+#### `getVolatilityDirection` — L855–L861 · internal helper
+
+Получает volatility direction из принадлежащего модулю источника данных.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Math.abs`.
+
+#### `getAssociationDirection` — L863–L869 · internal helper
+
+Получает association direction из принадлежащего модулю источника данных.
+
+- Параметры: `correlation`.
+
+- Основные вызовы: `Math.abs`.
+
+#### `getAssociationStrength` — L871–L880 · internal helper
+
+Получает association strength из принадлежащего модулю источника данных.
+
+- Параметры: `correlation`.
+
+- Основные вызовы: `Math.abs`.
+
+### `server/modules/analytics/analyticsV2.types.ts`
+
+Вертикальный backend-модуль analytics: analytics v2 types.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const ANALYTICS_V2_VERSION` — L1
+- `const EXTRACTED_ANALYTICS_AXES` — L3
+- `const SELF_REPORT_ANALYTICS_AXES` — L4
+- `const ANALYTICS_V2_AXES` — L11
+- `type ExtractedAnalyticsAxis` — L16
+- `type SelfReportAnalyticsAxis` — L17
+- `type AnalyticsV2Axis` — L19
+- `type AnalyticsV2WindowKind` — L21
+- `type AnalyticsV2AxisSource` — L22
+- `type AnalyticsV2BaselineQuality` — L23
+- `type AnalyticsV2Direction` — L28
+- `type AnalyticsV2TrendDirection` — L29
+- `type AnalyticsV2VolatilityDirection` — L34
+- `type AnalyticsV2QualityGrade` — L39
+- `type AnalyticsV2QualityReason` — L44
+- `type AnalyticsV2NoDataReason` — L50
+- `type AnalyticsV2AssociationDirection` — L51
+- `type AnalyticsV2AssociationStrength` — L56
+- `type AnalyticsV2Window` — L62
+- `type AnalyticsV2Density` — L69
+- `type AnalyticsV2AxisSummary` — L81
+- `type AnalyticsV2ContextItem` — L102
+- `type AnalyticsV2Context` — L108
+- `type AnalyticsV2Quality` — L120
+- `type AnalyticsV2Versions` — L126
+- `type AnalyticsV2Association` — L143
+- `type AnalyticsV2Summary` — L153
+- `type AnalyticsV2WindowResponse` — L165
+- `type AnalyticsV2Overview` — L170
+
+### `server/modules/auth/auth.middleware.ts`
+
+Вертикальный backend-модуль owner auth: auth middleware.
+
+#### `requireAuth` — L23–L46 · public API
+
+Выполняет локальную операцию require auth внутри ответственности этого файла.
+
+- Параметры: `req`, `res`, `next`.
+
+- Основные вызовы: `isServerAuthRequired`, `next`, `authenticateRequest`, `json`, `status`.
+
+#### `requireProtectedApiAuth` — L48–L64 · public API
+
+Выполняет локальную операцию require protected api auth внутри ответственности этого файла.
+
+- Параметры: `req`, `res`, `next`.
+
+- Основные вызовы: `isServerAuthRequired`, `next`, `isProtectedApiPath`, `requireAuth`.
+
+#### `requireProtectedApiCsrf` — L66–L82 · public API
+
+Выполняет локальную операцию require protected api csrf внутри ответственности этого файла.
+
+- Параметры: `req`, `res`, `next`.
+
+- Основные вызовы: `isServerAuthRequired`, `next`, `isProtectedApiPath`, `has`, `requireCsrf`.
+
+#### `requireCsrf` — L84–L108 · public API
+
+Выполняет локальную операцию require csrf внутри ответственности этого файла.
+
+- Параметры: `req`, `res`, `next`.
+
+- Основные вызовы: `isServerAuthRequired`, `next`, `get`, `json`, `status`, `verifyCsrfToken`.
+
+#### `readCookie` — L110–L114 · public API
+
+Получает cookie из принадлежащего модулю источника данных.
+
+- Параметры: `req`, `name`.
+
+- Основные вызовы: `parseCookieHeader`, `get`.
+
+#### `setAuthCookies` — L116–L139 · public API
+
+Изменяет auth cookies, сохраняя инварианты данного модуля.
+
+- Параметры: `res`, `input`.
+
+- Основные вызовы: `isProduction`, `cookie`.
+
+#### `clearAuthCookies` — L141–L156 · public API
+
+Удаляет или очищает auth cookies с необходимыми связанными действиями.
+
+- Параметры: `res`.
+
+- Основные вызовы: `isProduction`, `clearCookie`.
+
+#### `authenticateRequest` — L158–L162 · internal helper
+
+Возвращает вычисленное значение authenticate request для использования внутри данного модуля.
+
+- Параметры: `req`.
+
+- Основные вызовы: `getDb`, `authenticateSessionToken`, `readCookie`.
+
+#### `isProtectedApiPath` — L164–L168 · internal helper
+
+Проверяет условие protected api path и возвращает логический результат без изменения состояния.
+
+- Параметры: `pathname`.
+
+- Основные вызовы: `startsWith`.
+
+#### `parseCookieHeader` — L170–L188 · internal helper
+
+Разбирает cookie header и преобразует вход в типизированное представление.
+
+- Параметры: `header`.
+
+- Основные вызовы: `Object.fromEntries`, `split`, `indexOf`, `decodeCookieValue`.
+
+#### `decodeCookieValue` — L190–L196 · internal helper
+
+Возвращает вычисленное значение decode cookie value для использования внутри данного модуля.
+
+- Параметры: `value`.
+
+- Основные вызовы: `decodeURIComponent`.
+
+#### `isProduction` — L198–L200 · internal helper
+
+Проверяет условие production и возвращает логический результат без изменения состояния.
+
+#### Публичные типы, классы и константы
+
+- `const SESSION_COOKIE_NAME` — L10
+- `const CSRF_COOKIE_NAME` — L11
+
+### `server/modules/auth/auth.repository.ts`
+
+Вертикальный backend-модуль owner auth: auth repository.
+
+#### `countAuthUsers` — L30–L36 · public API
+
+Детерминированно вычисляет auth users из входных данных.
+
+- Параметры: `db`.
+
+- Основные вызовы: `get`.
+
+#### `createAuthUser` — L38–L55 · public API
+
+Создаёт auth user из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`, `input`.
+
+- Основные вызовы: `run`, `getAuthUserById`.
+
+#### `getAuthUserById` — L57–L71 · public API
+
+Получает auth user by id из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `id`.
+
+- Основные вызовы: `get`.
+
+#### `getAuthUserByUsername` — L73–L87 · public API
+
+Получает auth user by username из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `username`.
+
+- Основные вызовы: `get`.
+
+#### `createAuthSession` — L89–L122 · public API
+
+Создаёт auth session из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`, `input`.
+
+- Основные вызовы: `run`, `getAuthSessionById`.
+
+#### `getAuthSessionById` — L124–L146 · public API
+
+Получает auth session by id из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `id`.
+
+- Основные вызовы: `get`.
+
+#### `getActiveAuthSessionByTokenHash` — L148–L174 · public API
+
+Получает active auth session by token hash из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `tokenHash`.
+
+- Основные вызовы: `get`.
+
+#### `touchAuthSession` — L176–L190 · public API
+
+Изменяет auth session, сохраняя инварианты данного модуля.
+
+- Параметры: `db`, `sessionId`, `now`.
+
+- Основные вызовы: `run`.
+
+#### `updateAuthSessionCsrfTokenHash` — L192–L210 · public API
+
+Изменяет auth session csrf token hash, сохраняя инварианты данного модуля.
+
+- Параметры: `db`, `input`.
+
+- Основные вызовы: `run`.
+
+#### `revokeAuthSessionByTokenHash` — L212–L229 · public API
+
+Удаляет или очищает auth session by token hash с необходимыми связанными действиями.
+
+- Параметры: `db`, `input`.
+
+- Основные вызовы: `run`.
+
+#### Публичные типы, классы и константы
+
+- `type AuthUserRole` — L3
+- `type AuthUserRow` — L5
+- `type AuthSessionRow` — L14
+- `type AuthSessionWithUserRow` — L25
+
+### `server/modules/auth/auth.route.ts`
+
+Вертикальный backend-модуль owner auth: auth route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /auth/me (L26)`
+- `POST /auth/setup (L77)`
+- `POST /auth/login (L124)`
+- `POST /auth/logout (L171)`
+
+### `server/modules/auth/auth.schema.ts`
+
+Вертикальный backend-модуль owner auth: auth schema.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const setupOwnerSchema` — L12
+- `const loginSchema` — L19
+- `type SetupOwnerInput` — L21
+- `type LoginInput` — L22
+
+### `server/modules/auth/auth.service.ts`
+
+Вертикальный backend-модуль owner auth: auth service.
 
 #### `isFirstRunSetupRequired` — L43–L45 · public API
 
@@ -8662,9 +8168,117 @@ Backend service с бизнес-оркестрацией: auth service.
 - `type AuthenticatedSession` — L33
 - `type CreatedAuthSession` — L38
 
-### `server/services/entry.service.ts`
+### `server/modules/entries/entries.route.ts`
 
-Backend service с бизнес-оркестрацией: entry service.
+Вертикальный backend-модуль entries и signal persistence: entries route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /entries (L21)`
+- `GET /entries/:id (L30)`
+- `POST /entries (L46)`
+- `PATCH /entries/:id (L74)`
+- `DELETE /entries/:id (L100)`
+- `POST /entries/:id/signals (L116)`
+
+### `server/modules/entries/entry.repository.ts`
+
+Вертикальный backend-модуль entries и signal persistence: entry repository.
+
+#### `createEntry` — L71–L100 · public API
+
+Создаёт entry из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`, `entry`.
+
+- Основные вызовы: `run`.
+
+#### `listEntries` — L102–L147 · public API
+
+Получает entries из принадлежащего модулю источника данных.
+
+- Параметры: `db`.
+
+- Основные вызовы: `all`.
+
+#### `getEntryById` — L149–L202 · public API
+
+Получает entry by id из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `id`.
+
+- Основные вызовы: `get`, `mapEntryRow`.
+
+#### `updateEntry` — L204–L230 · public API
+
+Изменяет entry, сохраняя инварианты данного модуля.
+
+- Параметры: `db`, `entryId`, `entry`.
+
+- Основные вызовы: `run`.
+
+#### `deleteEntry` — L232–L242 · public API
+
+Удаляет или очищает entry с необходимыми связанными действиями.
+
+- Параметры: `db`, `entryId`.
+
+- Основные вызовы: `run`.
+
+#### `updateEntryStatus` — L244–L258 · public API
+
+Изменяет entry status, сохраняя инварианты данного модуля.
+
+- Параметры: `db`, `entryId`, `status`.
+
+- Основные вызовы: `run`, `toISOString`.
+
+#### `markEntryFailed` — L260–L265 · public API
+
+Изменяет entry failed, сохраняя инварианты данного модуля.
+
+- Параметры: `db`, `entryId`.
+
+- Основные вызовы: `updateEntryStatus`.
+
+#### `mapEntryRow` — L267–L326 · internal helper
+
+Преобразует или объединяет entry row по правилам домена.
+
+- Параметры: `row`.
+
+- Основные вызовы: `createDefaultSignalContext`, `parseStringArray`, `parseRecord`, `createEmptyMetricConfidence`.
+
+#### `parseStringArray` — L328–L331 · internal helper
+
+Разбирает string array и преобразует вход в типизированное представление.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`.
+
+#### `parseRecord` — L333–L345 · internal helper
+
+Разбирает record и преобразует вход в типизированное представление.
+
+- Параметры: `value`, `fallback`.
+
+- Основные вызовы: `Array.isArray`.
+
+### `server/modules/entries/entry.schema.ts`
+
+Вертикальный backend-модуль entries и signal persistence: entry schema.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const createEntrySchema` — L5
+- `const updateEntrySchema` — L14
+
+### `server/modules/entries/entry.service.ts`
+
+Вертикальный backend-модуль entries и signal persistence: entry service.
 
 #### `createEntry` — L60–L117 · public API
 
@@ -8734,9 +8348,45 @@ Backend service с бизнес-оркестрацией: entry service.
 
 - Параметры: `signal`.
 
-### `server/services/export.service.ts`
+### `server/modules/entries/signal.repository.ts`
 
-Backend service с бизнес-оркестрацией: export service.
+Вертикальный backend-модуль entries и signal persistence: signal repository.
+
+#### `hasSignalForEntryHash` — L34–L51 · public API
+
+Проверяет условие signal for entry hash и возвращает логический результат без изменения состояния.
+
+- Параметры: `db`, `entryId`, `sourceTextHash`.
+
+- Основные вызовы: `get`, `Boolean`.
+
+#### `getSignalStatusForEntryHash` — L53–L73 · public API
+
+Получает signal status for entry hash из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `entryId`, `sourceTextHash`.
+
+- Основные вызовы: `get`.
+
+#### `insertSignalAndFinalizeEntry` — L75–L113 · public API
+
+Сохраняет insert signal and finalize entry в принадлежащем модулю хранилище или read model.
+
+- Параметры: `db`, `{ entryId, sourceTextHash, signal, finalStatus, schemaVersion, promptVersion, provider = "ollama", model, errorCode = null, createdAt, }`.
+
+- Основные вызовы: `withDbWriteTransaction`, `insertSignalRow`, `run`.
+
+#### `insertSignalRow` — L115–L181 · public API
+
+Сохраняет insert signal row в принадлежащем модулю хранилище или read model.
+
+- Параметры: `db`, `{ entryId, sourceTextHash, signal, schemaVersion, promptVersion, provider = "ollama", model, errorCode = null, createdAt, }`.
+
+- Основные вызовы: `run`.
+
+### `server/modules/exports/export.service.ts`
+
+Вертикальный backend-модуль metadata export: export service.
 
 #### `buildBackendMetadataExport` — L7–L47 · public API
 
@@ -8746,17 +8396,38 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `Promise.all`, `all`, `get`, `toISOString`.
 
-### `server/services/extraction.service.ts`
+### `server/modules/exports/exports.route.ts`
 
-Оркестрирует Ollama/Gemini/off extraction, prompt, provider status, timeout/error mapping и fallback.
+Вертикальный backend-модуль metadata export: exports route.
 
-#### `getExtractionOptions` — L144–L178 · public API
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /exports/backend-metadata (L8)`
+
+### `server/modules/extraction/extraction.schema.ts`
+
+Вертикальный backend-модуль extraction и signal contracts: extraction schema.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const extractionProviderSchema` — L4
+- `const extractionRequestSchema` — L6
+- `const signalMetadataPayloadSchema` — L14
+- `const appendSignalSchema` — L23
+
+### `server/modules/extraction/extraction.service.ts`
+
+Вертикальный backend-модуль extraction и signal contracts: extraction service.
+
+#### `getExtractionOptions` — L148–L182 · public API
 
 Получает extraction options из принадлежащего модулю источника данных.
 
 - Основные вызовы: `normalizeProvider`, `defaultModelForProvider`, `unique`, `Boolean`.
 
-#### `getExtractionStatus` — L180–L217 · public API
+#### `getExtractionStatus` — L184–L221 · public API
 
 Получает extraction status из принадлежащего модулю источника данных.
 
@@ -8764,15 +8435,15 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `normalizeProvider`, `normalizeModel`, `availableStatus`, `unavailableStatus`, `getOllamaBaseUrl`, `requestJson`, `trimTrailingSlash`, `Array.isArray`.
 
-#### `extractSignal` — L219–L267 · public API
+#### `extractSignal` — L223–L271 · public API
 
-Выбирает provider/model, выполняет один transient extraction request и всегда возвращает sanitized Signal либо явный fallback.
+Извлекает signal из входных данных без самостоятельного сохранения результата.
 
 - Параметры: `{ text, provider, model, entry_date, captured_at, }`.
 
 - Основные вызовы: `normalizeProvider`, `normalizeModel`, `analyzeSignalContext`, `createFallbackResult`, `requestGeminiExtraction`, `requestOllamaExtraction`, `sanitizeSignalCandidate`, `createSignalMetadata`.
 
-#### `normalizeProvider` — L269–L276 · internal helper
+#### `normalizeProvider` — L273–L280 · internal helper
 
 Приводит provider к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
@@ -8780,7 +8451,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `isExtractionProvider`.
 
-#### `normalizeModel` — L278–L281 · internal helper
+#### `normalizeModel` — L282–L285 · internal helper
 
 Приводит model к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
@@ -8788,13 +8459,13 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `defaultModelForProvider`.
 
-#### `defaultModelForProvider` — L283–L287 · internal helper
+#### `defaultModelForProvider` — L287–L291 · internal helper
 
 Возвращает вычисленное значение default model for provider для использования внутри данного модуля.
 
 - Параметры: `provider`.
 
-#### `requestOllamaExtraction` — L289–L315 · internal helper
+#### `requestOllamaExtraction` — L293–L319 · internal helper
 
 Выполняет внешний запрос для ollama extraction и нормализует результат или ошибку.
 
@@ -8802,7 +8473,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `getOllamaBaseUrl`, `isLocalOllamaUrl`, `requestJson`, `trimTrailingSlash`, `Number`, `buildExtractionMessages`, `getRecordValue`, `extractJson`.
 
-#### `requestGeminiExtraction` — L317–L362 · internal helper
+#### `requestGeminiExtraction` — L321–L366 · internal helper
 
 Выполняет внешний запрос для gemini extraction и нормализует результат или ошибку.
 
@@ -8810,7 +8481,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `requestJson`, `encodeURIComponent`, `Number`, `buildSystemInstruction`, `buildUserExtractionPrompt`, `readGeminiText`, `extractJson`.
 
-#### `requestJson` — L364–L391 · internal helper
+#### `requestJson` — L368–L395 · internal helper
 
 Выполняет внешний запрос для json и нормализует результат или ошибку.
 
@@ -8818,7 +8489,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `setTimeout`, `abort`, `fetch`, `text`, `json`, `clearTimeout`.
 
-#### `buildExtractionMessages` — L393–L404 · internal helper
+#### `buildExtractionMessages` — L397–L408 · internal helper
 
 Создаёт extraction messages из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -8826,17 +8497,17 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `buildSystemInstruction`, `buildUserExtractionPrompt`.
 
-#### `buildSystemInstruction` — L406–L430 · internal helper
+#### `buildSystemInstruction` — L410–L434 · internal helper
 
 Создаёт system instruction из переданных данных, не отдавая вызывающему коду детали сборки.
 
-#### `buildUserExtractionPrompt` — L432–L515 · internal helper
+#### `buildUserExtractionPrompt` — L436–L519 · internal helper
 
 Создаёт user extraction prompt из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `rawText`.
 
-#### `createSignalMetadata` — L517–L530 · internal helper
+#### `createSignalMetadata` — L521–L534 · internal helper
 
 Создаёт signal metadata из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -8844,7 +8515,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `toISOString`.
 
-#### `createFallbackResult` — L532–L545 · internal helper
+#### `createFallbackResult` — L536–L549 · internal helper
 
 Создаёт fallback result из переданных данных, не отдавая вызывающему коду детали сборки.
 
@@ -8852,7 +8523,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `analyzeSignalContext`, `createFallbackSignal`, `createSignalMetadata`.
 
-#### `classifyProviderError` — L547–L568 · internal helper
+#### `classifyProviderError` — L551–L572 · internal helper
 
 Возвращает вычисленное значение classify provider error для использования внутри данного модуля.
 
@@ -8860,19 +8531,19 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `String`.
 
-#### `availableStatus` — L570–L580 · internal helper
+#### `availableStatus` — L574–L584 · internal helper
 
 Возвращает вычисленное значение available status для использования внутри данного модуля.
 
 - Параметры: `provider`, `model`.
 
-#### `unavailableStatus` — L582–L593 · internal helper
+#### `unavailableStatus` — L586–L597 · internal helper
 
 Возвращает вычисленное значение unavailable status для использования внутри данного модуля.
 
 - Параметры: `provider`, `model`, `reason`.
 
-#### `extractJson` — L595–L604 · internal helper
+#### `extractJson` — L599–L608 · internal helper
 
 Извлекает json из входных данных без самостоятельного сохранения результата.
 
@@ -8880,11 +8551,11 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `indexOf`, `lastIndexOf`.
 
-#### `getOllamaBaseUrl` — L606–L608 · internal helper
+#### `getOllamaBaseUrl` — L610–L612 · internal helper
 
 Получает ollama base url из принадлежащего модулю источника данных.
 
-#### `trimTrailingSlash` — L610–L612 · internal helper
+#### `trimTrailingSlash` — L614–L616 · internal helper
 
 Возвращает вычисленное значение trim trailing slash для использования внутри данного модуля.
 
@@ -8892,13 +8563,13 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `replace`, `String`.
 
-#### `isLocalOllamaUrl` — L614–L621 · internal helper
+#### `isLocalOllamaUrl` — L618–L625 · internal helper
 
 Проверяет условие local ollama url и возвращает логический результат без изменения состояния.
 
 - Параметры: `value`.
 
-#### `unique` — L623–L625 · internal helper
+#### `unique` — L627–L629 · internal helper
 
 Возвращает вычисленное значение unique для использования внутри данного модуля.
 
@@ -8906,7 +8577,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `Array.from`.
 
-#### `isExtractionProvider` — L627–L629 · internal helper
+#### `isExtractionProvider` — L631–L633 · internal helper
 
 Проверяет условие extraction provider и возвращает логический результат без изменения состояния.
 
@@ -8914,13 +8585,13 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `Object.values`.
 
-#### `isRecord` — L631–L633 · internal helper
+#### `isRecord` — L635–L637 · internal helper
 
 Проверяет условие record и возвращает логический результат без изменения состояния.
 
 - Параметры: `value`.
 
-#### `getRecordValue` — L635–L637 · internal helper
+#### `getRecordValue` — L639–L641 · internal helper
 
 Получает record value из принадлежащего модулю источника данных.
 
@@ -8928,7 +8599,7 @@ Backend service с бизнес-оркестрацией: export service.
 
 - Основные вызовы: `isRecord`.
 
-#### `readGeminiText` — L639–L652 · internal helper
+#### `readGeminiText` — L643–L656 · internal helper
 
 Получает gemini text из принадлежащего модулю источника данных.
 
@@ -8938,11 +8609,213 @@ Backend service с бизнес-оркестрацией: export service.
 
 #### Публичные типы, классы и константы
 
-- `const EXTRACTION_PROVIDERS` — L48
+- `const EXTRACTION_PROVIDERS` — L52
 
-### `server/services/insight-input.service.ts`
+### `server/modules/extraction/extractions.route.ts`
 
-Backend service с бизнес-оркестрацией: insight input service.
+Вертикальный backend-модуль extraction и signal contracts: extractions route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /extractions/config (L15)`
+- `GET /extractions/status (L19)`
+- `POST /extractions (L31)`
+
+### `server/modules/extraction/markers.ts`
+
+Вертикальный backend-модуль extraction и signal contracts: markers.
+
+#### `markerLabel` — L56–L58 · public API
+
+Изменяет er label, сохраняя инварианты данного модуля.
+
+- Параметры: `marker`.
+
+#### `markerPriority` — L60–L62 · public API
+
+Изменяет er priority, сохраняя инварианты данного модуля.
+
+- Параметры: `marker`.
+
+#### Публичные типы, классы и константы
+
+- `const MARKERS` — L1
+- `type Marker` — L22
+- `const MARKER_LABELS` — L24
+
+### `server/modules/extraction/sanitization.service.ts`
+
+Вертикальный backend-модуль extraction и signal contracts: sanitization service.
+
+#### `sanitizeSignalCandidate` — L23–L48 · public API
+
+Приводит sanitize signal candidate к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `candidate`.
+
+- Основные вызовы: `safeParse`, `mapSignalCandidate`.
+
+#### `createFallbackSignal` — L50–L84 · public API
+
+Создаёт fallback signal из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Основные вызовы: `createDefaultSignalContext`, `createEmptyMetricConfidence`, `safeParse`, `toISOString`.
+
+#### `isClientFallbackSignal` — L86–L88 · public API
+
+Проверяет условие client fallback signal и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `safeParse`.
+
+### `server/modules/extraction/signal.schema.ts`
+
+Вертикальный backend-модуль extraction и signal contracts: signal schema.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const SIGNAL_AXES` — L4
+- `const markerSchema` — L24
+- `const signalAxisSchema` — L25
+- `const signalLevelSchema` — L26
+- `const confidenceLevelSchema` — L27
+- `const entryIntentSchema` — L28
+- `const structureDensitySchema` — L37
+- `const temporalBucketSchema` — L38
+- `const temporalContextSourceSchema` — L45
+- `const stateInferenceSchema` — L113
+- `const emotionSignalsSchema` — L116
+- `const extractedSignalCandidateSchema` — L119
+- `const sanitizedSignalSchema` — L152
+- `const fallbackSignalSchema` — L163
+- `const clientFallbackSignalSchema` — L191
+- `const clientSignalPayloadSchema` — L210
+- `const overridePayloadSchema` — L215
+
+### `server/modules/insights/insight.repository.ts`
+
+Вертикальный backend-модуль insight snapshots: insight repository.
+
+#### `countInsightEvidenceDays` — L37–L70 · public API
+
+Детерминированно вычисляет insight evidence days из входных данных.
+
+- Параметры: `db`, `{ from, to }`.
+
+- Основные вызовы: `get`.
+
+#### `getSnapshot` — L72–L96 · public API
+
+Получает snapshot из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ layer, periodStart, periodEnd }`.
+
+- Основные вызовы: `get`.
+
+#### `getLatestVisibleSnapshot` — L98–L122 · public API
+
+Получает latest visible snapshot из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ layer, today }`.
+
+- Основные вызовы: `get`.
+
+#### `listVisibleSnapshots` — L124–L151 · public API
+
+Получает visible snapshots из принадлежащего модулю источника данных.
+
+- Параметры: `db`.
+
+- Основные вызовы: `all`.
+
+#### `softDeleteSnapshot` — L153–L168 · public API
+
+Возвращает вычисленное значение soft delete snapshot для использования внутри данного модуля.
+
+- Параметры: `db`, `id`.
+
+- Основные вызовы: `run`, `toISOString`.
+
+#### `upsertSnapshot` — L170–L243 · public API
+
+Сохраняет upsert snapshot в принадлежащем модулю хранилище или read model.
+
+- Параметры: `db`, `{ layer, periodStart, periodEnd, text, topic, generatedAt, expiresAt, schemaVersion, promptVersion, }`.
+
+- Основные вызовы: `getSnapshot`, `run`.
+
+### `server/modules/insights/insight.service.ts`
+
+Вертикальный backend-модуль insight snapshots: insight service.
+
+#### `getCurrentInsightSnapshots` — L56–L99 · public API
+
+Получает current insight snapshots из принадлежащего модулю источника данных.
+
+- Параметры: `db`, `{ today }`.
+
+- Основные вызовы: `isDateOnly`, `formatDateOnly`, `addDays`, `countInsightEvidenceDays`, `createOrRefreshSnapshot`, `push`, `toPublicSnapshot`, `getLatestVisibleSnapshot`.
+
+#### `listInsightSnapshots` — L101–L106 · public API
+
+Получает insight snapshots из принадлежащего модулю источника данных.
+
+- Параметры: `db`.
+
+- Основные вызовы: `listVisibleSnapshots`.
+
+#### `deleteInsightSnapshot` — L108–L115 · public API
+
+Удаляет или очищает insight snapshot с необходимыми связанными действиями.
+
+- Параметры: `db`, `id`.
+
+- Основные вызовы: `isInteger`, `Number`, `withDbWriteTransaction`, `softDeleteSnapshot`.
+
+#### `createOrRefreshSnapshot` — L117–L160 · internal helper
+
+Создаёт or refresh snapshot из переданных данных, не отдавая вызывающему коду детали сборки.
+
+- Параметры: `db`, `{ layer, periodStart, periodEnd, retainDays, today, }`.
+
+- Основные вызовы: `buildAnalyticsV2Summary`, `buildInsightV3Input`, `composeInsightV3Text`, `insightV3Topic`, `toISOString`, `addDays`, `withDbWriteTransaction`, `upsertSnapshot`.
+
+#### `toPublicSnapshot` — L162–L173 · internal helper
+
+Возвращает вычисленное значение to public snapshot для использования внутри данного модуля.
+
+- Параметры: `snapshot`.
+
+#### `isDateOnly` — L175–L177 · internal helper
+
+Проверяет условие date only и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `test`.
+
+#### `addDays` — L179–L185 · internal helper
+
+Возвращает вычисленное значение days для использования внутри данного модуля.
+
+- Параметры: `dateOnly`, `days`.
+
+- Основные вызовы: `split`, `UTC`, `setUTCDate`, `getUTCDate`, `formatDateOnly`.
+
+#### `formatDateOnly` — L187–L189 · internal helper
+
+Преобразует date only в стабильное представление для UI, сети или хранения.
+
+- Параметры: `date`.
+
+- Основные вызовы: `toISOString`.
+
+### `server/modules/insights/insightInput.ts`
+
+Вертикальный backend-модуль insight snapshots: insight input.
 
 #### `buildInsightV2Input` — L81–L116 · public API
 
@@ -9086,13 +8959,24 @@ Backend service с бизнес-оркестрацией: insight input service.
 
 - `type InsightV2Input` — L11
 
-### `server/services/insight-v3.service.ts`
+### `server/modules/insights/insights.route.ts`
 
-Backend service с бизнес-оркестрацией: insight v3 service.
+Вертикальный backend-модуль insight snapshots: insights route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /insights/current (L12)`
+- `GET /insights (L24)`
+- `DELETE /insights/:id (L34)`
+
+### `server/modules/insights/insightV3.ts`
+
+Вертикальный backend-модуль insight snapshots: insight v3.
 
 #### `buildInsightV3Input` — L72–L92 · public API
 
-Преобразует Analytics V2 summary в ограниченный evidence pack для пользовательского observation.
+Создаёт insight v3 input из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `summary`, `layer`.
 
@@ -9100,7 +8984,7 @@ Backend service с бизнес-оркестрацией: insight v3 service.
 
 #### `composeInsightV3Text` — L94–L109 · public API
 
-Формирует не-клинический observation text только из выбранных evidence и uncertainty.
+Создаёт insight v3 text из переданных данных, не отдавая вызывающему коду детали сборки.
 
 - Параметры: `input`.
 
@@ -9203,75 +9087,9 @@ Backend service с бизнес-оркестрацией: insight v3 service.
 - `type InsightV3Observation` — L27
 - `type InsightV3Input` — L38
 
-### `server/services/insight.service.ts`
+### `server/modules/insights/legacyObservation.ts`
 
-Оркестрирует day/week/month snapshots: sufficiency gates, Analytics V2, Insight V3, persistence и retention.
-
-#### `getCurrentInsightSnapshots` — L56–L99 · public API
-
-Проверяет достаточность day/week/month evidence и создаёт или обновляет только допустимые текущие snapshots.
-
-- Параметры: `db`, `{ today }`.
-
-- Основные вызовы: `isDateOnly`, `formatDateOnly`, `addDays`, `countInsightEvidenceDays`, `createOrRefreshSnapshot`, `push`, `toPublicSnapshot`, `getLatestVisibleSnapshot`.
-
-#### `listInsightSnapshots` — L101–L106 · public API
-
-Получает insight snapshots из принадлежащего модулю источника данных.
-
-- Параметры: `db`.
-
-- Основные вызовы: `listVisibleSnapshots`.
-
-#### `deleteInsightSnapshot` — L108–L115 · public API
-
-Удаляет или очищает insight snapshot с необходимыми связанными действиями.
-
-- Параметры: `db`, `id`.
-
-- Основные вызовы: `isInteger`, `Number`, `withDbWriteTransaction`, `softDeleteSnapshot`.
-
-#### `createOrRefreshSnapshot` — L117–L160 · internal helper
-
-Создаёт or refresh snapshot из переданных данных, не отдавая вызывающему коду детали сборки.
-
-- Параметры: `db`, `{ layer, periodStart, periodEnd, retainDays, today, }`.
-
-- Основные вызовы: `buildAnalyticsV2Summary`, `buildInsightV3Input`, `composeInsightV3Text`, `insightV3Topic`, `toISOString`, `addDays`, `withDbWriteTransaction`, `upsertSnapshot`.
-
-#### `toPublicSnapshot` — L162–L173 · internal helper
-
-Возвращает вычисленное значение to public snapshot для использования внутри данного модуля.
-
-- Параметры: `snapshot`.
-
-#### `isDateOnly` — L175–L177 · internal helper
-
-Проверяет условие date only и возвращает логический результат без изменения состояния.
-
-- Параметры: `value`.
-
-- Основные вызовы: `test`.
-
-#### `addDays` — L179–L185 · internal helper
-
-Возвращает вычисленное значение days для использования внутри данного модуля.
-
-- Параметры: `dateOnly`, `days`.
-
-- Основные вызовы: `split`, `UTC`, `setUTCDate`, `getUTCDate`, `formatDateOnly`.
-
-#### `formatDateOnly` — L187–L189 · internal helper
-
-Преобразует date only в стабильное представление для UI, сети или хранения.
-
-- Параметры: `date`.
-
-- Основные вызовы: `toISOString`.
-
-### `server/services/observation.service.ts`
-
-Backend service с бизнес-оркестрацией: observation service.
+Вертикальный backend-модуль insight snapshots: legacy observation.
 
 #### `generateObservation` — L44–L113 · public API
 
@@ -9293,35 +9111,48 @@ Backend service с бизнес-оркестрацией: observation service.
 
 - `const OBSERVATION_PROMPT_CONTRACT` — L36
 
-### `server/services/sanitization.service.ts`
+### `server/modules/selfReports/selfReport.repository.ts`
 
-Backend service с бизнес-оркестрацией: sanitization service.
+Вертикальный backend-модуль self-report aggregates: self report repository.
 
-#### `sanitizeSignalCandidate` — L20–L45 · public API
+#### `replaceSelfReportDailyAggregates` — L11–L52 · public API
 
-Приводит sanitize signal candidate к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+Сохраняет replace self report daily aggregates в принадлежащем модулю хранилище или read model.
 
-- Параметры: `candidate`.
+- Параметры: `db`, `localDay`, `aggregates`.
 
-- Основные вызовы: `safeParse`, `mapSignalCandidate`.
+- Основные вызовы: `run`.
 
-#### `createFallbackSignal` — L47–L81 · public API
+#### `listSelfReportDailyAggregates` — L54–L79 · public API
 
-Создаёт fallback signal из переданных данных, не отдавая вызывающему коду детали сборки.
+Получает self report daily aggregates из принадлежащего модулю источника данных.
 
-- Основные вызовы: `createDefaultSignalContext`, `createEmptyMetricConfidence`, `safeParse`, `toISOString`.
+- Параметры: `db`, `localDay`.
 
-#### `isClientFallbackSignal` — L83–L85 · public API
+- Основные вызовы: `all`.
 
-Проверяет условие client fallback signal и возвращает логический результат без изменения состояния.
+#### `getSelfReportDailyAggregate` — L81–L106 · public API
 
-- Параметры: `value`.
+Получает self report daily aggregate из принадлежащего модулю источника данных.
 
-- Основные вызовы: `safeParse`.
+- Параметры: `db`, `localDay`, `axis`.
 
-### `server/services/self-report.service.ts`
+- Основные вызовы: `get`.
 
-Backend service с бизнес-оркестрацией: self report service.
+### `server/modules/selfReports/selfReport.schema.ts`
+
+Вертикальный backend-модуль self-report aggregates: self report schema.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### Публичные типы, классы и константы
+
+- `const selfReportAxisSchema` — L3
+- `const selfReportDailyAggregateSchema` — L11
+- `const syncSelfReportDailyAggregatesSchema` — L31
+
+### `server/modules/selfReports/selfReport.service.ts`
+
+Вертикальный backend-модуль self-report aggregates: self report service.
 
 #### `syncSelfReportDailyAggregates` — L9–L27 · public API
 
@@ -9338,6 +9169,87 @@ Backend service с бизнес-оркестрацией: self report service.
 - Параметры: `db`, `localDay`.
 
 - Основные вызовы: `listSelfReportDailyAggregates`.
+
+### `server/modules/selfReports/selfReports.route.ts`
+
+Вертикальный backend-модуль self-report aggregates: self reports route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `PUT /self-reports/daily-aggregates/:localDay (L15)`
+- `GET /self-reports/daily-aggregates/:localDay (L49)`
+
+### `server/platform/http/config.route.ts`
+
+Общая backend platform infrastructure: config route.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
+#### HTTP routes
+
+- `GET /config (L10)`
+
+### `server/platform/http/error.middleware.ts`
+
+Общая backend platform infrastructure: error middleware.
+
+#### `jsonErrorHandler` — L3–L18 · public API
+
+Возвращает вычисленное значение json error handler для использования внутри данного модуля.
+
+- Параметры: `error`, `_req`, `res`, `next`.
+
+- Основные вызовы: `isEntityTooLargeError`, `json`, `status`, `next`.
+
+#### `apiErrorHandler` — L20–L33 · public API
+
+Возвращает вычисленное значение api error handler для использования внутри данного модуля.
+
+- Параметры: `error`, `_req`, `res`, `_next`.
+
+- Основные вызовы: `console.error`, `json`, `status`.
+
+#### `isEntityTooLargeError` — L35–L42 · internal helper
+
+Проверяет условие entity too large error и возвращает логический результат без изменения состояния.
+
+- Параметры: `error`.
+
+### `server/platform/http/http.ts`
+
+Общая backend platform infrastructure: http.
+
+#### `asyncHandler` — L8–L18 · public API
+
+Возвращает вычисленное значение async handler для использования внутри данного модуля.
+
+- Параметры: `handler`.
+
+- Основные вызовы: `catch`, `handler`.
+
+#### `sendValidationError` — L20–L29 · public API
+
+Выполняет внешний запрос для validation error и нормализует результат или ошибку.
+
+- Параметры: `res`, `message`, `error`.
+
+- Основные вызовы: `json`, `status`, `flatten`.
+
+#### `isCodedError` — L31–L33 · public API
+
+Проверяет условие coded error и возвращает логический результат без изменения состояния.
+
+- Параметры: `error`.
+
+#### Публичные типы, классы и константы
+
+- `type CodedError` — L4
+
+### `server/server.ts`
+
+Исполняемая точка запуска Express-сервера.
+
+Именованных функций нет: логика находится в bootstrap-коде, данных или анонимных callbacks.
 
 ## Shared contracts: функции
 
@@ -9496,6 +9408,122 @@ Backend service с бизнес-оркестрацией: self report service.
 
 - `type SignalContextInput` — L8
 - `type SignalContextFields` — L13
+
+### `shared/signal/signalMapper.ts`
+
+Единый pure Signal mapper для клиентского и серверного runtime.
+
+#### `mapSignalCandidate` — L85–L127 · public API
+
+Преобразует или объединяет signal candidate по правилам домена.
+
+- Параметры: `candidate`.
+
+- Основные вызовы: `createDefaultSignalContext`, `extractEmotionLabels`, `mapMetric`, `Object.keys`, `getQualityReason`.
+
+#### `createEmptyMetricConfidence` — L129–L131 · public API
+
+Создаёт empty metric confidence из переданных данных, не отдавая вызывающему коду детали сборки.
+
+#### `mapMetric` — L133–L182 · internal helper
+
+Преобразует или объединяет metric по правилам домена.
+
+- Параметры: `metric`, `stateInference`, `emotionLabels`.
+
+- Основные вызовы: `scoreLevel`, `confidenceWeight`, `clampScore`, `Math.round`, `highestConfidence`, `getEmotionMetricAdjustment`, `adjustConfidence`.
+
+#### `scoreLevel` — L184–L189 · internal helper
+
+Детерминированно вычисляет level из входных данных.
+
+- Параметры: `level`, `direction`.
+
+#### `confidenceWeight` — L191–L195 · internal helper
+
+Возвращает вычисленное значение confidence weight для использования внутри данного модуля.
+
+- Параметры: `confidence`.
+
+#### `highestConfidence` — L197–L201 · internal helper
+
+Возвращает вычисленное значение highest confidence для использования внутри данного модуля.
+
+- Параметры: `confidences`.
+
+#### `adjustConfidence` — L203–L212 · internal helper
+
+Возвращает вычисленное значение adjust confidence для использования внутри данного модуля.
+
+- Параметры: `confidence`, `emotionAdjustment`.
+
+#### `clampScore` — L214–L216 · internal helper
+
+Ограничивает score допустимым диапазоном или точностью.
+
+- Параметры: `score`.
+
+- Основные вызовы: `Math.max`, `Math.min`.
+
+#### `getQualityReason` — L218–L246 · internal helper
+
+Получает quality reason из принадлежащего модулю источника данных.
+
+- Параметры: `stateInference`, `hasMetric`, `hasTextSignal`, `hasEmotionSignal`, `metrics`.
+
+- Основные вызовы: `Object.entries`, `localeCompare`, `withEmotionReason`.
+
+#### `withEmotionReason` — L248–L263 · internal helper
+
+Возвращает вычисленное значение with emotion reason для использования внутри данного модуля.
+
+- Параметры: `reason`, `metrics`.
+
+#### `extractEmotionLabels` — L265–L280 · internal helper
+
+Извлекает emotion labels из входных данных без самостоятельного сохранения результата.
+
+- Параметры: `signals`.
+
+- Основные вызовы: `isRecord`, `Object.entries`, `isFinite`, `normalizeEmotionLabel`, `Math.max`, `Math.min`.
+
+#### `getEmotionMetricAdjustment` — L282–L291 · internal helper
+
+Получает emotion metric adjustment из принадлежащего модулю источника данных.
+
+- Параметры: `metric`, `labels`.
+
+- Основные вызовы: `getEmotionAdjustmentCandidates`.
+
+#### `getEmotionAdjustmentCandidates` — L293–L325 · internal helper
+
+Получает emotion adjustment candidates из принадлежащего модулю источника данных.
+
+- Параметры: `metric`, `labels`.
+
+- Основные вызовы: `emotionCandidate`.
+
+#### `emotionCandidate` — L327–L339 · internal helper
+
+Возвращает вычисленное значение emotion candidate для использования внутри данного модуля.
+
+- Параметры: `metric`, `label`, `labels`, `direction`.
+
+#### `normalizeEmotionLabel` — L341–L348 · internal helper
+
+Приводит emotion label к безопасной канонической форме и отбрасывает неподдерживаемые значения.
+
+- Параметры: `label`.
+
+- Основные вызовы: `replace`, `toLocaleLowerCase`.
+
+#### `isRecord` — L350–L352 · internal helper
+
+Проверяет условие record и возвращает логический результат без изменения состояния.
+
+- Параметры: `value`.
+
+- Основные вызовы: `Array.isArray`.
 
 ## Tests: функции
 
@@ -10125,7 +10153,7 @@ Node test для соответствующего сценария: vault migrat
 
 - Основные вызовы: `set`, `String`.
 
-#### `putRecord` — L81–L90 · internal helper
+#### `putRecord` — L82–L91 · internal helper
 
 Возвращает вычисленное значение put record для использования внутри данного модуля.
 
@@ -10133,7 +10161,7 @@ Node test для соответствующего сценария: vault migrat
 
 - Основные вызовы: `transaction`, `put`, `objectStore`, `reject`, `resolve`.
 
-#### `getRecord` — L92–L100 · internal helper
+#### `getRecord` — L93–L101 · internal helper
 
 Получает record из принадлежащего модулю источника данных.
 
@@ -10141,7 +10169,7 @@ Node test для соответствующего сценария: vault migrat
 
 - Основные вызовы: `transaction`, `get`, `objectStore`, `resolve`, `reject`.
 
-#### `deleteDatabase` — L102–L110 · internal helper
+#### `deleteDatabase` — L103–L111 · internal helper
 
 Удаляет или очищает database с необходимыми связанными действиями.
 
@@ -10271,7 +10299,7 @@ Node test для соответствующего сценария: vault profil
 
 Проектный файл: generate code map.
 
-#### `normalizePath` — L124–L126 · internal helper
+#### `normalizePath` — L142–L144 · internal helper
 
 Приводит path к безопасной канонической форме и отбрасывает неподдерживаемые значения.
 
@@ -10279,13 +10307,13 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `replaceAll`.
 
-#### `listProjectFiles` — L128–L138 · internal helper
+#### `listProjectFiles` — L146–L157 · internal helper
 
 Получает project files из принадлежащего модулю источника данных.
 
-- Основные вызовы: `execFileSync`, `split`, `has`, `localeCompare`.
+- Основные вызовы: `execFileSync`, `split`, `has`, `existsSync`, `localeCompare`.
 
-#### `isExported` — L140–L148 · internal helper
+#### `isExported` — L159–L167 · internal helper
 
 Проверяет условие exported и возвращает логический результат без изменения состояния.
 
@@ -10293,7 +10321,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `Boolean`.
 
-#### `lineOf` — L150–L152 · internal helper
+#### `lineOf` — L169–L171 · internal helper
 
 Возвращает вычисленное значение line of для использования внутри данного модуля.
 
@@ -10301,7 +10329,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `getLineAndCharacterOfPosition`, `getStart`.
 
-#### `endLineOf` — L154–L156 · internal helper
+#### `endLineOf` — L173–L175 · internal helper
 
 Возвращает вычисленное значение end line of для использования внутри данного модуля.
 
@@ -10309,7 +10337,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `getLineAndCharacterOfPosition`, `getEnd`.
 
-#### `analyzeCode` — L158–L367 · internal helper
+#### `analyzeCode` — L177–L386 · internal helper
 
 Возвращает вычисленное значение analyze code для использования внутри данного модуля.
 
@@ -10317,7 +10345,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `readFileSync`, `endsWith`, `createSourceFile`, `isFunctionDeclaration`, `isMethodDeclaration`, `getText`, `isArrowFunction`, `isFunctionExpression`.
 
-#### `enclosingFunctionName` — L180–L199 · nested helper в analyzeCode
+#### `enclosingFunctionName` — L199–L218 · nested helper в analyzeCode
 
 Возвращает вычисленное значение enclosing function name для использования внутри данного модуля.
 
@@ -10325,7 +10353,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isFunctionDeclaration`, `isMethodDeclaration`, `getText`, `isArrowFunction`, `isFunctionExpression`, `isVariableDeclaration`, `isIdentifier`.
 
-#### `functionScope` — L201–L205 · nested helper в analyzeCode
+#### `functionScope` — L220–L224 · nested helper в analyzeCode
 
 Возвращает вычисленное значение function scope для использования внутри данного модуля.
 
@@ -10333,7 +10361,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isMethodDeclaration`, `enclosingFunctionName`.
 
-#### `directCalls` — L207–L234 · nested helper в analyzeCode
+#### `directCalls` — L226–L253 · nested helper в analyzeCode
 
 Возвращает вычисленное значение direct calls для использования внутри данного модуля.
 
@@ -10341,7 +10369,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isCallExpression`, `isIdentifier`, `isPropertyAccessExpression`, `has`, `push`, `forEachChild`, `visitCalls`.
 
-#### `visitCalls` — L215–L230 · nested helper в directCalls
+#### `visitCalls` — L234–L249 · nested helper в directCalls
 
 Выполняет локальную операцию visit calls внутри ответственности этого файла.
 
@@ -10349,7 +10377,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isCallExpression`, `isIdentifier`, `isPropertyAccessExpression`, `has`, `push`, `forEachChild`.
 
-#### `addFunction` — L236–L265 · nested helper в analyzeCode
+#### `addFunction` — L255–L284 · nested helper в analyzeCode
 
 Выполняет локальную операцию function внутри ответственности этого файла.
 
@@ -10357,7 +10385,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isVariableDeclaration`, `Boolean`, `isArrowFunction`, `isBlock`, `isReturnStatement`, `forEachChild`, `findReturn`, `push`.
 
-#### `findReturn` — L244–L251 · nested helper в addFunction
+#### `findReturn` — L263–L270 · nested helper в addFunction
 
 Выбирает return, удовлетворяющий ограничениям текущего сценария.
 
@@ -10365,7 +10393,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isReturnStatement`, `forEachChild`.
 
-#### `visit` — L312–L362 · nested helper в analyzeCode
+#### `visit` — L331–L381 · nested helper в analyzeCode
 
 Выполняет локальную операцию visit внутри ответственности этого файла.
 
@@ -10373,7 +10401,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `isFunctionDeclaration`, `addFunction`, `isExported`, `getText`, `isMethodDeclaration`, `isVariableDeclaration`, `isIdentifier`, `isArrowFunction`.
 
-#### `humanizeStem` — L369–L375 · internal helper
+#### `humanizeStem` — L388–L394 · internal helper
 
 Возвращает вычисленное значение humanize stem для использования внутри данного модуля.
 
@@ -10381,7 +10409,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `basename`, `extname`, `toLocaleLowerCase`, `replaceAll`.
 
-#### `humanizeIdentifier` — L377–L384 · internal helper
+#### `humanizeIdentifier` — L396–L403 · internal helper
 
 Возвращает вычисленное значение humanize identifier для использования внутри данного модуля.
 
@@ -10389,7 +10417,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `toLocaleLowerCase`, `replaceAll`, `replace`.
 
-#### `describeFunction` — L386–L430 · internal helper
+#### `describeFunction` — L405–L449 · internal helper
 
 Возвращает вычисленное значение describe function для использования внутри данного модуля.
 
@@ -10397,7 +10425,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `humanizeIdentifier`, `test`.
 
-#### `purposeFor` — L432–L453 · internal helper
+#### `purposeFor` — L451–L472 · internal helper
 
 Возвращает вычисленное значение purpose for для использования внутри данного модуля.
 
@@ -10405,7 +10433,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `startsWith`, `matchingPrefix`, `humanizeStem`, `endsWith`, `test`.
 
-#### `matchingPrefix` — L455–L459 · internal helper
+#### `matchingPrefix` — L474–L478 · internal helper
 
 Возвращает вычисленное значение matching prefix для использования внутри данного модуля.
 
@@ -10413,7 +10441,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `Object.keys`, `startsWith`.
 
-#### `sectionFor` — L461–L471 · internal helper
+#### `sectionFor` — L480–L490 · internal helper
 
 Возвращает вычисленное значение section for для использования внутри данного модуля.
 
@@ -10421,7 +10449,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `startsWith`.
 
-#### `escapeTableCell` — L473–L475 · internal helper
+#### `escapeTableCell` — L492–L494 · internal helper
 
 Возвращает вычисленное значение escape table cell для использования внутри данного модуля.
 
@@ -10429,7 +10457,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `replaceAll`.
 
-#### `renderFileMapRow` — L477–L479 · internal helper
+#### `renderFileMapRow` — L496–L498 · internal helper
 
 Возвращает вычисленное значение render file map row для использования внутри данного модуля.
 
@@ -10437,7 +10465,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `escapeTableCell`, `purposeFor`.
 
-#### `renderFunction` — L481–L505 · internal helper
+#### `renderFunction` — L500–L524 · internal helper
 
 Возвращает вычисленное значение render function для использования внутри данного модуля.
 
@@ -10445,7 +10473,7 @@ Node test для соответствующего сценария: vault profil
 
 - Основные вызовы: `describeFunction`, `push`.
 
-#### `renderFunctionFile` — L507–L540 · internal helper
+#### `renderFunctionFile` — L526–L559 · internal helper
 
 Возвращает вычисленное значение render function file для использования внутри данного модуля.
 

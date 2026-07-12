@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import test from "node:test";
-import { createEntrySchema } from "../server/core/entry.schema.js";
+import { createEntrySchema } from "../server/modules/entries/entry.schema.js";
 import { validSignal } from "./signal-fixtures.js";
 
 function validPayload(overrides = {}) {

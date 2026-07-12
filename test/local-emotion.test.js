@@ -6,7 +6,7 @@ import {
   normalizeEmotionClassifierOutput,
   requestContainsRawText,
 } from "../client/src/features/emotion/localEmotion.ts";
-import { extractSignalForText } from "../client/src/lib/extraction.ts";
+import { extractSignalForText } from "../client/src/features/extraction/extractSignalForText.ts";
 import { fallbackSignal, validSignal } from "./signal-fixtures.js";
 
 function extraction(signal) {

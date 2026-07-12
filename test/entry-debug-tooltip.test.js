@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getEntryDebugBlocks } from "../client/src/components/entryDebugBlocks.ts";
+import { getEntryDebugBlocks } from "../client/src/features/entries/ui/entryDebugBlocks.ts";
 import { validSignal } from "./signal-fixtures.js";
 
 test("entry debug tooltip includes local self-report values", () => {

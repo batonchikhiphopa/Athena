@@ -1,5 +1,8 @@
-import type { LocalEntry } from "../../types";
-import { createTextHash, replaceAllLocalEntries } from "../../lib/storage";
+import type { LocalEntry } from "../entries/entryTypes";
+import {
+  createTextHash,
+  replaceAllLocalEntries,
+} from "../entries/localEntryRepository";
 import {
   replaceAllSelfReportEvents,
   type ReplaceSelfReportEventsResult,
@@ -13,7 +16,7 @@ import {
   type LocalExportSelfReportEventV1,
   type LocalExportSelfReportValuesV1,
 } from "./exportTypes";
-import { validateLocalExportPackage } from "./importPackage";
+import { validateLocalExportPackage } from "./importValidation";
 import type { SelfReportEvent, SelfReportValues } from "../selfReports/selfReportTypes";
 
 export type LocalImportApplyMode = "replace_local_data";

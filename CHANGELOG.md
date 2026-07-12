@@ -2,6 +2,28 @@
 
 All notable changes to Athena are documented here.
 
+## v0.8.3 - 2026-07-12
+
+### Changed
+
+- Reorganized the client into feature-owned modules with explicit `shared` and `platform` boundaries.
+- Reorganized the backend into vertical `analytics`, `auth`, `entries`, `exports`, `extraction`, `insights`, and `selfReports` modules.
+- Split the former global API, storage, vault, import, Entries UI, and Analytics V2 modules into smaller focused files.
+- Co-located feature UI, persistence, API adapters, types, and content with the behavior they support.
+- Replaced duplicate client/server Signal mapping with one shared pure mapper.
+- Updated the architecture guide and generated code map for the new module ownership and file layout.
+- Bumped root, client, lockfile, and exported app metadata versions to `0.8.3`.
+
+### Fixed
+
+- Updated the locked transitive `protobufjs` dependency to a patched release after the pre-release security audit.
+
+### Notes
+
+- This release is an internal architecture refactor; user-facing behavior is intended to remain unchanged.
+- No database migration, payload contract bump, or privacy-boundary change is included.
+- Raw diary text remains browser-local.
+
 ## v0.8.0 - 2026-06-13
 
 ### Added

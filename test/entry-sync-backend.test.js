@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createEntrySchema } from "../server/core/entry.schema.ts";
+import { createEntrySchema } from "../server/modules/entries/entry.schema.ts";
 import {
   createEntry,
   getEntryById,
-} from "../server/services/entry.service.ts";
+} from "../server/modules/entries/entry.service.ts";
 import { createTestDb } from "./helpers/createTestDb.js";
 import { validSignal } from "./signal-fixtures.js";
 

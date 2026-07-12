@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useState } from "react";
 import { useAthenaApp } from "./useAthenaApp";
 import { useAthenaAutoLock } from "./useAppAutoLock";
-import { Editor } from "../components/Editor";
-import { Observations } from "../components/Observations";
+import { Editor } from "../features/editor/ui/Editor";
+import { Observations } from "../features/insights/ui/Observations";
 import {
   FloatingLayerProvider,
   FloatingPanel,
@@ -11,18 +11,18 @@ import {
 import { Nav } from "../components/Nav";
 import type { VaultCredentialSummary } from "../features/vault/vaultApi";
 import { useI18n } from "../i18n/useI18n";
-import type { AppLockAutoLockPreference } from "../lib/appLock";
-import type { VaultProfile } from "../lib/vaultProfiles";
-import { todayDateOnly } from "../lib/dates";
+import type { AppLockAutoLockPreference } from "../features/vault/appLock";
+import type { VaultProfile } from "../features/vault/vaultProfiles";
+import { todayDateOnly } from "../shared/lib/dates";
 import logoImg from "../assets/logo-bg.jpg";
 
 const EntriesPage = lazy(() =>
-  import("../components/EntriesPage").then((module) => ({
+  import("../features/entries/ui/EntriesPage").then((module) => ({
     default: module.EntriesPage,
   })),
 );
 const Settings = lazy(() =>
-  import("../features/settings/components/SettingsPage").then((module) => ({
+  import("../features/settings/ui/SettingsPage").then((module) => ({
     default: module.Settings,
   })),
 );

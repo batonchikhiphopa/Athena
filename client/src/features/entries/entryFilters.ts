@@ -1,4 +1,4 @@
-import type { EntryView } from "../../types";
+import type { EntryView } from "./entryTypes";
 
 export function normalizeTag(tag: string): string {
   return tag

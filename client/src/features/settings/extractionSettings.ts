@@ -1,4 +1,7 @@
-import type { ExtractionConfig, ExtractionSettings } from "../../types";
+import type {
+  ExtractionConfig,
+  ExtractionSettings,
+} from "../../shared/contracts";
 
 export const DEFAULT_EXTRACTION_SETTINGS: ExtractionSettings = {
   provider: "ollama",

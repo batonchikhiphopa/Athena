@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { syncSelfReportDailyAggregates } from "../server/services/self-report.service.js";
-import { syncSelfReportDailyAggregatesSchema } from "../server/core/self-report.schema.js";
+import { syncSelfReportDailyAggregates } from "../server/modules/selfReports/selfReport.service.js";
+import { syncSelfReportDailyAggregatesSchema } from "../server/modules/selfReports/selfReport.schema.js";
 import { serializeSelfReportDailyAggregates } from "../client/src/features/selfReports/selfReportApi.ts";
 import { createTestDb } from "./helpers/createTestDb.js";
 

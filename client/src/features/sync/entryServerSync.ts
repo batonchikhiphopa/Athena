@@ -1,5 +1,6 @@
 import { createEntry, updateServerEntry } from "../entries/entriesApi";
-import type { LocalEntry, ServerEntry } from "../../types";
+import type { ServerEntry } from "../../shared/contracts";
+import type { LocalEntry } from "../entries/entryTypes";
 
 type EntryServerSyncApi = {
   createEntry: typeof createEntry;

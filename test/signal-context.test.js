@@ -5,8 +5,8 @@ import {
   analyzeSignalContext,
   createDefaultSignalContext,
 } from "../shared/contracts/signalAnalysis.ts";
-import { extractSignal } from "../server/services/extraction.service.ts";
-import { createEntry } from "../server/services/entry.service.ts";
+import { extractSignal } from "../server/modules/extraction/extraction.service.ts";
+import { createEntry } from "../server/modules/entries/entry.service.ts";
 import { createTestDb } from "./helpers/createTestDb.js";
 
 test("signal context is deterministic, bounded, and textless", () => {

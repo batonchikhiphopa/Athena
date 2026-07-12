@@ -4,20 +4,25 @@
  * The run counter prevents an older autosave from overwriting a newer edit.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { EntryView, LocalEntry } from "../../types";
+import type { EntryView, LocalEntry } from "../entries/entryTypes";
 import { deleteServerEntry } from "../entries/entriesApi";
-import { todayDateOnly } from "../../lib/dates";
-import { createFallbackMetadata, createFallbackSignal } from "../../lib/signals";
+import { todayDateOnly } from "../../shared/lib/dates";
+import {
+  createFallbackMetadata,
+  createFallbackSignal,
+} from "../extraction/signals";
 import {
   clearLocalDraft,
+  migrateLegacyDraftToIndexedDb,
+} from "./draftRepository";
+import {
   createClientEntryId,
   createTextHash,
   deleteLocalEntry,
   getLocalEntry,
-  migrateLegacyDraftToIndexedDb,
   saveLocalEntry,
   updateLocalEntry,
-} from "../../lib/storage";
+} from "../entries/localEntryRepository";
 import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 import { enqueueEntrySyncJob } from "../sync/entrySyncJob";

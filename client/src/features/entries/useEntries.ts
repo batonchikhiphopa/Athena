@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { EntrySortDirection, EntryView, ServerEntry } from "../../types";
+import type { ServerEntry } from "../../shared/contracts";
+import type { EntrySortDirection, EntryView } from "./entryTypes";
 import {
   deleteServerEntry,
   loadServerEntries,
@@ -8,10 +9,12 @@ import {
 import {
   deleteLocalEntry,
   getAllLocalEntries,
+  updateLocalEntry,
+} from "./localEntryRepository";
+import {
   getEntrySortDirection,
   setEntrySortDirection as persistEntrySortDirection,
-  updateLocalEntry,
-} from "../../lib/storage";
+} from "./entryPreferences";
 import { deleteEntrySelfReportAndSync } from "../selfReports/selfReportActions";
 import { getAllSelfReportEvents } from "../selfReports/selfReportStorage";
 import { mergeEntryState, mergeServerEntryIntoView } from "./entryState";

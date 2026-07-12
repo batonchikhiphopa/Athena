@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import type { InsightSnapshot } from "../../types";
+import type { InsightSnapshot } from "../../shared/contracts";
 import {
   deleteInsightSnapshot,
   loadCurrentInsights,
   loadInsightHistory,
 } from "./insightsApi";
-import { todayDateOnly } from "../../lib/dates";
+import { todayDateOnly } from "../../shared/lib/dates";
 import {
   getSeenEditorInsightIds,
   markEditorInsightSeen,
-} from "../../lib/storage";
+} from "./seenInsights";
 import { pickLatestUnseenEditorInsight } from "../editor/editorInsight";
 
 type UseInsightsOptions = {

@@ -7,7 +7,7 @@ import {
 } from "./languages";
 import { translateMessage, type MessageKey } from "./messages";
 import { I18nContext } from "./i18nContext";
-import { getProfileScopedStorageKey } from "../lib/vaultProfiles";
+import { getProfileScopedStorageKey } from "../features/vault/vaultProfiles";
 
 type TranslateValues = Record<string, string | number>;
 

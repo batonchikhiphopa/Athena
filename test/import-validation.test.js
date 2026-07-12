@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildLocalImportPreview,
   parseAndValidateLocalExportJson,
   validateLocalExportPackage,
-} from "../client/src/features/exportImport/importPackage.ts";
+} from "../client/src/features/exportImport/importValidation.ts";
+import { buildLocalImportPreview } from "../client/src/features/exportImport/importPreview.ts";
 
 const NOW = "2026-06-07T12:00:00.000Z";
 

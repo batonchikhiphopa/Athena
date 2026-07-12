@@ -8,7 +8,7 @@ import {
   renameVaultProfile,
   setActiveVaultProfileId,
   setVaultProfiles,
-} from "../client/src/lib/vaultProfiles.ts";
+} from "../client/src/features/vault/vaultProfiles.ts";
 
 const localStorageMock = new Map();
 

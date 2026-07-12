@@ -33,13 +33,14 @@ test.beforeEach(async () => {
 
 test("local vault migration encrypts old IndexedDB entries without losing data", async () => {
   const { setupVault, isVaultEncryptedPayload } = await import(
-    "../client/src/lib/vault.ts"
+    "../client/src/features/vault/vault.ts"
   );
-  const {
-    getAllLocalEntries,
-    migrateLocalStorageToVault,
-    openAthenaLocalDb,
-  } = await import("../client/src/lib/storage.ts");
+  const { getAllLocalEntries, migrateEntriesToVault } = await import(
+    "../client/src/features/entries/localEntryRepository.ts"
+  );
+  const { openAthenaLocalDb } = await import(
+    "../client/src/platform/storage/athenaDb.ts"
+  );
   const legacyEntry = {
     id: "legacy-entry-1",
     serverId: null,
@@ -63,7 +64,7 @@ test("local vault migration encrypts old IndexedDB entries without losing data",
 
   await putRecord(db, "entries", legacyEntry);
   await setupVault("athena-vault-secret-v3:personal:correct horse battery staple");
-  await migrateLocalStorageToVault();
+  await migrateEntriesToVault();
 
   const entries = await getAllLocalEntries();
   const storedRecord = await getRecord(db, "entries", legacyEntry.id);

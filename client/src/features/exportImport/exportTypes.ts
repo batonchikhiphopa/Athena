@@ -1,6 +1,6 @@
-import type { LocalEntry } from "../../types";
+import type { LocalEntry } from "../entries/entryTypes";
 import type { SelfReportEvent } from "../selfReports/selfReportTypes";
-import type { QueueJob, QueueJobStatus, QueueJobType } from "../../lib/queueTypes";
+import type { QueueJob, QueueJobStatus, QueueJobType } from "../sync/queueTypes";
 
 export const ATHENA_EXPORT_APP_ID = "athena" as const;
 export const LOCAL_EXPORT_VERSION = "local_export.v1" as const;

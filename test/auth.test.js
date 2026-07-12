@@ -9,7 +9,7 @@ import {
   logout,
   setupOwner,
   verifyCsrfToken,
-} from "../server/services/auth.service.js";
+} from "../server/modules/auth/auth.service.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 
 test("first-run setup creates one owner with Argon2id password hash", async () => {

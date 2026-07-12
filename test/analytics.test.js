@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 
-import { createEntry } from "../server/services/entry.service.js";
+import { createEntry } from "../server/modules/entries/entry.service.js";
 import {
   buildSummary,
   calculateAverage,
   calculateDensity,
   normalizeRows,
-} from "../server/services/analytics.service.js";
-import { generateObservation } from "../server/services/observation.service.js";
+} from "../server/modules/analytics/analytics.service.js";
+import { generateObservation } from "../server/modules/insights/legacyObservation.js";
 import { createTestDb } from "./helpers/createTestDb.js";
 import {
   fallbackSignal,

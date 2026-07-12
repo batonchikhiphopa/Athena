@@ -2,25 +2,27 @@ import { useCallback, useEffect, useState } from "react";
 import type { Language } from "../../i18n/languages";
 import { translateMessage } from "../../i18n/messages";
 import type {
-  EntryView,
   ExtractionConfig,
   ExtractionSettings,
   ExtractionStatus,
-} from "../../types";
+} from "../../shared/contracts";
+import type { EntryView } from "../entries/entryTypes";
 import { loadExtractionConfig, loadExtractionStatus } from "../extraction/extractionApi";
 import {
   GEMINI_DAILY_EXTRACTION_LIMIT,
+  getRemainingGeminiDailyExtractions,
+} from "../extraction/geminiQuota";
+import {
   getDebugMode,
   getExtractionSettings,
   getLocalEmotionSpikeEnabled,
-  getRemainingGeminiDailyExtractions,
   getPersonaTextEnabled,
   setDebugMode as persistDebugMode,
   setExtractionSettings as persistExtractionSettings,
   setLocalEmotionSpikeEnabled as persistLocalEmotionSpikeEnabled,
   setPersonaTextEnabled as persistPersonaTextEnabled,
-  updateLocalEntry,
-} from "../../lib/storage";
+} from "./settingsStorage";
+import { updateLocalEntry } from "../entries/localEntryRepository";
 import type { LocalEmotionResult } from "../emotion/localEmotion";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 import {

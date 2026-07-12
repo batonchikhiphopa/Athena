@@ -1,4 +1,4 @@
-import type { EntryView } from "../../types";
+import type { EntryView } from "../entries/entryTypes";
 import {
   LOCAL_HASHED_EMBEDDING_PROVIDER,
   cosineSimilarity,

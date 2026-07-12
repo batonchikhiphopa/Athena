@@ -1,12 +1,15 @@
-import { enqueueQueueJob } from "../../lib/queue";
+import { enqueueQueueJob } from "./queue";
 import {
   queueBlocked,
   queueCancelled,
   queueConflict,
-} from "../../lib/queueErrors";
-import { getLocalEntry, updateLocalEntry } from "../../lib/storage";
-import type { EntrySyncQueuePayload, QueueJob } from "../../lib/queueTypes";
-import type { LocalEntry } from "../../types";
+} from "./queueErrors";
+import {
+  getLocalEntry,
+  updateLocalEntry,
+} from "../entries/localEntryRepository";
+import type { EntrySyncQueuePayload, QueueJob } from "./queueTypes";
+import type { LocalEntry } from "../entries/entryTypes";
 import { syncLocalEntryToServer } from "./entryServerSync";
 import { planEntrySyncJob } from "./entrySyncPolicy";
 

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useI18n } from "../i18n/useI18n";
-import type { EntryView } from "../types";
-import { deleteAthenaLocalData } from "../lib/storage";
+import type { EntryView } from "../features/entries/entryTypes";
+import { deleteAthenaLocalData } from "./localData";
 import { useAthenaLifecycle } from "./useAthenaLifecycle";
 import { useAthenaNavigation } from "./useAthenaNavigation";
 import { useVaultLockPreparation } from "./useVaultLockPreparation";
@@ -10,7 +10,7 @@ import { useEntries } from "../features/entries/useEntries";
 import { useInsights } from "../features/insights/useInsights";
 import { useSettingsState } from "../features/settings/useSettingsState";
 import { useSyncQueue } from "../features/sync/useSyncQueue";
-import { useOnlineStatus } from "../lib/offline";
+import { useOnlineStatus } from "../shared/lib/offline";
 
 export function useAthenaApp() {
   const { language, t } = useI18n();

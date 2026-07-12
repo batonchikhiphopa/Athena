@@ -21,7 +21,7 @@ export {
   unlockVaultKeyFromConfig,
   unlockVaultKeyFromPasswordlessConfig,
   unlockVaultWithoutSecret,
-} from "../../lib/vault";
+} from "./vault";
 export type {
   VaultConfig,
   VaultCredential,
@@ -29,4 +29,4 @@ export type {
   VaultCredentialSummary,
   VaultEncryptedPayload,
   VaultStatus,
-} from "../../lib/vault";
+} from "./vault";

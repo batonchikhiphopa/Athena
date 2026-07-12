@@ -9,7 +9,7 @@ import {
   queueConflict,
   queueRetryable,
   serializeQueueError,
-} from "../client/src/lib/queueErrors.ts";
+} from "../client/src/features/sync/queueErrors.ts";
 
 test("explicit queue errors preserve kind, code, and message", () => {
   const error = queueRetryable(

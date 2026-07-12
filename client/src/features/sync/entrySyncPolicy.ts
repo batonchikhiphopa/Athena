@@ -1,4 +1,4 @@
-import type { EntrySyncQueuePayload } from "../../lib/queueTypes";
+import type { EntrySyncQueuePayload } from "./queueTypes";
 
 export type EntrySyncLocalEntrySnapshot = {
   id: string;

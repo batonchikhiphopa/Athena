@@ -1,5 +1,5 @@
-import type { ExtractionResult } from "../../types";
-import { mapSignalCandidate } from "../../lib/signals";
+import type { ExtractionResult } from "../../shared/contracts";
+import { mapSignalCandidate } from "../extraction/signals";
 
 export const CEDR_EMOTION_CANDIDATE_MODEL =
   "cointegrated/rubert-tiny2-cedr-emotion-detection";
