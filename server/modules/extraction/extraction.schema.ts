@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  ACTIVE_PROMPT_VERSION,
+  ACTIVE_SCHEMA_VERSION,
+} from "../../config/versions.js";
 import { clientSignalPayloadSchema } from "./signal.schema.js";
 
 export const extractionProviderSchema = z.enum(["ollama", "gemini", "off"]);
@@ -12,8 +16,8 @@ export const extractionRequestSchema = z.object({
 }).strict();
 
 export const signalMetadataPayloadSchema = z.object({
-  schema_version: z.string().min(1),
-  prompt_version: z.string().min(1),
+  schema_version: z.literal(ACTIVE_SCHEMA_VERSION),
+  prompt_version: z.literal(ACTIVE_PROMPT_VERSION),
   provider: extractionProviderSchema.default("ollama"),
   model: z.string().min(1),
   error_code: z.string().min(1).nullable().optional(),

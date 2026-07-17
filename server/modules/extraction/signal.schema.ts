@@ -1,30 +1,23 @@
 import { z } from "zod";
+import {
+  ACTIVITY_CONTEXT_AGENCIES,
+  ACTIVITY_CONTEXT_BLOCKERS,
+  ACTIVITY_CONTEXT_EFFECTS,
+  ACTIVITY_CONTEXT_EVENTS,
+  ACTIVITY_CONTEXT_KINDS,
+  ACTIVITY_CONTEXT_NEXT_STEPS,
+  ACTIVITY_CONTEXT_OUTCOMES,
+  ACTIVITY_CONTEXT_STRATEGIES,
+  CONFIDENCE_LEVELS,
+  SIGNAL_AXES,
+  SIGNAL_LEVELS,
+} from "../../../shared/contracts/signal.js";
 import { MARKERS } from "./markers.js";
-
-export const SIGNAL_AXES = [
-  "load",
-  "fatigue",
-  "focus",
-  "distress",
-  "anxiety",
-  "mood",
-  "energy",
-  "sleep_quality",
-  "self_attack",
-  "shame_guilt",
-  "rumination",
-  "avoidance",
-  "agency",
-  "conflict",
-  "social_connection",
-  "recovery_need",
-  "confidence",
-] as const;
 
 export const markerSchema = z.enum(MARKERS);
 export const signalAxisSchema = z.enum(SIGNAL_AXES);
-export const signalLevelSchema = z.enum(["low", "medium", "high"]);
-export const confidenceLevelSchema = z.enum(["low", "medium", "high"]);
+export const signalLevelSchema = z.enum(SIGNAL_LEVELS);
+export const confidenceLevelSchema = z.enum(CONFIDENCE_LEVELS);
 export const entryIntentSchema = z.enum([
   "log",
   "reflection",
@@ -47,6 +40,21 @@ export const temporalContextSourceSchema = z.enum([
   "created_at",
   "absent",
 ]);
+
+export const activityContextSchema = z
+  .object({
+    activity: z.string().trim().min(1).max(52),
+    kind: z.enum(ACTIVITY_CONTEXT_KINDS),
+    event: z.enum(ACTIVITY_CONTEXT_EVENTS),
+    outcome: z.enum(ACTIVITY_CONTEXT_OUTCOMES),
+    blockers: z.array(z.enum(ACTIVITY_CONTEXT_BLOCKERS)).max(2),
+    strategy: z.enum(ACTIVITY_CONTEXT_STRATEGIES),
+    next_step: z.enum(ACTIVITY_CONTEXT_NEXT_STEPS),
+    agency: z.enum(ACTIVITY_CONTEXT_AGENCIES),
+    effect: z.enum(ACTIVITY_CONTEXT_EFFECTS),
+    confidence: confidenceLevelSchema,
+  })
+  .strict();
 
 const scoreSchema = z.number().int().min(0).max(10).nullable();
 const metricConfidenceSchema = z.object({
@@ -113,33 +121,16 @@ const stateInferenceShape = Object.fromEntries(
 export const stateInferenceSchema = z.object(stateInferenceShape).strict();
 const emptyStateInferenceSchema = z.object({}).strict();
 
-export const emotionSignalsSchema = z.record(z.unknown());
-const emptyEmotionSignalsSchema = z.object({}).strict();
-
 export const extractedSignalCandidateSchema = z.object({
   topics: z.array(z.string().min(1)).max(5),
   activities: z.array(z.string().min(1)).max(5),
+  activity_contexts: z.array(activityContextSchema).max(2),
   markers: z.array(markerSchema).max(8),
   state_inference: stateInferenceSchema,
-  emotion_signals: emotionSignalsSchema,
   metric_confidence: metricConfidenceSchema,
-  entry_intent: entryIntentSignalSchema.default({
-    intent: "unknown",
-    confidence: "low",
-    basis: [],
-  }),
-  structure_signal: structureSignalSchema.default({
-    density: "empty",
-    coherence: "low",
-    has_question: false,
-    has_plan: false,
-    basis: [],
-  }),
-  temporal_context: temporalContextSchema.default({
-    local_date: null,
-    time_bucket: "unknown",
-    source: "absent",
-  }),
+  entry_intent: entryIntentSignalSchema,
+  structure_signal: structureSignalSchema,
+  temporal_context: temporalContextSchema,
   quality_reason: z.string().min(1).max(128),
 
   load: scoreSchema,
@@ -163,9 +154,9 @@ export const sanitizedSignalSchema = extractedSignalCandidateSchema.extend({
 export const fallbackSignalSchema = z.object({
   topics: z.array(z.string()).length(0),
   activities: z.array(z.string()).length(0),
+  activity_contexts: z.array(activityContextSchema).length(0),
   markers: z.array(markerSchema).length(0),
   state_inference: emptyStateInferenceSchema,
-  emotion_signals: emptyEmotionSignalsSchema,
   metric_confidence: fallbackMetricConfidenceSchema,
   entry_intent: defaultEntryIntentSignalSchema,
   structure_signal: defaultStructureSignalSchema,
@@ -191,9 +182,9 @@ export const fallbackSignalSchema = z.object({
 export const clientFallbackSignalSchema = z.object({
   topics: z.array(z.string()).length(0),
   activities: z.array(z.string()).length(0),
+  activity_contexts: z.array(activityContextSchema).length(0),
   markers: z.array(markerSchema).length(0),
   state_inference: emptyStateInferenceSchema,
-  emotion_signals: emptyEmotionSignalsSchema,
   metric_confidence: fallbackMetricConfidenceSchema,
   entry_intent: entryIntentSignalSchema,
   structure_signal: structureSignalSchema,

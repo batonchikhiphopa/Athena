@@ -1,13 +1,18 @@
+import {
+  ACTIVE_EXTRACTION_PROMPT_VERSION,
+  ACTIVE_SIGNAL_SCHEMA_VERSION,
+} from "../../shared/contracts";
 import type { LocalEntry } from "../entries/entryTypes";
 import type { SelfReportEvent } from "../selfReports/selfReportTypes";
+import type { Signal, SignalMetadata } from "../../shared/contracts";
 import type { QueueJob, QueueJobStatus, QueueJobType } from "../sync/queueTypes";
 
 export const ATHENA_EXPORT_APP_ID = "athena" as const;
 export const LOCAL_EXPORT_VERSION = "local_export.v1" as const;
 export const BACKEND_METADATA_EXPORT_VERSION = "backend_metadata_export.v1" as const;
 
-export const EXPORT_SIGNAL_SCHEMA_VERSION = "signal.v4" as const;
-export const EXPORT_PROMPT_VERSION = "extraction.v5" as const;
+export const EXPORT_SIGNAL_SCHEMA_VERSION = ACTIVE_SIGNAL_SCHEMA_VERSION;
+export const EXPORT_PROMPT_VERSION = ACTIVE_EXTRACTION_PROMPT_VERSION;
 export const EXPORT_SELF_REPORT_SCHEMA_VERSION = "self_report.v1" as const;
 export const EXPORT_SELF_REPORT_DAILY_AGGREGATE_VERSION =
   "self_report_daily_aggregate.v1" as const;
@@ -38,9 +43,9 @@ export type LocalExportEntryV1 = {
   analysis_enabled: boolean;
   created_at: string;
   updated_at: string;
-  source_text_hash: string | null;
-  signal: unknown | null;
-  metadata: unknown | null;
+  source_text_hash: string;
+  signal: Signal;
+  metadata: SignalMetadata;
 };
 
 export type LocalExportSelfReportValuesV1 = {
@@ -67,7 +72,6 @@ export type LocalExportSettingsV1 = {
   interface_language?: string;
   entry_sort_direction?: "asc" | "desc";
   persona_text_enabled?: boolean;
-  local_emotion_spike_enabled?: boolean;
 };
 
 export type QueueExportSummaryV1 = {
@@ -112,9 +116,8 @@ export type AthenaBackendMetadataExportV1 = {
   };
   entries: unknown[];
   signals: unknown[];
-  effective_signals?: unknown[];
-  signal_overrides?: unknown[];
+  effective_signals: unknown[];
+  signal_overrides: unknown[];
   self_report_daily_aggregates: unknown[];
   insight_snapshots: unknown[];
-  analytics_summary?: unknown;
 };

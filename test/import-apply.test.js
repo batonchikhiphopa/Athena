@@ -7,6 +7,7 @@ import {
   toImportedSelfReportEvent,
   toSelfReportValues,
 } from "../client/src/features/exportImport/importApply.ts";
+import { validSignal } from "./signal-fixtures.js";
 
 const NOW = "2026-06-07T12:00:00.000Z";
 
@@ -17,8 +18,8 @@ function createPackage(overrides = {}) {
     exported_at: NOW,
     source: {
       app_version: "0.6.0",
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       self_report_schema_version: "self_report.v1",
       self_report_daily_aggregate_version: "self_report_daily_aggregate.v1",
     },
@@ -34,35 +35,10 @@ function createPackage(overrides = {}) {
         updated_at: "2026-06-06T10:05:00.000Z",
         source_text_hash:
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        signal: {
-          topics: ["work"],
-          activities: [],
-          markers: [],
-          load: 7,
-          fatigue: null,
-          focus: 4,
-          signal_quality: "valid",
-          entry_intent: {
-            intent: "reflection",
-            confidence: "medium",
-            basis: [],
-          },
-          structure_signal: {
-            density: "medium",
-            coherence: "medium",
-            has_question: false,
-            has_plan: false,
-            basis: [],
-          },
-          temporal_context: {
-            local_date: "2026-06-06",
-            time_bucket: "unknown",
-            source: "entry_date",
-          },
-        },
+        signal: validSignal({ topics: ["work"], load: 7, focus: 4 }),
         metadata: {
-          schema_version: "signal.v4",
-          prompt_version: "extraction.v5",
+          schema_version: "signal.v5",
+          prompt_version: "extraction.v7",
           provider: "off",
           model: "off",
           error_code: null,

@@ -14,7 +14,6 @@ import {
   type VaultStatus,
   type VaultCredentialSummary,
 } from "./vaultApi";
-import { migrateLocalDataToVault } from "./vaultMigration";
 
 export type LocalVaultPhase = VaultStatus;
 export type LocalVaultError =
@@ -62,7 +61,6 @@ export function useLocalVault() {
 
     try {
       await setupVaultWithoutSecret(profileId);
-      await migrateLocalDataToVault();
       setPhase("unlocked");
     } catch (nextError) {
       setError(toUserMessage(nextError));
@@ -79,7 +77,6 @@ export function useLocalVault() {
 
       try {
         await setupVault(passphrase, profileId);
-        await migrateLocalDataToVault();
         setPhase("unlocked");
       } catch (nextError) {
         setError(toUserMessage(nextError));
@@ -97,7 +94,6 @@ export function useLocalVault() {
 
     try {
       await unlockVault(passphrase);
-      await migrateLocalDataToVault();
       setPhase("unlocked");
     } catch (nextError) {
       setError(toUserMessage(nextError));
@@ -113,7 +109,6 @@ export function useLocalVault() {
 
     try {
       await unlockVaultWithoutSecret(profileId);
-      await migrateLocalDataToVault();
       setPhase("unlocked");
     } catch (nextError) {
       setError(toUserMessage(nextError));

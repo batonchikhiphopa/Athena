@@ -8,13 +8,8 @@ export type QueueJobStatus =
 
 export type QueueJobType =
   | "entry.sync"
-  | "entry.delete_remote"
-  | "entry.extract"
-  | "entry.append_signal"
   | "entry.reprocess_signal"
-  | "self_report.sync_daily_aggregate"
-  | "semantic.index_entry"
-  | "semantic.reindex_all";
+  | "self_report.sync_daily_aggregate";
 
 export type EntryReprocessReason =
   | "fallback"
@@ -76,14 +71,13 @@ export type QueueHandler<TPayload = unknown> = (
 export type QueueListener = (snapshot: QueueSnapshot) => void;
 
 export type EntryQueuePayload = {
-  entry_id?: string;
-  local_revision?: string;
-  server_id?: number | null;
-  source_text_hash?: string;
-  reason?: EntryReprocessReason;
-  requested_schema_version?: string;
-  requested_prompt_version?: string;
-  queued_at?: string;
+  entry_id: string;
+  server_id: number | null;
+  source_text_hash: string;
+  reason: EntryReprocessReason;
+  requested_schema_version: string;
+  requested_prompt_version: string;
+  queued_at: string;
 };
 
 export type EntrySyncQueuePayload = {

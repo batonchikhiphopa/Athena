@@ -25,7 +25,7 @@ test("entry API payload rejects raw text", () => {
   assert.equal(parsed.success, false);
 });
 
-test("entry API rejects legacy Signal v2 payloads", () => {
+test("entry API rejects incomplete Signal payloads", () => {
   const parsed = createEntrySchema.safeParse(
     validPayload({
       signal: {

@@ -102,5 +102,5 @@ function getEntryId(job: QueueJob<EntryQueuePayload>): string | null {
     return payloadEntryId;
   }
 
-  return job.entity_id;
+  return null;
 }

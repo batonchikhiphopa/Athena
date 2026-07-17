@@ -58,7 +58,6 @@ test("invalid extraction output persists deterministic fallback without raw text
     assert.equal(storedSignal.activities, "[]");
     assert.equal(storedSignal.markers, "[]");
     assert.equal(storedSignal.state_inference, "{}");
-    assert.equal(storedSignal.emotion_signals, "{}");
     assert.equal(
       storedSignal.metric_confidence,
       '{"load":"low","fatigue":"low","focus":"low"}',
@@ -76,11 +75,9 @@ test("invalid extraction output persists deterministic fallback without raw text
     await db.close();
   }
 });
-
 test("client fallback payload shape remains valid", () => {
   assert.deepEqual(createFallbackSignal(), fallbackSignal());
 });
-
 test("fallback entry can receive a later signal for the same text hash", async () => {
   const db = await createTestDb();
 
@@ -127,17 +124,31 @@ test("fallback entry can receive a later signal for the same text hash", async (
     await db.close();
   }
 });
-
-test("stored Signal v4 details round-trip through entry reads", async () => {
+test("stored Signal v5 details round-trip through entry reads", async () => {
   const db = await createTestDb();
 
   try {
     const entryId = await createEntry(db, {
-      client_entry_id: "client-entry-v4-details",
+      client_entry_id: "client-entry-v5-details",
       entry_date: "2026-04-24",
       tags: [],
       source_text_hash: "e".repeat(64),
       signal: validSignal({
+        activities: ["Поиск работы"],
+        activity_contexts: [
+          {
+            activity: "Поиск работы",
+            kind: "task",
+            event: "progressed",
+            outcome: "partial",
+            blockers: ["uncertainty"],
+            strategy: "clear_plan",
+            next_step: "explicit",
+            agency: "active",
+            effect: "draining",
+            confidence: "medium",
+          },
+        ],
         state_inference: {
           distress: state("high", "medium", ["explicit pressure"]),
           agency: state("low", "low", ["stuck"]),
@@ -172,101 +183,21 @@ test("stored Signal v4 details round-trip through entry reads", async () => {
       entries[0].signal.state_inference,
       entry.signal.state_inference,
     );
-    assert.deepEqual(entries[0].signal.emotion_signals, {});
     assert.equal(entries[0].signal.metric_confidence.load, "medium");
     assert.equal(entries[0].signal.entry_intent.intent, "unknown");
     assert.equal(entries[0].signal.structure_signal.density, "empty");
     assert.equal(entries[0].signal.temporal_context.source, "absent");
+    assert.equal(entries[0].signal.activity_contexts[0].event, "progressed");
     assert.equal(JSON.parse(storedSignal.state_inference).distress.level, "high");
+    assert.equal(
+      JSON.parse(storedSignal.activity_contexts)[0].strategy,
+      "clear_plan",
+    );
     assert.equal(JSON.parse(storedSignal.metric_confidence).load, "medium");
     assert.equal(JSON.parse(storedSignal.entry_intent).intent, "unknown");
     assert.equal(JSON.parse(storedSignal.structure_signal).density, "empty");
     assert.equal(JSON.parse(storedSignal.temporal_context).source, "absent");
     assert.equal(storedSignal.quality_reason, "state_distress_high");
-  } finally {
-    await db.close();
-  }
-});
-
-test("legacy stored signal rows normalize to current read shape", async () => {
-  const db = await createTestDb();
-
-  try {
-    const now = "2026-04-24T10:00:00.000Z";
-    const entry = await db.run(
-      `
-      INSERT INTO entries (
-        client_entry_id,
-        entry_date,
-        created_at,
-        updated_at,
-        status,
-        tags,
-        source_text_hash
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        "client-entry-legacy-row",
-        "2026-04-24",
-        now,
-        now,
-        "extracted",
-        "[]",
-        "f".repeat(64),
-      ],
-    );
-
-    await db.run(
-      `
-      INSERT INTO signals (
-        entry_id,
-        source_text_hash,
-        topics,
-        activities,
-        markers,
-        load,
-        fatigue,
-        focus,
-        signal_quality,
-        schema_version,
-        prompt_version,
-        provider,
-        model,
-        error_code,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        entry.lastID,
-        "f".repeat(64),
-        '["legacy"]',
-        "[]",
-        "[]",
-        5,
-        null,
-        6,
-        "valid",
-        "signal.v2",
-        "extraction.v3",
-        "ollama",
-        "legacy-model",
-        null,
-        now,
-      ],
-    );
-
-    const normalized = await getEntryById(db, entry.lastID);
-
-    assert.deepEqual(normalized.signal.state_inference, {});
-    assert.deepEqual(normalized.signal.emotion_signals, {});
-    assert.deepEqual(normalized.signal.metric_confidence, {
-      load: "low",
-      fatigue: "low",
-      focus: "low",
-    });
-    assert.equal(normalized.signal.quality_reason, "legacy_signal_v2");
-    assert.equal(normalized.signal.load, 5);
-    assert.equal(normalized.signal.focus, 6);
   } finally {
     await db.close();
   }

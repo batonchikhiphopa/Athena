@@ -1,6 +1,7 @@
 import { createEmptyMetricConfidence } from "../../../shared/signal/signalMapper.js";
 import type {
   EntryStatus,
+  ActivityContext,
   EntryIntentSignal,
   ExtractionProvider,
   MetricConfidence,
@@ -35,9 +36,9 @@ type EntryJoinedRow = {
   signal_id: number | null;
   topics: string | null;
   activities: string | null;
+  activity_contexts: string | null;
   markers: string | null;
   state_inference: string | null;
-  emotion_signals: string | null;
   metric_confidence: string | null;
   entry_intent: string | null;
   structure_signal: string | null;
@@ -113,9 +114,9 @@ export async function listEntries(db: AthenaDb): Promise<EntryView[]> {
       s.id AS signal_id,
       s.topics,
       s.activities,
+      s.activity_contexts,
       s.markers,
       s.state_inference,
-      s.emotion_signals,
       s.metric_confidence,
       s.entry_intent,
       s.structure_signal,
@@ -164,9 +165,9 @@ export async function getEntryById(
       s.id AS signal_id,
       s.topics,
       s.activities,
+      s.activity_contexts,
       s.markers,
       s.state_inference,
-      s.emotion_signals,
       s.metric_confidence,
       s.entry_intent,
       s.structure_signal,
@@ -270,12 +271,9 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
     ? {
         topics: parseStringArray(row.topics),
         activities: parseStringArray(row.activities),
+        activity_contexts: parseArray<ActivityContext>(row.activity_contexts),
         markers: parseStringArray(row.markers),
         state_inference: parseRecord<StateInference>(row.state_inference, {}),
-        emotion_signals: parseRecord<Record<string, unknown>>(
-          row.emotion_signals,
-          {},
-        ),
         metric_confidence: parseRecord<MetricConfidence>(
           row.metric_confidence,
           createEmptyMetricConfidence(),
@@ -292,7 +290,7 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
           row.temporal_context,
           defaultContext.temporal_context,
         ),
-        quality_reason: row.quality_reason || "legacy_signal_v2",
+        quality_reason: row.quality_reason || "stored_signal_missing_reason",
         load: row.load,
         fatigue: row.fatigue,
         focus: row.focus,
@@ -328,6 +326,15 @@ function mapEntryRow(row: EntryJoinedRow): EntryView {
 function parseStringArray(value: string | null): string[] {
   const parsed: unknown = JSON.parse(value || "[]");
   return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+}
+
+function parseArray<T>(value: string | null): T[] {
+  try {
+    const parsed: unknown = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 function parseRecord<T extends Record<string, unknown>>(

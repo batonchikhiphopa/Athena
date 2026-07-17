@@ -11,10 +11,7 @@ import {
   createFallbackMetadata,
   createFallbackSignal,
 } from "../extraction/signals";
-import {
-  clearLocalDraft,
-  migrateLegacyDraftToIndexedDb,
-} from "./draftRepository";
+import { clearLocalDraft } from "./draftRepository";
 import {
   createClientEntryId,
   createTextHash,
@@ -255,7 +252,6 @@ export function useEditorDraft({
   );
 
   const initializeDraft = useCallback(async () => {
-    await migrateLegacyDraftToIndexedDb();
     await clearLocalDraft();
     resetDraftState();
     setDraftLoaded(true);

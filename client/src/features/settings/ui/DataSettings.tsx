@@ -8,7 +8,6 @@ import {
 import { getEntrySortDirection } from "../../entries/entryPreferences";
 import {
   getExtractionSettings,
-  getLocalEmotionSpikeEnabled,
   getPersonaTextEnabled,
 } from "../settingsStorage";
 import { getQueueJobs } from "../../sync/queueStorage";
@@ -104,7 +103,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
     try {
       const extractionSettings = getExtractionSettings();
       const packageData = buildLocalExportPackage({
-        appVersion: "0.8.3",
+        appVersion: "0.9.0",
         entries: await getAllLocalEntries(),
         selfReportEvents: await getAllSelfReportEvents(),
         settings: {
@@ -113,7 +112,6 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
           interface_language: language,
           entry_sort_direction: getEntrySortDirection(),
           persona_text_enabled: getPersonaTextEnabled(),
-          local_emotion_spike_enabled: getLocalEmotionSpikeEnabled(),
         },
         queueJobs: await getQueueJobs(),
       });

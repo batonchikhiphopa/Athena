@@ -13,6 +13,7 @@ import { CloseIcon, EditIcon } from "./entryUiHelpers";
 import { tagTestIdValue } from "./entryTagId";
 
 export function EntryTile({
+  compact = false,
   debugMode,
   entry,
   isExpanded,
@@ -25,6 +26,7 @@ export function EntryTile({
   onToggleEntryAnalysis,
   onToggleTag,
 }: {
+  compact?: boolean;
   debugMode: boolean;
   entry: EntryView;
   isExpanded: boolean;
@@ -96,6 +98,7 @@ export function EntryTile({
         "focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400/70",
       ].join(" ")}
       data-expanded={isExpanded ? "true" : "false"}
+      data-compact={compact ? "true" : "false"}
       data-testid="entry-list-item"
       onClick={() => onSelectEntry(entry.id)}
       onBlurCapture={onAnchorBlur}
@@ -207,7 +210,12 @@ export function EntryTile({
           </TooltipButton>
         </div>
 
-        <div className="flex min-h-10 items-center justify-between border-b border-black/5 px-5 py-3 pr-28 text-xs text-zinc-500">
+        <div
+          className={[
+            "flex items-center justify-between border-b border-black/5 pr-28 text-xs text-zinc-500",
+            compact ? "min-h-8 px-4 py-2" : "min-h-10 px-5 py-3",
+          ].join(" ")}
+        >
           <span>{formatLongDate(entry.entryDate, language)}</span>
           {entry.isDraft && (
             <span className="rounded-full bg-white/45 px-2 py-0.5 text-[11px] text-zinc-500">
@@ -216,14 +224,24 @@ export function EntryTile({
           )}
         </div>
 
-        <div className="athena-entry-tile-body px-5 py-4">
-          <div className="athena-entry-tile-body-content whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-zinc-900">
+        <div
+          className={[
+            "athena-entry-tile-body",
+            compact ? "px-4 py-2.5" : "px-5 py-4",
+          ].join(" ")}
+        >
+          <div
+            className={[
+              "athena-entry-tile-body-content whitespace-pre-wrap break-words font-serif text-zinc-900",
+              compact ? "text-sm leading-6" : "text-[15px] leading-7",
+            ].join(" ")}
+          >
             <EntryText text={entry.text} query={searchQuery} />
           </div>
         </div>
 
         {entry.tags.length > 0 && (
-          <div className="px-5 pb-4">
+          <div className={compact ? "px-4 pb-2.5" : "px-5 pb-4"}>
             <div className="flex max-h-8 flex-wrap items-start gap-1.5 overflow-hidden">
               {entry.tags.map((tag) => (
                 <button

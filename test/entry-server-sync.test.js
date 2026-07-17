@@ -70,8 +70,8 @@ function localEntry(overrides = {}) {
     source_text_hash: "a".repeat(64),
     signals: validSignal(),
     metadata: {
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       provider: "gemini",
       model: "gemini-2.5-flash-lite",
       error_code: null,
@@ -95,8 +95,8 @@ function serverEntry(overrides = {}) {
     source_text_hash: "a".repeat(64),
     signal: validSignal(),
     metadata: {
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       provider: "gemini",
       model: "gemini-2.5-flash-lite",
       error_code: null,

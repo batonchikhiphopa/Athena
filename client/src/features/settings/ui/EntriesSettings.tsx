@@ -5,7 +5,6 @@ import type {
 } from "../../../shared/contracts";
 import type { MessageKey } from "../../../i18n/messages";
 import { useI18n } from "../../../i18n/useI18n";
-import type { LocalEmotionResult } from "../../emotion/localEmotion";
 import type {
   QueueJobStatus,
   QueueSnapshot,
@@ -16,7 +15,7 @@ import {
   SettingsRow,
   SettingsSection,
   SettingsSelect,
-  SettingsLineLever
+  SettingsLineLever,
 } from "./settingsUi";
 
 type EntriesSettingsProps = {
@@ -24,9 +23,6 @@ type EntriesSettingsProps = {
   debugMode: boolean;
   extractionSettings: ExtractionSettings;
   extractionStatus: ExtractionStatus | null;
-  localEmotionSpikeEnabled: boolean;
-  localEmotionSpikeResult: LocalEmotionResult | null;
-  localEmotionSpikeStatus: "idle" | "running" | "done" | "error";
   providers: ExtractionConfig["providers"];
   queueSnapshot: QueueSnapshot;
   reprocessCandidates: number;
@@ -39,10 +35,8 @@ type EntriesSettingsProps = {
   onRefreshExtractionStatus: () => void;
   onReprocessFallbackEntries: () => void;
   onRetryRecoverableQueueJobs: () => void;
-  onRunLocalEmotionSpikeDemo: () => void;
   onStartQueue: () => void;
   onToggleDebugMode: (value: boolean) => void;
-  onToggleLocalEmotionSpike: (value: boolean) => void;
 };
 
 type QueueErrorDetails = {
@@ -56,9 +50,6 @@ export function EntriesSettings({
   debugMode,
   extractionSettings,
   extractionStatus,
-  localEmotionSpikeEnabled,
-  localEmotionSpikeResult,
-  localEmotionSpikeStatus,
   providers,
   queueSnapshot,
   reprocessCandidates,
@@ -71,13 +62,10 @@ export function EntriesSettings({
   onRefreshExtractionStatus,
   onReprocessFallbackEntries,
   onRetryRecoverableQueueJobs,
-  onRunLocalEmotionSpikeDemo,
   onStartQueue,
   onToggleDebugMode,
-  onToggleLocalEmotionSpike,
 }: EntriesSettingsProps) {
   const { language, t } = useI18n();
-  const localEmotionSpikeAvailable = language === "ru";
   const latestJob = queueSnapshot.latestJob;
   const visibleQueueError = latestJob?.last_error ?? queueSnapshot.lastError;
   const queueErrorDetails = parseQueueErrorDetails(visibleQueueError);
@@ -101,41 +89,6 @@ export function EntriesSettings({
           title={t("settings.records.debugMode")}
         />
       </SettingsSection>
-
-      {debugMode && localEmotionSpikeAvailable ? (
-        <SettingsSection>
-          <SettingsRow
-            action={
-<SettingsLineLever
-  checked={localEmotionSpikeEnabled}
-  label={t("settings.records.localEmotionTitle")}
-  onChange={onToggleLocalEmotionSpike}
-/>
-            }
-            description={t("settings.records.localEmotionDescription")}
-            title={t("settings.records.localEmotionTitle")}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <SettingsButton
-                disabled={localEmotionSpikeStatus === "running"}
-                onClick={onRunLocalEmotionSpikeDemo}
-                size="xs"
-              >
-                {t("settings.records.runDemo")}
-              </SettingsButton>
-              <div className="text-xs text-zinc-400">
-                {t("common.status")}: {formatRunStatus(localEmotionSpikeStatus, t)}
-              </div>
-            </div>
-
-            {localEmotionSpikeResult ? (
-              <div className="mt-3 rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600">
-                {formatEmotionSpikeResult(localEmotionSpikeResult)}
-              </div>
-            ) : null}
-          </SettingsRow>
-        </SettingsSection>
-      ) : null}
 
       <SettingsSection label={t("settings.records.analysis")}>
         <SettingsRow
@@ -539,38 +492,4 @@ function formatProviderLabel(
   } satisfies Record<ExtractionSettings["provider"], MessageKey>;
 
   return t(keys[provider.id]) || provider.label;
-}
-
-function formatRunStatus(
-  status: "idle" | "running" | "done" | "error",
-  t: (key: MessageKey, values?: Record<string, string | number>) => string,
-) {
-  const keys = {
-    done: "state.done",
-    error: "state.error",
-    idle: "state.idle",
-    running: "state.running",
-  } satisfies Record<typeof status, MessageKey>;
-
-  return t(keys[status]);
-}
-
-function formatEmotionSpikeResult(result: LocalEmotionResult) {
-  if (!result.ok) {
-    return `${result.reason}: ${result.message.slice(0, 160)}`;
-  }
-
-  const labels = Object.entries(result.signals.labels)
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 4)
-    .map(([label, score]) => `${label} ${score}`)
-    .join(", ");
-
-  return [
-    result.signals.model,
-    `top=${result.signals.top_label ?? "-"} ${result.signals.top_score ?? "-"}`,
-    `load=${result.signals.timings_ms.model_load}ms`,
-    `infer=${result.signals.timings_ms.inference}ms`,
-    labels,
-  ].join(" · ");
 }

@@ -19,9 +19,8 @@ type EntriesPageProps = {
   onClearFilters: () => void;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
-  onOpenObservations: () => void;
   onSearchQueryChange: (query: string) => void;
-  onSelectEntry: (id: string) => void;
+  onSelectEntry: (id: string | null) => void;
   onToggleEntryAnalysis: (entry: EntryView) => void;
   onToggleExcludedTag: (tag: string) => void;
   onToggleTag: (tag: string) => void;
@@ -39,7 +38,6 @@ export function EntriesPage({
   onClearFilters,
   onDeleteEntry,
   onEditEntry,
-  onOpenObservations,
   onSearchQueryChange,
   onSelectEntry,
   onToggleEntryAnalysis,
@@ -66,8 +64,10 @@ export function EntriesPage({
   }, [entries, expandedEntryId]);
 
   function handleSelectEntry(entryId: string) {
-    setExpandedEntryId(entryId);
-    onSelectEntry(entryId);
+    const nextExpandedEntryId = expandedEntryId === entryId ? null : entryId;
+
+    setExpandedEntryId(nextExpandedEntryId);
+    onSelectEntry(nextExpandedEntryId);
   }
 
   return (
@@ -86,7 +86,6 @@ export function EntriesPage({
           isSearching={isSearching}
           searchQuery={searchQuery}
           onClearFilters={onClearFilters}
-          onOpenObservations={onOpenObservations}
           onSearchQueryChange={onSearchQueryChange}
           onToggleExcludedTag={onToggleExcludedTag}
           onToggleTag={onToggleTag}

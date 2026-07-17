@@ -6,6 +6,7 @@ import {
   validateLocalExportPackage,
 } from "../client/src/features/exportImport/importValidation.ts";
 import { buildLocalImportPreview } from "../client/src/features/exportImport/importPreview.ts";
+import { fallbackSignal, validSignal } from "./signal-fixtures.js";
 
 const NOW = "2026-06-07T12:00:00.000Z";
 
@@ -16,8 +17,8 @@ function createPackage(overrides = {}) {
     exported_at: NOW,
     source: {
       app_version: "0.6.0",
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       self_report_schema_version: "self_report.v1",
       self_report_daily_aggregate_version: "self_report_daily_aggregate.v1",
     },
@@ -33,16 +34,10 @@ function createPackage(overrides = {}) {
         updated_at: "2026-06-06T10:05:00.000Z",
         source_text_hash:
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        signal: {
-          topics: ["work"],
-          load: 7,
-          fatigue: null,
-          focus: 4,
-          signal_quality: "valid",
-        },
+        signal: validSignal({ topics: ["work"], load: 7, focus: 4 }),
         metadata: {
-          schema_version: "signal.v4",
-          prompt_version: "extraction.v5",
+          schema_version: "signal.v5",
+          prompt_version: "extraction.v7",
           provider: "off",
           model: "off",
         },
@@ -56,9 +51,17 @@ function createPackage(overrides = {}) {
         analysis_enabled: false,
         created_at: "2026-06-07T10:00:00.000Z",
         updated_at: "2026-06-07T10:05:00.000Z",
-        source_text_hash: null,
-        signal: null,
-        metadata: null,
+        source_text_hash:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        signal: fallbackSignal(),
+        metadata: {
+          schema_version: "signal.v5",
+          prompt_version: "extraction.v7",
+          provider: "off",
+          model: "fallback",
+          error_code: "analysis_disabled",
+          created_at: "2026-06-07T10:05:00.000Z",
+        },
       },
     ],
     self_reports: {
@@ -86,7 +89,6 @@ function createPackage(overrides = {}) {
       interface_language: "en",
       entry_sort_direction: "desc",
       persona_text_enabled: true,
-      local_emotion_spike_enabled: false,
     },
     queue: {
       pending_jobs: [

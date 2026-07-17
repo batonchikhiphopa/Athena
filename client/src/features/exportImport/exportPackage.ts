@@ -29,13 +29,8 @@ const SAFE_QUEUE_REASONS = new Set([
 
 const QUEUE_TYPES = new Set<QueueJobType>([
   "entry.sync",
-  "entry.delete_remote",
-  "entry.extract",
-  "entry.append_signal",
   "entry.reprocess_signal",
   "self_report.sync_daily_aggregate",
-  "semantic.index_entry",
-  "semantic.reindex_all",
 ]);
 
 export function buildLocalExportPackage(
@@ -88,9 +83,9 @@ export function toLocalExportEntry(entry: LocalEntry): LocalExportEntryV1 {
     analysis_enabled: entry.analysis_enabled,
     created_at: entry.createdAt,
     updated_at: entry.updatedAt,
-    source_text_hash: entry.source_text_hash || null,
-    signal: entry.signals ?? null,
-    metadata: entry.metadata ?? null,
+    source_text_hash: entry.source_text_hash,
+    signal: entry.signals,
+    metadata: entry.metadata,
   };
 }
 
@@ -152,10 +147,6 @@ export function toLocalExportSettings(
     result.persona_text_enabled = settings.persona_text_enabled;
   }
 
-  if (typeof settings.local_emotion_spike_enabled === "boolean") {
-    result.local_emotion_spike_enabled = settings.local_emotion_spike_enabled;
-  }
-
   return result;
 }
 
@@ -212,7 +203,7 @@ export function assertValidLocalExportPackage(
     assertIsoDate(entry.created_at, "Invalid entry created_at timestamp.");
     assertIsoDate(entry.updated_at, "Invalid entry updated_at timestamp.");
     assertCondition(
-      entry.source_text_hash === null || typeof entry.source_text_hash === "string",
+      /^[a-f0-9]{64}$/.test(entry.source_text_hash),
       "Invalid source_text_hash.",
     );
   }

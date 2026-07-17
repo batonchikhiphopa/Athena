@@ -18,6 +18,7 @@ React client
   - light paper-like workspace with icon rail
   - editor-first writing surface
   - searchable Entries card grid
+  - unified expandable Results list built from local entries
   - floating Observations and Settings panels
   - IndexedDB raw entries, drafts, and self-report events
   - optional local vault encryption
@@ -31,11 +32,16 @@ Express backend
   - SQLite metadata and signals
   - deterministic analytics and Analytics V2 summaries
   - Insight V3 snapshots
+  - deidentified activity-insight orchestration
 
 Extraction providers
   - off fallback
   - local Ollama
   - Gemini API when explicitly configured
+
+Results insight provider
+  - one bounded Gemini batch per day
+  - temporary activity tokens and textless structured input only
 ```
 
 ## Data Boundary
@@ -63,13 +69,37 @@ surfaces are:
   analysis control, voluntary self-report scales, and a quick new-entry action.
 - **Entries**: a card-grid archive with always-on local hybrid search across
   text, dates, tags, excluded tags, and semantic similarity.
+- **Results**: one unfiltered list of task/project and repeatable-activity
+  identities built in the browser. A row expands on click to show a verbal
+  insight, status/rhythm chips, the original activity graph, and source entry
+  tiles. Results currently has no rename, merge, or manual-linking state.
 - **Observations**: a floating history panel for saved day, week, and month
-  snapshots derived from deterministic analytics after sufficiency rules pass.
+  snapshots plus activity insights and navigation into Results.
 - **Settings**: a floating panel for interface, access, records, and data
   controls.
 
-The surface stays quiet; analytical detail appears only through bounded
-observations, settings, queue/status controls, or debug-only affordances.
+The surface stays quiet; analytical detail appears only through expanded
+Results rows, bounded observations, settings, queue/status controls, or
+debug-only affordances.
+
+## Results Pipeline
+
+```text
+analyzed local entries
+-> extracted activities and activity_contexts
+-> exact identity catalog + bounded project-tag hints
+-> local activity aggregation
+-> expandable Results rows and source entry tiles
+-> optional deidentified Gemini insight batch
+-> encrypted browser-local insight cache
+```
+
+Specific project tags are identity hints, not automatic activities. One
+specific tag may name a project only when the entry also contains task/project
+evidence. Broad tags such as a domain or subject, and entries with multiple
+possible project tags, do not create project identities. Exact configured
+cross-language aliases may share an identity; general fuzzy merging is not
+used.
 
 ## Current Project Shape
 
@@ -92,6 +122,7 @@ server/
     exports/
     extraction/
     insights/
+    results/
     selfReports/
   platform/http/         shared Express mechanics and error handling
   core/                  cross-module backend types only
@@ -118,6 +149,9 @@ docs/                    public project docs
   `client/src/shared` or repository-level `shared`.
 - One deterministic rule: the Signal mapper lives in `shared/signal` and is
   consumed by both runtimes.
+- One runtime vocabulary: Signal v5 and activity-insight enum values live in
+  `shared/contracts`; client normalizers and server Zod/provider schemas consume
+  those values instead of redefining them.
 - Infrastructure boundaries: IndexedDB schema belongs to `platform/storage`;
   feature repositories own their records and encryption envelopes.
 

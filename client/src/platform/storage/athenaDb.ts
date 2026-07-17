@@ -1,8 +1,9 @@
 import { getProfileScopedDatabaseName } from "../../features/vault/vaultProfiles";
 
 export const ATHENA_LOCAL_DB_NAME = "athena-private-v1";
-const ATHENA_LOCAL_DB_VERSION = 3;
+const ATHENA_LOCAL_DB_VERSION = 6;
 
+export const ACTIVITY_INSIGHT_STORE = "activity_insights";
 export const ENTRY_STORE = "entries";
 export const DRAFT_STORE = "drafts";
 export const QUEUE_JOBS_STORE = "queue_jobs";
@@ -55,6 +56,12 @@ export function idbRequest<T = unknown>(request: IDBRequest) {
 }
 
 function initializeSchema(db: IDBDatabase) {
+  if (!db.objectStoreNames.contains(ACTIVITY_INSIGHT_STORE)) {
+    db.createObjectStore(ACTIVITY_INSIGHT_STORE, {
+      keyPath: "storageKey",
+    });
+  }
+
   if (!db.objectStoreNames.contains(ENTRY_STORE)) {
     const entries = db.createObjectStore(ENTRY_STORE, { keyPath: "id" });
     entries.createIndex("entry_date", "entry_date");

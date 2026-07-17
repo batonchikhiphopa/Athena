@@ -11,6 +11,15 @@ import type {
 } from "../../shared/contracts/index.js";
 
 export type {
+  ActivityContext,
+  ActivityContextAgency,
+  ActivityContextBlocker,
+  ActivityContextEffect,
+  ActivityContextEvent,
+  ActivityContextKind,
+  ActivityContextNextStep,
+  ActivityContextOutcome,
+  ActivityContextStrategy,
   ConfidenceLevel,
   EntryStatus,
   EntryIntent,
@@ -72,9 +81,9 @@ export type SignalRow = {
   signal_quality: SignalQuality;
   topics: string;
   activities: string;
+  activity_contexts: string;
   markers: string;
   state_inference: string;
-  emotion_signals: string;
   metric_confidence: string;
   entry_intent: string;
   structure_signal: string;
@@ -98,9 +107,9 @@ export type EffectiveSignalRow = {
   signal_quality: SignalQuality;
   topics: string;
   activities: string;
+  activity_contexts: string;
   markers: string;
   state_inference: string;
-  emotion_signals: string;
   metric_confidence: string;
   entry_intent: string;
   structure_signal: string;

@@ -7,15 +7,16 @@ The contract has two separate export surfaces:
 - `local_export.v1` - a browser-local JSON package created by direct user action. It may contain raw diary text because it is the user's explicit private export.
 - `backend_metadata_export.v1` - a backend JSON export for self-hosted metadata. It must remain textless and must not be treated as a full diary backup.
 
-This document defines the public export/import contracts. Runtime code should preserve these shapes across compatible releases.
+This document defines the current export/import contract. Athena is in active
+development, so imports must match the active contract exactly.
 
 ## Current Contract Versions
 
 Current runtime versions used by this contract:
 
 ```ts
-const ACTIVE_SCHEMA_VERSION = "signal.v4";
-const ACTIVE_PROMPT_VERSION = "extraction.v5";
+const ACTIVE_SCHEMA_VERSION = "signal.v5";
+const ACTIVE_PROMPT_VERSION = "extraction.v7";
 const SELF_REPORT_SCHEMA_VERSION = "self_report.v1";
 const SELF_REPORT_DAILY_AGGREGATE_VERSION = "self_report_daily_aggregate.v1";
 ```
@@ -48,8 +49,8 @@ type AthenaLocalExportV1 = {
   exported_at: string;
   source: {
     app_version: string | null;
-    schema_version: "signal.v4";
-    prompt_version: "extraction.v5";
+    schema_version: "signal.v5";
+    prompt_version: "extraction.v7";
     self_report_schema_version: "self_report.v1";
     self_report_daily_aggregate_version: "self_report_daily_aggregate.v1";
   };
@@ -99,19 +100,13 @@ type LocalExportSettingsV1 = {
   interface_language?: string;
   entry_sort_direction?: "asc" | "desc";
   persona_text_enabled?: boolean;
-  local_emotion_spike_enabled?: boolean;
 };
 
 type QueueExportSummaryV1 = {
   type:
     | "entry.sync"
-    | "entry.delete_remote"
-    | "entry.extract"
-    | "entry.append_signal"
     | "entry.reprocess_signal"
-    | "self_report.sync_daily_aggregate"
-    | "semantic.index_entry"
-    | "semantic.reindex_all";
+    | "self_report.sync_daily_aggregate";
   entity_kind: string | null;
   entity_id: string | null;
   status: "queued" | "running" | "blocked" | "failed";
@@ -335,19 +330,18 @@ type AthenaBackendMetadataExportV1 = {
   exported_at: string;
   source: {
     app_version: string | null;
-    schema_version: "signal.v4";
-    prompt_version: "extraction.v5";
+    schema_version: "signal.v5";
+    prompt_version: "extraction.v7";
     self_report_schema_version: "self_report.v1";
     self_report_daily_aggregate_version: "self_report_daily_aggregate.v1";
     backend_schema_version: string | null;
   };
   entries: unknown[];
   signals: unknown[];
-  effective_signals?: unknown[];
-  signal_overrides?: unknown[];
+  effective_signals: unknown[];
+  signal_overrides: unknown[];
   self_report_daily_aggregates: unknown[];
   insight_snapshots: unknown[];
-  analytics_summary?: unknown;
 };
 ```
 
@@ -363,7 +357,6 @@ Backend metadata export may include:
 - signal overrides, if currently supported;
 - self-report daily aggregate rows;
 - insight snapshots;
-- current analytics summary;
 - contract and schema versions.
 
 ### Excluded Data

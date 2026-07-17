@@ -32,7 +32,13 @@ export function sanitizeSignalCandidate(
     };
   }
 
-  const classified = mapSignalCandidate(result.data);
+  const classified = mapSignalCandidate({
+    ...result.data,
+    activity_contexts: alignActivityContexts(
+      result.data.activities,
+      result.data.activity_contexts,
+    ),
+  });
 
   if (classified.signal_quality === "fallback") {
     return {
@@ -52,9 +58,9 @@ export function createFallbackSignal(): Signal {
   const fallback = {
     topics: [],
     activities: [],
+    activity_contexts: [],
     markers: [],
     state_inference: {},
-    emotion_signals: {},
     metric_confidence: createEmptyMetricConfidence(),
     entry_intent: context.entry_intent,
     structure_signal: context.structure_signal,
@@ -85,4 +91,31 @@ export function createFallbackSignal(): Signal {
 
 export function isClientFallbackSignal(value: unknown): boolean {
   return clientFallbackSignalSchema.safeParse(value).success;
+}
+
+function alignActivityContexts(
+  activities: string[],
+  contexts: Signal["activity_contexts"],
+): Signal["activity_contexts"] {
+  const activityByKey = new Map(
+    activities.map((activity) => [normalizeActivityKey(activity), activity]),
+  );
+  const used = new Set<string>();
+
+  return contexts.flatMap((context) => {
+    const key = normalizeActivityKey(context.activity);
+    const activity = activityByKey.get(key);
+    if (!activity || used.has(key)) return [];
+
+    used.add(key);
+    return [{ ...context, activity }];
+  });
+}
+
+function normalizeActivityKey(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
 }

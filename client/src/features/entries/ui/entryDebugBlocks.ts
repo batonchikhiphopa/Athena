@@ -71,18 +71,6 @@ export function getEntryDebugBlocks(entry: EntryView): DebugBlock[] {
       ],
     },
     {
-      title: "emotion signals",
-      rows:
-        Object.keys(entry.signals.emotion_signals).length > 0
-          ? [
-              { label: "mapper", value: entry.signals.quality_reason },
-              ...formatEmotionSignals(entry.signals.emotion_signals).map(
-                ([label, value]) => ({ label, value }),
-              ),
-            ]
-          : [{ label: "emotion", value: "-" }],
-    },
-    {
       title: "self report",
       rows: entry.selfReport
         ? [
@@ -150,31 +138,4 @@ function formatNullReasons(signals: EntryView["signals"]) {
   return nullMetrics
     .map((metric) => `${metric}: no relevant state evidence`)
     .join("; ");
-}
-
-function formatEmotionSignals(signals: Record<string, unknown>) {
-  const labels = getRecord(signals.labels);
-  const rows: Array<[string, string]> = [];
-
-  if (typeof signals.model === "string") rows.push(["model", signals.model]);
-  if (typeof signals.status === "string") rows.push(["status", signals.status]);
-  if (typeof signals.top_label === "string") {
-    rows.push(["top", `${signals.top_label} ${signals.top_score ?? ""}`]);
-  }
-
-  for (const [label, value] of Object.entries(labels).slice(0, 8)) {
-    rows.push([label, String(value)]);
-  }
-
-  if (rows.length === 0) {
-    rows.push(["raw", JSON.stringify(signals).slice(0, 240)]);
-  }
-
-  return rows;
-}
-
-function getRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
 }

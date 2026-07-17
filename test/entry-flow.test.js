@@ -81,8 +81,8 @@ test("entry update keeps the same server entry id", async () => {
         },
       }),
       metadata: {
-        schema_version: "signal.v1",
-        prompt_version: "extraction.v1",
+        schema_version: "signal.v5",
+        prompt_version: "extraction.v7",
         provider: "gemini",
         model: "gemini-2.5-flash-lite",
       },

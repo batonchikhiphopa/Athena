@@ -251,7 +251,7 @@ test("Insight V3 keeps low-density wording explicit", async () => {
   }
 });
 
-test("old snapshot history still renders stored text", async () => {
+test("snapshot history returns stored text unchanged", async () => {
   const db = await createTestDb();
 
   try {
@@ -277,8 +277,8 @@ test("old snapshot history still renders stored text", async () => {
         "На этой неделе снова возвращалась тема работы. Старый текст.",
         "2026-04-08T00:00:00.000Z",
         "2026-04-21",
-        "signal.v4",
-        "extraction.v5",
+        "signal.v5",
+        "extraction.v7",
       ],
     );
 

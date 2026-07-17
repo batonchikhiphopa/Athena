@@ -16,6 +16,7 @@ const PROTECTED_PATH_PREFIXES = [
   "/analytics",
   "/self-reports",
   "/extractions",
+  "/results",
 ];
 
 const MUTATING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);

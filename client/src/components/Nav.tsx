@@ -16,12 +16,13 @@ type NavProps = {
 const IconComponent = Icon;
 
 const navItems: Array<{
-  icon: "feather" | "list";
+  icon: "feather" | "list" | "results";
   label: MessageKey;
-  page: Extract<Page, "editor" | "entries">;
+  page: Page;
 }> = [
   { icon: "feather", label: "nav.editor", page: "editor" },
   { icon: "list", label: "nav.entries", page: "entries" },
+  { icon: "results", label: "nav.results", page: "results" },
 ];
 
 export function Nav({

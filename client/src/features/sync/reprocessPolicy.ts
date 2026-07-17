@@ -32,6 +32,7 @@ export type EntryReprocessPlan =
       action: "skip";
       reason:
         | "analysis_disabled"
+        | "contract_mismatch"
         | "entry_missing"
         | "not_pending_reextract"
         | "validation_missing_entry_id";
@@ -74,11 +75,12 @@ export function isSignalReprocessCandidate(
   signal: Signal,
   metadata: SignalMetadata,
 ) {
+  if (!hasCurrentSignalContract(metadata)) return false;
+
   return (
     isFallbackReprocessCandidate(signal, metadata) ||
     isSparseNoMetricsReprocessCandidate(signal, metadata) ||
-    isRetryableProviderErrorCode(metadata.error_code) ||
-    !hasCurrentSignalContract(metadata)
+    isRetryableProviderErrorCode(metadata.error_code)
   );
 }
 
@@ -87,7 +89,7 @@ export function isFallbackReprocessCandidate(
   metadata: SignalMetadata,
 ) {
   if (signal.signal_quality !== "fallback") return false;
-  if (!hasCurrentSignalContract(metadata)) return true;
+  if (!hasCurrentSignalContract(metadata)) return false;
   if (isRetryableProviderErrorCode(metadata.error_code)) return true;
 
   return !isTerminalCurrentFallbackErrorCode(metadata.error_code);
@@ -98,7 +100,7 @@ export function isSparseNoMetricsReprocessCandidate(
   metadata: SignalMetadata,
 ) {
   if (!isMetricEmptySparseSignal(signal)) return false;
-  if (!hasCurrentSignalContract(metadata)) return true;
+  if (!hasCurrentSignalContract(metadata)) return false;
 
   return isRetryableProviderErrorCode(metadata.error_code);
 }
@@ -146,8 +148,7 @@ export function planEntryReprocessJob(
   entry: LocalEntry | null | undefined,
 ): EntryReprocessPlan {
   const payload = getPayloadRecord(job.payload);
-  const entryId =
-    readNonEmptyString(payload.entry_id) ?? readNonEmptyString(job.entity_id);
+  const entryId = readNonEmptyString(payload.entry_id);
 
   if (!entryId) {
     return {
@@ -160,6 +161,16 @@ export function planEntryReprocessJob(
     return {
       action: "skip",
       reason: "entry_missing",
+    };
+  }
+
+  if (
+    payload.requested_schema_version !== CLIENT_ACTIVE_SCHEMA_VERSION ||
+    payload.requested_prompt_version !== CLIENT_ACTIVE_PROMPT_VERSION
+  ) {
+    return {
+      action: "skip",
+      reason: "contract_mismatch",
     };
   }
 

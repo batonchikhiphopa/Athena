@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const e2eDataDir = path.join(process.cwd(), ".tmp", "e2e");
 const e2eApiOrigin = "http://127.0.0.1:3100";
+const e2eClientPort = process.env.ATHENA_E2E_CLIENT_PORT ?? "5173";
+const e2eClientOrigin = `http://127.0.0.1:${e2eClientPort}`;
 const e2eEnv = {
   ATHENA_AI_PROVIDER: "off",
   ATHENA_AUTH_REQUIRED: "false",
@@ -22,7 +24,7 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: e2eClientOrigin,
     trace: "retain-on-failure",
   },
   projects: [
@@ -42,13 +44,13 @@ export default defineConfig({
     },
     {
       command:
-        "npm --workspace athena-client run dev -- --host 127.0.0.1 --port 5173 --strictPort",
+        `npm --workspace athena-client run dev -- --host 127.0.0.1 --port ${e2eClientPort} --strictPort`,
       env: {
         ATHENA_DEV_API_ORIGIN: e2eApiOrigin,
       },
       reuseExistingServer: false,
       timeout: 120_000,
-      url: "http://127.0.0.1:5173",
+      url: e2eClientOrigin,
     },
   ],
 });

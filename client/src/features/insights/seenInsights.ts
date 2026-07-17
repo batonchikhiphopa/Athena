@@ -1,6 +1,9 @@
 import { getProfileScopedStorageKey } from "../vault/vaultProfiles";
 
 export const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
+export const SEEN_OBSERVATION_IDS_KEY = "athena_seen_observation_ids";
+export const SEEN_ACTIVITY_INSIGHT_KEYS_KEY =
+  "athena_seen_activity_insight_keys";
 
 export function getSeenEditorInsightIds() {
   const raw = localStorage.getItem(
@@ -28,5 +31,68 @@ export function markEditorInsightSeen(id: number) {
   localStorage.setItem(
     getProfileScopedStorageKey(SEEN_EDITOR_INSIGHT_IDS_KEY),
     JSON.stringify(Array.from(seenIds).slice(-100)),
+  );
+}
+
+export function getSeenObservationIds() {
+  return getStoredValues<number>(SEEN_OBSERVATION_IDS_KEY, (value) =>
+    typeof value === "number" && Number.isInteger(value) ? value : null,
+  );
+}
+
+export function getSeenActivityInsightKeys() {
+  return getStoredValues<string>(SEEN_ACTIVITY_INSIGHT_KEYS_KEY, (value) =>
+    typeof value === "string" ? value : null,
+  );
+}
+
+export function createActivityInsightSeenKey(
+  activityId: string,
+  generatedAt: string,
+) {
+  return `${activityId}:${generatedAt}`;
+}
+
+export function markObservationFeedSeen({
+  activityInsightKeys,
+  observationIds,
+}: {
+  activityInsightKeys: string[];
+  observationIds: number[];
+}) {
+  storeValues(
+    SEEN_OBSERVATION_IDS_KEY,
+    [...getSeenObservationIds(), ...observationIds],
+  );
+  storeValues(
+    SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
+    [...getSeenActivityInsightKeys(), ...activityInsightKeys],
+  );
+}
+
+function getStoredValues<T>(
+  key: string,
+  parseValue: (value: unknown) => T | null,
+) {
+  const raw = localStorage.getItem(getProfileScopedStorageKey(key));
+  if (!raw) return new Set<T>();
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return new Set<T>();
+    return new Set(
+      parsed
+        .map(parseValue)
+        .filter((value): value is T => value !== null),
+    );
+  } catch {
+    return new Set<T>();
+  }
+}
+
+function storeValues<T>(key: string, values: T[]) {
+  localStorage.setItem(
+    getProfileScopedStorageKey(key),
+    JSON.stringify([...new Set(values)].slice(-300)),
   );
 }

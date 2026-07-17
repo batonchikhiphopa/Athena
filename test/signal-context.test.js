@@ -29,7 +29,7 @@ test("signal context is deterministic, bounded, and textless", () => {
   assert.equal(serialized.includes(rawText), false);
 });
 
-test("signal context defaults are explicit for legacy and fallback signals", () => {
+test("signal context defaults are explicit for fallback signals", () => {
   assert.deepEqual(createDefaultSignalContext(), {
     entry_intent: {
       intent: "unknown",
@@ -64,8 +64,8 @@ test("provider-off extraction still attaches deterministic signal context", asyn
   assert.equal(result.signal.entry_intent.intent, "planning");
   assert.equal(result.signal.structure_signal.has_plan, true);
   assert.equal(result.signal.temporal_context.time_bucket, "morning");
-  assert.equal(result.metadata.schema_version, "signal.v4");
-  assert.equal(result.metadata.prompt_version, "extraction.v5");
+  assert.equal(result.metadata.schema_version, "signal.v5");
+  assert.equal(result.metadata.prompt_version, "extraction.v7");
 });
 
 test("contextual fallback extraction can be persisted as an entry", async () => {

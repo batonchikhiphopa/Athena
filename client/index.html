@@ -5,9 +5,132 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Athena</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: #fafaf9;
+        color: #18181b;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .athena-boot-shell {
+        align-items: center;
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .athena-boot-mark {
+        animation: athena-boot-pulse 1.4s ease-in-out infinite;
+        border: 1px solid #d4d4d8;
+        border-radius: 999px;
+        border-top-color: #3f3f46;
+        display: block;
+        height: 1rem;
+        margin: 1.25rem auto 0;
+        width: 1rem;
+      }
+
+      .athena-boot-title {
+        color: #a1a1aa;
+        font-size: 0.75rem;
+        letter-spacing: 0.24em;
+        margin: 0;
+        text-transform: uppercase;
+      }
+
+      .athena-boot-retry {
+        border: 0;
+        border-bottom: 1px solid #71717a;
+        background: transparent;
+        color: #52525b;
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.875rem;
+        margin-top: 1.75rem;
+        padding: 0.25rem;
+      }
+
+      @keyframes athena-boot-pulse {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .athena-boot-mark {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div data-athena-bootstrap="pending" id="root">
+      <main aria-live="polite" class="athena-boot-shell" role="status">
+        <div>
+          <p class="athena-boot-title">Athena</p>
+          <span aria-hidden="true" class="athena-boot-mark"></span>
+          <button class="athena-boot-retry" hidden id="athena-boot-retry" type="button">
+            Перезапустить Athena
+          </button>
+        </div>
+      </main>
+    </div>
+    <script>
+      (() => {
+        const retryButton = document.getElementById("athena-boot-retry");
+        const revealRetry = window.setTimeout(() => {
+          if (document.getElementById("root")?.dataset.athenaBootstrap === "pending") {
+            retryButton.hidden = false;
+          }
+        }, 6000);
+
+        window.addEventListener(
+          "athena:bootstrapped",
+          () => window.clearTimeout(revealRetry),
+          { once: true },
+        );
+
+        retryButton.addEventListener("click", async () => {
+          retryButton.disabled = true;
+          const athenaScope = new URL("/", window.location.origin).href;
+
+          await Promise.allSettled([
+            "serviceWorker" in navigator
+              ? navigator.serviceWorker.getRegistrations().then((registrations) =>
+                  Promise.all(
+                    registrations
+                      .filter((registration) => registration.scope === athenaScope)
+                      .map((registration) => registration.unregister()),
+                  ),
+                )
+              : Promise.resolve(),
+            "caches" in window
+              ? caches.keys().then((cacheNames) =>
+                  Promise.all(
+                    cacheNames
+                      .filter(
+                        (cacheName) =>
+                          cacheName.startsWith("athena-shell-") ||
+                          cacheName.startsWith("athena-static-"),
+                      )
+                      .map((cacheName) => caches.delete(cacheName)),
+                  ),
+                )
+              : Promise.resolve(),
+          ]);
+
+          window.location.reload();
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

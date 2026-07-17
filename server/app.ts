@@ -7,6 +7,7 @@ import entriesRouter from "./modules/entries/entries.route.js";
 import exportsRouter from "./modules/exports/exports.route.js";
 import extractionsRouter from "./modules/extraction/extractions.route.js";
 import insightsRouter from "./modules/insights/insights.route.js";
+import resultsRouter from "./modules/results/results.route.js";
 import selfReportsRouter from "./modules/selfReports/selfReports.route.js";
 import { CLIENT_DIST_DIR } from "./config/env.js";
 import {
@@ -37,6 +38,7 @@ export function createApp(): express.Express {
   app.use(exportsRouter);
   app.use(analyticsRouter);
   app.use(insightsRouter);
+  app.use(resultsRouter);
   app.use(selfReportsRouter);
   app.use(apiErrorHandler);
   app.use(express.static(CLIENT_DIR));

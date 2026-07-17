@@ -12,6 +12,14 @@ npm run client:build
 npm run test:e2e
 ```
 
+If the normal Vite port is already occupied by a developer session, run the
+smoke on another port without stopping it:
+
+```powershell
+$env:ATHENA_E2E_CLIENT_PORT = "5174"
+npm run test:e2e
+```
+
 `npm run release:check` runs all of the above plus dependency audit.
 
 GitHub Actions runs install, unit/integration tests, server type-check, client
@@ -32,7 +40,7 @@ Server:
 
 Client/local:
 
-- vault setup, unlock, rotation, and migration;
+- vault setup, unlock, credential rotation, and encrypted record persistence;
 - IndexedDB entry storage and draft storage;
 - queue retry, cancellation, stale running recovery, pruning, and textless
   entry sync jobs;
@@ -42,10 +50,16 @@ Client/local:
 
 Signal pipeline:
 
-- strict Signal v4 sanitization;
+- strict Signal v5 sanitization;
 - fallback behavior;
-- mapper confidence and null metric reasons;
-- local emotion evidence cannot create metrics by itself.
+- mapper confidence and null metric reasons.
+
+Results pipeline:
+
+- exact multilingual identity aliases and task/activity classification;
+- specific project tags as bounded identity hints;
+- rejection of broad or ambiguous tag-only project candidates;
+- deidentified activity-specific context aggregation for insights.
 
 ## E2E Smoke Flow
 
@@ -71,5 +85,8 @@ Before a public release, also verify the visible current product shape:
 2. Entries renders as a searchable card grid.
 3. Observation history opens as a floating panel and refreshes without sending
    local RAG excerpts to the backend.
-4. Settings opens as a floating panel with Interface, Access, Records, and Data
+4. Results renders one unified list; a row expands by clicking the row itself,
+   without filter, rename, merge, or manual-link controls, and its source entry
+   tiles retain Entries actions.
+5. Settings opens as a floating panel with Interface, Access, Records, and Data
    tabs.

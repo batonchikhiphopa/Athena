@@ -73,6 +73,9 @@ test("queued reprocess plans against latest local source, not stale payload hash
       entry_id: "entry-1",
       source_text_hash: "a".repeat(64),
       reason: "manual_reprocess",
+      requested_schema_version: CLIENT_ACTIVE_SCHEMA_VERSION,
+      requested_prompt_version: CLIENT_ACTIVE_PROMPT_VERSION,
+      queued_at: "2026-05-30T10:00:00.000Z",
     }),
     localEntry({
       source_text_hash: "c".repeat(64),
@@ -83,45 +86,6 @@ test("queued reprocess plans against latest local source, not stale payload hash
   assert.equal(plan.action, "process");
   assert.equal(plan.sourceTextHash, "c".repeat(64));
   assert.equal(plan.reason, "manual_reprocess");
-});
-
-test("queued job created before 3c payload fields remains processable", () => {
-  const plan = planEntryReprocessJob(
-    queueJob({
-      entry_id: "entry-1",
-      source_text_hash: "a".repeat(64),
-    }),
-    localEntry({
-      signals: fallbackSignal(),
-      metadata: metadata({ error_code: "client_fallback" }),
-    }),
-  );
-
-  assert.equal(plan.action, "process");
-  assert.equal(plan.reason, "fallback");
-});
-
-test("legacy v2 entry remains valid until explicit reprocess and is selectable", () => {
-  assert.equal(
-    isSignalReprocessCandidate(
-      validSignal(),
-      metadata({
-        schema_version: "signal.v2",
-        prompt_version: "extraction.v2",
-      }),
-    ),
-    true,
-  );
-  assert.equal(
-    getSignalReprocessReason(
-      validSignal(),
-      metadata({
-        schema_version: "signal.v2",
-        prompt_version: "extraction.v2",
-      }),
-    ),
-    "manual_reprocess",
-  );
 });
 
 test("reprocess covers retryable provider failures and metric-empty sparse signals", () => {
@@ -148,29 +112,10 @@ test("current parse-error fallbacks do not loop through repeated reprocess", () 
     ),
     false,
   );
-  assert.equal(
-    isSignalReprocessCandidate(
-      fallbackSignal(),
-      metadata({
-        error_code: "parse_error",
-        prompt_version: "extraction.v-previous",
-      }),
-    ),
-    true,
-  );
 });
 
 test("current sparse no-metrics signals do not loop after successful reprocess", () => {
   assert.equal(isSignalReprocessCandidate(sparseSignal(), metadata()), false);
-  assert.equal(
-    isSignalReprocessCandidate(
-      sparseSignal(),
-      metadata({
-        prompt_version: "extraction.v-previous",
-      }),
-    ),
-    true,
-  );
 });
 
 test("reprocess payload is inspectable and does not carry raw text", () => {

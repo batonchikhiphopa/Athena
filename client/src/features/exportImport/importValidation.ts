@@ -18,6 +18,8 @@ import {
   type LocalExportSourceV1,
   type QueueExportSummaryV1,
 } from "./exportTypes";
+import { isCurrentSignal } from "../extraction/signals";
+import type { SignalMetadata } from "../../shared/contracts";
 import {
   assertAllowedKeys,
   assertCondition,
@@ -29,7 +31,6 @@ import {
   readIsoDate,
   readLocalDay,
   readNonEmptyString,
-  readNullableJsonValue,
   readNullableNonNegativeInteger,
   readNullableSelfReportValue,
   readNullableString,
@@ -96,7 +97,15 @@ const SETTINGS_KEYS = [
   "interface_language",
   "entry_sort_direction",
   "persona_text_enabled",
-  "local_emotion_spike_enabled",
+] as const;
+
+const SIGNAL_METADATA_KEYS = [
+  "schema_version",
+  "prompt_version",
+  "provider",
+  "model",
+  "error_code",
+  "created_at",
 ] as const;
 
 const QUEUE_KEYS = ["pending_jobs"] as const;
@@ -111,13 +120,8 @@ const QUEUE_SUMMARY_KEYS = [
 
 const QUEUE_TYPES = new Set([
   "entry.sync",
-  "entry.delete_remote",
-  "entry.extract",
-  "entry.append_signal",
   "entry.reprocess_signal",
   "self_report.sync_daily_aggregate",
-  "semantic.index_entry",
-  "semantic.reindex_all",
 ]);
 
 const SAFE_QUEUE_REASONS = new Set([
@@ -225,18 +229,16 @@ function validateEntries(value: unknown): LocalExportEntryV1[] {
     assertCondition(!seenIds.has(id), `Duplicate entry id: ${id}`);
     seenIds.add(id);
 
-    const sourceTextHash = readNullableString(
+    const sourceTextHash = readString(
       entry,
       "source_text_hash",
       "Invalid source_text_hash.",
     );
 
-    if (sourceTextHash !== null) {
-      assertCondition(
-        /^[a-f0-9]{64}$/.test(sourceTextHash),
-        "Invalid source_text_hash.",
-      );
-    }
+    assertCondition(
+      /^[a-f0-9]{64}$/.test(sourceTextHash),
+      "Invalid source_text_hash.",
+    );
 
     return {
       id,
@@ -264,10 +266,61 @@ function validateEntries(value: unknown): LocalExportEntryV1[] {
         "Invalid entry updated_at timestamp.",
       ),
       source_text_hash: sourceTextHash,
-      signal: readNullableJsonValue(entry, "signal", "Invalid signal value."),
-      metadata: readNullableJsonValue(entry, "metadata", "Invalid metadata value."),
+      signal: validateCurrentSignal(entry.signal),
+      metadata: validateSignalMetadata(entry.metadata),
     };
   });
+}
+
+function validateCurrentSignal(value: unknown): LocalExportEntryV1["signal"] {
+  assertCondition(isCurrentSignal(value), "Invalid Signal v5 value.");
+  return value;
+}
+
+function validateSignalMetadata(value: unknown): SignalMetadata {
+  const metadata = assertPlainObject(value, "Invalid signal metadata.");
+  assertAllowedKeys(metadata, SIGNAL_METADATA_KEYS, "signal metadata");
+
+  const provider = readString(metadata, "provider", "Invalid signal provider.");
+  assertCondition(
+    provider === "off" || provider === "ollama" || provider === "gemini",
+    "Invalid signal provider.",
+  );
+
+  const result: SignalMetadata = {
+    schema_version: readExact(
+      metadata,
+      "schema_version",
+      EXPORT_SIGNAL_SCHEMA_VERSION,
+      "Invalid signal metadata schema_version.",
+    ),
+    prompt_version: readExact(
+      metadata,
+      "prompt_version",
+      EXPORT_PROMPT_VERSION,
+      "Invalid signal metadata prompt_version.",
+    ),
+    provider,
+    model: readNonEmptyString(metadata, "model", "Invalid signal model."),
+  };
+
+  if (metadata.error_code !== undefined) {
+    result.error_code = readNullableString(
+      metadata,
+      "error_code",
+      "Invalid signal error_code.",
+    );
+  }
+
+  if (metadata.created_at !== undefined) {
+    result.created_at = readIsoDate(
+      metadata,
+      "created_at",
+      "Invalid signal created_at.",
+    );
+  }
+
+  return result;
 }
 
 function validateSelfReports(value: unknown): AthenaLocalExportV1["self_reports"] {
@@ -386,14 +439,6 @@ function validateSettings(value: unknown): LocalExportSettingsV1 {
       settings,
       "persona_text_enabled",
       "Invalid persona_text_enabled.",
-    );
-  }
-
-  if (settings.local_emotion_spike_enabled !== undefined) {
-    result.local_emotion_spike_enabled = readBoolean(
-      settings,
-      "local_emotion_spike_enabled",
-      "Invalid local_emotion_spike_enabled.",
     );
   }
 

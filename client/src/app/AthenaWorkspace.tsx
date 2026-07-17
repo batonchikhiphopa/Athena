@@ -1,8 +1,10 @@
-import { lazy, Suspense, useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useAthenaApp } from "./useAthenaApp";
 import { useAthenaAutoLock } from "./useAppAutoLock";
 import { Editor } from "../features/editor/ui/Editor";
 import { Observations } from "../features/insights/ui/Observations";
+import { ObservationsButton } from "../features/insights/ui/ObservationsButton";
+import { useObservationNotifications } from "../features/insights/useObservationNotifications";
 import {
   FloatingLayerProvider,
   FloatingPanel,
@@ -15,10 +17,17 @@ import type { AppLockAutoLockPreference } from "../features/vault/appLock";
 import type { VaultProfile } from "../features/vault/vaultProfiles";
 import { todayDateOnly } from "../shared/lib/dates";
 import logoImg from "../assets/logo-bg.jpg";
+import { buildActivityIndex } from "../features/results/resultsModel";
+import { useActivityInsights } from "../features/results/useActivityInsights";
 
 const EntriesPage = lazy(() =>
   import("../features/entries/ui/EntriesPage").then((module) => ({
     default: module.EntriesPage,
+  })),
+);
+const ResultsPage = lazy(() =>
+  import("../features/results/ui/ResultsPage").then((module) => ({
+    default: module.ResultsPage,
   })),
 );
 const Settings = lazy(() =>
@@ -94,10 +103,31 @@ export function AthenaWorkspace({
   onRotateVaultSecret,
 }: AthenaWorkspaceProps) {
   const app = useAthenaApp();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { handlers } = app;
   const [isObservationsOpen, setIsObservationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [focusedActivity, setFocusedActivity] = useState<{
+    id: string;
+    key: number;
+  } | null>(null);
+  const resultsModel = useMemo(
+    () => buildActivityIndex(app.entries, language),
+    [app.entries, language],
+  );
+  const activityInsights = useActivityInsights({
+    activities: resultsModel.activities,
+    extractionSettings: app.extractionSettings,
+    isDemo: resultsModel.isDemo,
+    language,
+  });
+  const {
+    hasUnread: hasUnreadObservations,
+    markAllSeen: markAllObservationsSeen,
+  } = useObservationNotifications({
+    activityInsights: activityInsights.insights,
+    observations: app.observationHistory,
+  });
 
   const handleLockAthena = useCallback(() => {
     if (!appProtectionEnabled) {
@@ -123,11 +153,25 @@ export function AthenaWorkspace({
 
   function handleOpenObservations() {
     setIsObservationsOpen(true);
+    markAllObservationsSeen();
     void handlers.refreshObservationHistory();
   }
 
   function handleRefreshObservations() {
     void handlers.refreshObservationHistory();
+  }
+
+  useEffect(() => {
+    if (isObservationsOpen) markAllObservationsSeen();
+  }, [isObservationsOpen, markAllObservationsSeen]);
+
+  function handleOpenActivity(activityId: string) {
+    setFocusedActivity((current) => ({
+      id: activityId,
+      key: (current?.key ?? 0) + 1,
+    }));
+    setIsObservationsOpen(false);
+    void handlers.navigate("results");
   }
 
   return (
@@ -160,7 +204,7 @@ export function AthenaWorkspace({
           <main
             className={[
               "flex h-full min-w-0 flex-1 justify-center px-4",
-              app.page === "entries"
+              app.page === "entries" || app.page === "results"
                 ? "athena-page-scroll overflow-y-auto"
                 : "overflow-hidden",
             ].join(" ")}
@@ -198,7 +242,6 @@ export function AthenaWorkspace({
                   onClearFilters={handlers.clearEntryFilters}
                   onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
                   onEditEntry={(entry) => void handlers.editEntry(entry)}
-                  onOpenObservations={handleOpenObservations}
                   onSearchQueryChange={handlers.setEntrySearchQuery}
                   onSelectEntry={handlers.selectEntry}
                   onToggleEntryAnalysis={(entry) =>
@@ -209,8 +252,43 @@ export function AthenaWorkspace({
                 />
               )}
 
+              {app.page === "results" && (
+                <ResultsPage
+                  activityInsights={activityInsights}
+                  debugMode={app.debugMode}
+                  entries={app.entries}
+                  extractionSettings={app.extractionSettings}
+                  focusedActivityId={focusedActivity?.id ?? null}
+                  focusedActivityKey={focusedActivity?.key ?? 0}
+                  model={resultsModel}
+                  onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
+                  onEditEntry={(entry) => void handlers.editEntry(entry)}
+                  onToggleEntryAnalysis={(entry) =>
+                    void handlers.toggleEntryAnalysisEnabled(entry)
+                  }
+                  onToggleTag={(tag) => {
+                    handlers.toggleIncludedEntryTag(tag);
+                    void handlers.navigate("entries");
+                  }}
+                />
+              )}
+
             </Suspense>
           </main>
+
+          <div
+            className="
+              pointer-events-none fixed left-1/2 top-1.5 z-30 w-full max-w-6xl
+              -translate-x-1/2 px-1.5 sm:top-2
+            "
+          >
+            <div className="flex justify-end">
+              <ObservationsButton
+                hasUnread={hasUnreadObservations}
+                onClick={handleOpenObservations}
+              />
+            </div>
+          </div>
 
           <Suspense fallback={null}>
             <FloatingPanel
@@ -228,12 +306,15 @@ export function AthenaWorkspace({
               testId="observations-floating-panel"
             >
               <Observations
+                activities={resultsModel.activities}
+                activityInsights={activityInsights.insights}
                 insights={app.observationHistory}
                 personaTextEnabled={app.personaTextEnabled}
                 onClose={() => setIsObservationsOpen(false)}
                 onDeleteInsight={(insight) =>
                   void handlers.deleteInsight(insight)
                 }
+                onOpenActivity={handleOpenActivity}
                 onRefresh={handleRefreshObservations}
               />
             </FloatingPanel>
@@ -262,9 +343,6 @@ export function AthenaWorkspace({
                 extractionConfig={app.extractionConfig}
                 extractionSettings={app.extractionSettings}
                 extractionStatus={app.extractionStatus}
-                localEmotionSpikeEnabled={app.localEmotionSpikeEnabled}
-                localEmotionSpikeResult={app.localEmotionSpikeResult}
-                localEmotionSpikeStatus={app.localEmotionSpikeStatus}
                 personaTextEnabled={app.personaTextEnabled}
                 reprocessMessage={app.reprocessMessage}
                 reprocessStatus={app.reprocessStatus}
@@ -298,13 +376,9 @@ export function AthenaWorkspace({
                 onRetryRecoverableQueueJobs={() =>
                   void handlers.retryRecoverableQueueJobs()
                 }
-                onRunLocalEmotionSpikeDemo={() =>
-                  void handlers.runLocalEmotionSpikeDemo()
-                }
                 onPauseQueue={handlers.pauseQueue}
                 onStartQueue={handlers.startQueue}
                 onToggleDebugMode={handlers.toggleDebugMode}
-                onToggleLocalEmotionSpike={handlers.toggleLocalEmotionSpike}
                 onTogglePersonaText={handlers.togglePersonaText}
               />
             </FloatingPanel>

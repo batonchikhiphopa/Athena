@@ -29,8 +29,8 @@ function createEntry(overrides = {}) {
       signal_quality: "valid",
     },
     metadata: {
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       provider: "off",
       model: "off",
       error_code: null,
@@ -107,7 +107,6 @@ test("buildLocalExportPackage creates local_export.v1 with local diary data", ()
       interface_language: "en",
       entry_sort_direction: "desc",
       persona_text_enabled: true,
-      local_emotion_spike_enabled: false,
     },
     queueJobs: [createQueueJob()],
   });
@@ -116,8 +115,8 @@ test("buildLocalExportPackage creates local_export.v1 with local diary data", ()
   assert.equal(exported.export_version, "local_export.v1");
   assert.equal(exported.exported_at, NOW);
   assert.equal(exported.source.app_version, "0.6.0");
-  assert.equal(exported.source.schema_version, "signal.v4");
-  assert.equal(exported.source.prompt_version, "extraction.v5");
+  assert.equal(exported.source.schema_version, "signal.v5");
+  assert.equal(exported.source.prompt_version, "extraction.v7");
 
   assert.equal(exported.entries.length, 1);
   assert.equal(
@@ -145,7 +144,6 @@ test("buildLocalExportPackage creates local_export.v1 with local diary data", ()
     interface_language: "en",
     entry_sort_direction: "desc",
     persona_text_enabled: true,
-    local_emotion_spike_enabled: false,
   });
 });
 
@@ -214,7 +212,6 @@ test("settings export keeps only safe user-facing settings", () => {
     interface_language: "de",
     entry_sort_direction: "asc",
     persona_text_enabled: false,
-    local_emotion_spike_enabled: true,
 
     api_key: "must-not-export",
     csrf_token: "must-not-export",
@@ -229,7 +226,6 @@ test("settings export keeps only safe user-facing settings", () => {
     interface_language: "de",
     entry_sort_direction: "asc",
     persona_text_enabled: false,
-    local_emotion_spike_enabled: true,
   });
 
   const serialized = JSON.stringify(settings);

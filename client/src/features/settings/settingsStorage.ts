@@ -3,13 +3,11 @@ import { getProfileScopedStorageKey } from "../vault/vaultProfiles";
 
 const DEBUG_MODE_KEY = "athena_debug_mode";
 const EXTRACTION_SETTINGS_KEY = "athena_extraction_settings";
-const LOCAL_EMOTION_SPIKE_ENABLED_KEY = "athena_local_emotion_spike_enabled";
 const PERSONA_TEXT_ENABLED_KEY = "athena_persona_text_enabled";
 
 export const SETTINGS_STORAGE_KEYS = [
   DEBUG_MODE_KEY,
   EXTRACTION_SETTINGS_KEY,
-  LOCAL_EMOTION_SPIKE_ENABLED_KEY,
   PERSONA_TEXT_ENABLED_KEY,
 ] as const;
 
@@ -45,14 +43,6 @@ export function getExtractionSettings(): ExtractionSettings | null {
 
 export function setExtractionSettings(value: ExtractionSettings) {
   localStorage.setItem(key(EXTRACTION_SETTINGS_KEY), JSON.stringify(value));
-}
-
-export function getLocalEmotionSpikeEnabled() {
-  return localStorage.getItem(key(LOCAL_EMOTION_SPIKE_ENABLED_KEY)) === "true";
-}
-
-export function setLocalEmotionSpikeEnabled(value: boolean) {
-  localStorage.setItem(key(LOCAL_EMOTION_SPIKE_ENABLED_KEY), String(value));
 }
 
 function key(value: string) {

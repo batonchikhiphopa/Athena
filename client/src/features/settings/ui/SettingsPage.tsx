@@ -7,7 +7,6 @@ import type {
 import type { QueueSnapshot } from "../../sync/queueTypes";
 import { useI18n } from "../../../i18n/useI18n";
 import { isSignalReprocessCandidate } from "../../sync/reprocessPolicy";
-import type { LocalEmotionResult } from "../../emotion/localEmotion";
 import type { AppLockAutoLockPreference } from "../../vault/appLock";
 import type { VaultProfile } from "../../vault/vaultProfiles";
 import type { EntryView } from "../../entries/entryTypes";
@@ -30,8 +29,8 @@ const fallbackProviders: ExtractionConfig["providers"] = [
   {
     id: "gemini",
     label: "Gemini API",
-    defaultModel: "gemini-2.5-flash-lite",
-    models: ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    defaultModel: "gemini-3.1-flash-lite",
+    models: ["gemini-3.1-flash-lite", "gemini-3.5-flash"],
     configured: false,
   },
   {
@@ -52,9 +51,6 @@ type SettingsProps = {
   extractionConfig: ExtractionConfig | null;
   extractionSettings: ExtractionSettings;
   extractionStatus: ExtractionStatus | null;
-  localEmotionSpikeEnabled: boolean;
-  localEmotionSpikeResult: LocalEmotionResult | null;
-  localEmotionSpikeStatus: "idle" | "running" | "done" | "error";
   personaTextEnabled: boolean;
   isOnline: boolean;
   queueSnapshot: QueueSnapshot;
@@ -92,11 +88,9 @@ type SettingsProps = {
   onRefreshExtractionStatus: () => void;
   onReprocessFallbackEntries: () => void;
   onRetryRecoverableQueueJobs: () => void;
-  onRunLocalEmotionSpikeDemo: () => void;
   onPauseQueue: () => void;
   onStartQueue: () => void;
   onToggleDebugMode: (value: boolean) => void;
-  onToggleLocalEmotionSpike: (value: boolean) => void;
   onTogglePersonaText: (value: boolean) => void;
 };
 
@@ -110,9 +104,6 @@ export function Settings({
   extractionConfig,
   extractionSettings,
   extractionStatus,
-  localEmotionSpikeEnabled,
-  localEmotionSpikeResult,
-  localEmotionSpikeStatus,
   personaTextEnabled,
   queueSnapshot,
   reprocessMessage,
@@ -136,11 +127,9 @@ export function Settings({
   onRefreshExtractionStatus,
   onReprocessFallbackEntries,
   onRetryRecoverableQueueJobs,
-  onRunLocalEmotionSpikeDemo,
   onPauseQueue,
   onStartQueue,
   onToggleDebugMode,
-  onToggleLocalEmotionSpike,
   onTogglePersonaText,
 }: SettingsProps) {
   const { t } = useI18n();
@@ -229,9 +218,6 @@ export function Settings({
             debugMode={debugMode}
             extractionSettings={extractionSettings}
             extractionStatus={extractionStatus}
-            localEmotionSpikeEnabled={localEmotionSpikeEnabled}
-            localEmotionSpikeResult={localEmotionSpikeResult}
-            localEmotionSpikeStatus={localEmotionSpikeStatus}
             providers={providers}
             queueSnapshot={queueSnapshot}
             reprocessCandidates={reprocessCandidates}
@@ -244,10 +230,8 @@ export function Settings({
             onRefreshExtractionStatus={onRefreshExtractionStatus}
             onReprocessFallbackEntries={onReprocessFallbackEntries}
             onRetryRecoverableQueueJobs={onRetryRecoverableQueueJobs}
-            onRunLocalEmotionSpikeDemo={onRunLocalEmotionSpikeDemo}
             onStartQueue={onStartQueue}
             onToggleDebugMode={onToggleDebugMode}
-            onToggleLocalEmotionSpike={onToggleLocalEmotionSpike}
           />
         ) : null}
 

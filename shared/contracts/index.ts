@@ -13,6 +13,15 @@ export type {
   ExtractionStatus,
 } from "./extraction.js";
 export type {
+  ActivityContext,
+  ActivityContextAgency,
+  ActivityContextBlocker,
+  ActivityContextEffect,
+  ActivityContextEvent,
+  ActivityContextKind,
+  ActivityContextNextStep,
+  ActivityContextOutcome,
+  ActivityContextStrategy,
   ConfidenceLevel,
   EntryIntent,
   EntryIntentSignal,
@@ -33,10 +42,28 @@ export type {
   StateInference,
   StateInferenceValue,
 } from "./signal.js";
+export {
+  ACTIVITY_CONTEXT_AGENCIES,
+  ACTIVITY_CONTEXT_BLOCKERS,
+  ACTIVITY_CONTEXT_EFFECTS,
+  ACTIVITY_CONTEXT_EVENTS,
+  ACTIVITY_CONTEXT_KINDS,
+  ACTIVITY_CONTEXT_NEXT_STEPS,
+  ACTIVITY_CONTEXT_OUTCOMES,
+  ACTIVITY_CONTEXT_STRATEGIES,
+  CONFIDENCE_LEVELS,
+  METRIC_NAMES,
+  SIGNAL_AXES,
+  SIGNAL_LEVELS,
+} from "./signal.js";
 export type {
   SignalContextFields,
   SignalContextInput,
 } from "./signalAnalysis.js";
+export {
+  ACTIVE_EXTRACTION_PROMPT_VERSION,
+  ACTIVE_SIGNAL_SCHEMA_VERSION,
+} from "./signalVersions.js";
 export type {
   InsightLayer,
   InsightSnapshot,
@@ -45,3 +72,27 @@ export type {
   SelfReportAxis,
   SelfReportDailyAggregate,
 } from "./selfReports.js";
+export type {
+  ActivityInsight,
+  ActivityInsightBurnoutRelation,
+  ActivityInsightConfidence,
+  ActivityInsightContext,
+  ActivityInsightEvent,
+  ActivityInsightInput,
+  ActivityInsightKind,
+  ActivityInsightLanguage,
+  ActivityInsightRhythm,
+  ActivityInsightsRequest,
+  ActivityInsightsResponse,
+  ActivityInsightStage,
+  ActivityInsightStatus,
+} from "./activityInsights.js";
+export {
+  ACTIVITY_INSIGHT_BURNOUT_RELATIONS,
+  ACTIVITY_INSIGHT_EVENTS,
+  ACTIVITY_INSIGHT_KINDS,
+  ACTIVITY_INSIGHT_LANGUAGES,
+  ACTIVITY_INSIGHT_RHYTHMS,
+  ACTIVITY_INSIGHT_STAGES,
+  ACTIVITY_INSIGHT_STATUSES,
+} from "./activityInsights.js";

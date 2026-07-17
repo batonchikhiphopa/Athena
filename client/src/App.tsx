@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AthenaWorkspace } from "./app/AthenaWorkspace";
 import { useAppAutoLockPreference } from "./app/useAppAutoLock";
 import { ServerAuthGate } from "./features/auth/ui/ServerAuthGate";
@@ -26,6 +26,7 @@ export default function App() {
   const vault = useLocalVault();
   const authPhase = serverAuth.phase;
   const vaultPhase = vault.phase;
+  const vaultError = vault.error;
   const lockVault = vault.lock;
   const setupVault = vault.setup;
   const unlockVaultWithoutSecret = vault.unlockWithoutSecret;
@@ -40,6 +41,30 @@ export default function App() {
   const appProtectionEnabled = isAppProtectionEnabled(vaultCredentials);
   const { autoLockPreference, changeAutoLockPreference } =
     useAppAutoLockPreference();
+  const vaultInitializationInFlightRef = useRef(false);
+
+  const initializePasswordlessVault = useCallback(() => {
+    if (vaultInitializationInFlightRef.current) return;
+
+    let initialize: (() => Promise<void>) | null = null;
+
+    if (vaultPhase === "unconfigured") {
+      initialize = () => setupVault(vaultProfileId);
+    } else if (vaultPhase === "locked") {
+      initialize = () => unlockVaultWithoutSecret(vaultProfileId);
+    }
+
+    if (!initialize) return;
+
+    vaultInitializationInFlightRef.current = true;
+    void initialize()
+      .catch(() => {
+        // useLocalVault owns the visible error state.
+      })
+      .finally(() => {
+        vaultInitializationInFlightRef.current = false;
+      });
+  }, [setupVault, unlockVaultWithoutSecret, vaultPhase, vaultProfileId]);
 
   function activateVaultProfile(profileId: string) {
     if (profileId === vaultProfileId) return;
@@ -110,27 +135,21 @@ export default function App() {
     if (
       authPhase !== "authenticated" ||
       vaultPhase === "unlocked" ||
-      isVaultBusy
+      isVaultBusy ||
+      appProtectionEnabled ||
+      vaultError
     ) {
       return;
     }
 
-    if (vaultPhase === "unconfigured") {
-      void setupVault(vaultProfileId);
-      return;
-    }
-
-    if (vaultPhase === "locked" && !appProtectionEnabled) {
-      void unlockVaultWithoutSecret(vaultProfileId);
-    }
+    initializePasswordlessVault();
   }, [
     appProtectionEnabled,
     authPhase,
+    initializePasswordlessVault,
     isVaultBusy,
-    setupVault,
-    unlockVaultWithoutSecret,
+    vaultError,
     vaultPhase,
-    vaultProfileId,
   ]);
 
   if (serverAuth.isRequired && serverAuth.phase !== "authenticated") {
@@ -148,7 +167,41 @@ export default function App() {
 
   if (vaultPhase !== "unlocked") {
     if (!appProtectionEnabled) {
-      return null;
+      return (
+        <main
+          className="flex min-h-full items-center justify-center bg-[#fafaf9] px-6 text-zinc-950"
+          role={vaultError ? "alert" : "status"}
+        >
+          <div className="text-center font-serif">
+            <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">
+              Athena
+            </p>
+            {vaultError ? (
+              <>
+                <p className="mt-5 text-sm text-red-800">
+                  {formatVaultStartupError(vaultError, t)}
+                </p>
+                <button
+                  className="mt-6 border-b border-zinc-500 px-1 py-1 text-sm text-zinc-700 transition hover:border-zinc-950 hover:text-zinc-950 disabled:cursor-wait disabled:opacity-50"
+                  disabled={isVaultBusy}
+                  onClick={initializePasswordlessVault}
+                  type="button"
+                >
+                  {t("auth.action.retry")}
+                </button>
+              </>
+            ) : (
+              <div className="mt-5 flex items-center justify-center gap-3 text-sm text-zinc-500">
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border border-zinc-300 border-t-zinc-700 motion-reduce:animate-none"
+                />
+                <span>{t("common.wait")}</span>
+              </div>
+            )}
+          </div>
+        </main>
+      );
     }
 
     return (
@@ -182,4 +235,18 @@ export default function App() {
       onRotateVaultSecret={vault.rotateSecret}
     />
   );
+}
+
+function formatVaultStartupError(
+  error: NonNullable<ReturnType<typeof useLocalVault>["error"]>,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  const keys = {
+    cryptoUnavailable: "vault.error.cryptoUnavailable",
+    keyTooShort: "vault.error.keyTooShort",
+    openFailed: "vault.error.openFailed",
+    unlockFailed: "vault.error.unlockFailed",
+  } as const;
+
+  return t(keys[error]);
 }

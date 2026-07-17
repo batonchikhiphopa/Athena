@@ -90,10 +90,6 @@ Current controls:
 - `npm run audit` is part of `npm run release:check`.
 - Client and server builds are reproducible through npm scripts.
 
-Residual risk:
-
-- Browser ONNX/runtime assets increase bundle size and dependency surface.
-
 ## Import/Export
 
 Current controls:

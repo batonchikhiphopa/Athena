@@ -2,6 +2,49 @@
 
 All notable changes to Athena are documented here.
 
+## Unreleased
+
+## v0.9.0 - 2026-07-17
+
+### Added
+
+- Added Results as a single evidence-backed view of projects, finite tasks, and
+  recurring activities extracted from local diary entries.
+- Added encrypted local activity-insight caching and one privacy-bounded batched
+  Gemini refresh per day.
+- Added Signal v5 activity-specific context for outcomes, blockers, strategies,
+  next-step clarity, agency, and links to strain or recovery.
+- Added shared unread notifications for observations and activity insights.
+
+### Changed
+
+- Results rows now expand smoothly by clicking the row and keep the original
+  activity graph plus compact entry cards in the expanded view.
+- Project tags can stabilize an activity identity when the entry also contains
+  task or project evidence; broad and ambiguous tags remain insufficient.
+- Activity aliases are normalized across supported languages without general
+  fuzzy merging.
+- Bumped root, client, lockfile, and exported app metadata versions to `0.9.0`.
+
+### Removed
+
+- Removed the browser-local ONNX emotion demo, its Settings controls, extraction
+  hook, tests, and `@huggingface/transformers` runtime dependency.
+- Removed the emotion-demo setting from the local export/import contract.
+- Removed the superseded `/analytics/summary` route and its separate legacy
+  observation generator; `GET /analytics/v2/summary` is the only analytics API.
+- Local import now accepts only the active Signal and extraction contract.
+- Removed plaintext IndexedDB, localStorage draft, and Vault config v2 migration
+  paths; the current vault format is the only local persistence format.
+- Results no longer approximates activity-specific impact from entry-level
+  `load`, `fatigue`, and `focus`; it uses current `activity_contexts` only.
+- Removed topic recovery from historical snapshot prose.
+- Signal validation no longer fills fields from older schemas; every current
+  Signal payload must provide the complete Signal v5 shape.
+- Removed unused queue job variants and the orphaned legacy analytics repository.
+- Removed the unused `emotion_signals` field from Signal, persistence, mapping,
+  prompts, debug output, and the effective-signal read model.
+
 ## v0.8.3 - 2026-07-12
 
 ### Changed

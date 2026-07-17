@@ -5,24 +5,45 @@ import type { MessageKey } from "../../../i18n/messages";
 import { formatInsightText } from "../content/insightText";
 import type { InsightSnapshot } from "../../../shared/contracts";
 import { TooltipButton } from "../../../components/TooltipButton";
+import { getResultsCopy } from "../../results/resultsCopy";
+import type { ActivityGroup } from "../../results/resultsTypes";
+import type { ActivityInsightView } from "../../results/activityInsightTypes";
 
 type ObservationsProps = {
+  activities: ActivityGroup[];
+  activityInsights: Map<string, ActivityInsightView>;
   insights: InsightSnapshot[];
   personaTextEnabled: boolean;
   onClose: () => void;
   onDeleteInsight: (insight: InsightSnapshot) => void;
+  onOpenActivity: (activityId: string) => void;
   onRefresh: () => void;
 };
 
 export function Observations({
+  activities,
+  activityInsights,
   insights,
   personaTextEnabled,
   onClose,
   onDeleteInsight,
+  onOpenActivity,
   onRefresh,
 }: ObservationsProps) {
   const { language, t } = useI18n();
   const groups = groupInsightsByDate(insights);
+  const resultsCopy = getResultsCopy(language);
+  const activityById = new Map(
+    activities.map((activity) => [activity.id, activity]),
+  );
+  const visibleActivityInsights = [...activityInsights.values()]
+    .flatMap((insight) => {
+      const activity = activityById.get(insight.activityId);
+      return activity ? [{ activity, insight }] : [];
+    })
+    .sort((left, right) =>
+      right.insight.generatedAt.localeCompare(left.insight.generatedAt),
+    );
 
   return (
     <section className="flex h-full min-h-0 flex-col text-zinc-800">
@@ -66,12 +87,47 @@ export function Observations({
         className="entries-feed-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5"
         data-no-drag
       >
-        {groups.length === 0 ? (
+        {groups.length === 0 && visibleActivityInsights.length === 0 ? (
           <div className="rounded-lg border border-dashed border-white/50 bg-white/30 p-5 text-sm text-zinc-400">
             {t("observations.empty")}
           </div>
         ) : (
           <div className="space-y-5">
+            {visibleActivityInsights.length > 0 && (
+              <section>
+                <div className="mb-2 text-sm font-medium text-zinc-500">
+                  {resultsCopy.tasks} / {resultsCopy.activities}
+                </div>
+                <div className="space-y-2">
+                  {visibleActivityInsights.map(({ activity, insight }) => (
+                    <article
+                      className="rounded-lg border border-amber-900/10 bg-amber-50/35 p-4 shadow-sm shadow-zinc-900/5"
+                      key={`${insight.activityId}-${insight.generatedAt}`}
+                    >
+                      <div className="text-xs uppercase text-zinc-400">
+                        {activity.label} · {resultsCopy.stage[activity.insightInput.stage]}
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-zinc-800">
+                        {insight.text}
+                      </p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <span className="text-xs text-zinc-400">
+                          {formatGeneratedAt(insight.generatedAt, language)}
+                        </span>
+                        <button
+                          className="rounded-full bg-white/55 px-3 py-1.5 text-xs text-zinc-500 transition hover:bg-white/85 hover:text-zinc-900"
+                          onClick={() => onOpenActivity(activity.id)}
+                          type="button"
+                        >
+                          {resultsCopy.openInResults} →
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {groups.map((group) => (
               <section key={group.date}>
                 <div className="mb-2 text-sm font-medium text-zinc-500">

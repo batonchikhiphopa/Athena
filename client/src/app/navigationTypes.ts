@@ -1,1 +1,1 @@
-export type Page = "editor" | "entries";
+export type Page = "editor" | "entries" | "results";

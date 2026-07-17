@@ -10,11 +10,12 @@ Raw diary text is not accepted by entry persistence endpoints. The only endpoint
 
 Current documented contract versions:
 
-- Signal schema: `signal.v4`
-- Extraction prompt: `extraction.v5`
+- Signal schema: `signal.v5`
+- Extraction prompt: `extraction.v7`
 - Self-report event schema: `self_report.v1`
 - Self-report daily aggregate schema: `self_report_daily_aggregate.v1`
 - Insight generation: `insight.v3`
+- Browser-local activity insight fingerprint: `activity-insight.v2`
 
 See [Contracts](CONTRACTS.md) for the versioning policy.
 
@@ -40,6 +41,10 @@ Common statuses:
 - `404` entry or insight not found
 - `409` owner already configured or source hash mismatch
 - `413` JSON body too large
+- `429` activity-insight daily limit or provider quota
+- `502` provider rejected, unavailable, or returned an invalid response
+- `503` configured provider key missing
+- `504` provider timeout
 - `500` unexpected server error
 
 ## Config
@@ -58,8 +63,8 @@ Response:
     "requestTimeoutMs": 30000
   },
   "versions": {
-    "schema_version": "signal.v4",
-    "prompt_version": "extraction.v5"
+    "schema_version": "signal.v5",
+    "prompt_version": "extraction.v7"
   }
 }
 ```
@@ -172,6 +177,7 @@ Create request:
   "signal": {
     "topics": [],
     "activities": [],
+    "activity_contexts": [],
     "markers": [],
     "load": null,
     "fatigue": null,
@@ -196,8 +202,8 @@ Create request:
     }
   },
   "metadata": {
-    "schema_version": "signal.v4",
-    "prompt_version": "extraction.v5",
+    "schema_version": "signal.v5",
+    "prompt_version": "extraction.v7",
     "provider": "ollama",
     "model": "gpt-oss:20b",
     "error_code": null,
@@ -208,7 +214,10 @@ Create request:
 
 `source_text_hash` is the SHA-256 hash of the local raw entry text. The raw text itself is not sent.
 
-Signal v4 context fields are textless deterministic metadata. `entry_intent` and `structure_signal` are derived from the current entry text shape; `temporal_context` is derived from entry metadata such as `entry_date` or `captured_at`.
+Current Signal context fields are textless deterministic metadata.
+`entry_intent` and `structure_signal` are derived from the current entry text
+shape; `temporal_context` is derived from entry metadata such as `entry_date`
+or `captured_at`.
 
 ### `GET /entries`
 
@@ -288,8 +297,8 @@ Request:
   "source_text_hash": "64 lowercase hex chars",
   "signal": {},
   "metadata": {
-    "schema_version": "signal.v4",
-    "prompt_version": "extraction.v5",
+    "schema_version": "signal.v5",
+    "prompt_version": "extraction.v7",
     "provider": "ollama",
     "model": "gpt-oss:20b"
   }
@@ -364,8 +373,8 @@ Response is a sanitized signal payload plus metadata:
 {
   "signal": {},
   "metadata": {
-    "schema_version": "signal.v4",
-    "prompt_version": "extraction.v5",
+    "schema_version": "signal.v5",
+    "prompt_version": "extraction.v7",
     "provider": "ollama",
     "model": "gpt-oss:20b",
     "error_code": null,
@@ -373,6 +382,73 @@ Response is a sanitized signal payload plus metadata:
   }
 }
 ```
+
+## Results Activity Insights
+
+### `POST /results/activity-insights`
+
+Creates one textless, bounded Results insight batch. The request accepts one to
+eight unique activities. It is protected by auth and CSRF when server auth is
+enabled.
+
+Request:
+
+```json
+{
+  "model": "gemini-3.1-flash-lite",
+  "language": "ru",
+  "activities": [
+    {
+      "id": "athena",
+      "label": "Athena",
+      "kind": "task",
+      "stage": "active",
+      "rhythm": "steady",
+      "burnoutRelation": "mixed",
+      "recentEvents": ["result", "mention"],
+      "recentContexts": [
+        {
+          "kind": "task",
+          "event": "progressed",
+          "outcome": "partial",
+          "blockers": [],
+          "strategy": "adjusted",
+          "next_step": "explicit",
+          "agency": "active",
+          "effect": "neutral",
+          "confidence": "high"
+        }
+      ],
+      "evidenceCount": 4,
+      "observationCount": 3,
+      "spanDays": 6
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "insights": [
+    {
+      "activityId": "athena",
+      "text": "Validated Athena prose without numeric claims.",
+      "status": "ready",
+      "confidence": "medium"
+    }
+  ]
+}
+```
+
+Activities with fewer than two independent observations return a local
+`insufficient` response without a provider call. For eligible activities, the
+server removes `label`, replaces `id` with a temporary token, sends only the
+remaining structured aggregate to Gemini, validates a one-to-one response, and
+maps the token back. Requests and generated prose are not persisted by the
+backend. The server-side daily quota is held in process memory per authenticated
+user or source IP.
 
 ## Insights
 
@@ -394,8 +470,7 @@ Insight V3 rendered text separates:
 Browser-local RAG evidence packs over raw diary chunks are not sent to these
 backend endpoints.
 
-Stored snapshot text remains backward-compatible: old snapshots are returned as
-stored and are not reformatted.
+Stored snapshot text is returned as written and is not reformatted.
 
 Current sufficiency rules:
 
@@ -509,8 +584,8 @@ Response:
   "exported_at": "2026-06-06T12:00:00.000Z",
   "source": {
     "app_version": null,
-    "schema_version": "signal.v4",
-    "prompt_version": "extraction.v5",
+    "schema_version": "signal.v5",
+    "prompt_version": "extraction.v7",
     "self_report_schema_version": "self_report.v1",
     "self_report_daily_aggregate_version": "self_report_daily_aggregate.v1",
     "backend_schema_version": "011"
@@ -528,42 +603,9 @@ The response must not include raw diary text, raw self-report events, auth sessi
 
 ## Analytics
 
-### `GET /analytics/summary`
-
-Returns deterministic week and month summaries based on latest available backend entry dates.
-
-Response when no entries exist:
-
-```json
-{
-  "week": null,
-  "month": null
-}
-```
-
-Response excerpt with data:
-
-```json
-{
-  "week": {
-    "window": "week",
-    "from": "2026-05-31",
-    "to": "2026-06-06",
-    "metrics": {},
-    "versions": {
-      "schema_versions": ["signal.v4"],
-      "prompt_versions": ["extraction.v5"]
-    }
-  },
-  "month": {}
-}
-```
-
 ### `GET /analytics/v2/summary`
 
-Returns deterministic Analytics V2 week and month summaries. V2 is separate from
-`/analytics/summary` so older observation code can remain compatible while the
-new measurement layer grows.
+Returns deterministic Analytics V2 week and month summaries.
 
 Analytics V2 reads textless data only:
 
@@ -664,14 +706,14 @@ Response with data:
       },
       "versions": {
         "current": {
-          "schema_versions": ["signal.v4"],
-          "prompt_versions": ["extraction.v5"],
+          "schema_versions": ["signal.v5"],
+          "prompt_versions": ["extraction.v7"],
           "models": ["gpt-oss:20b"],
           "self_report_aggregate_versions": ["self_report_daily_aggregate.v1"]
         },
         "baseline": {
-          "schema_versions": ["signal.v4"],
-          "prompt_versions": ["extraction.v5"],
+          "schema_versions": ["signal.v5"],
+          "prompt_versions": ["extraction.v7"],
           "models": ["gpt-oss:20b"],
           "self_report_aggregate_versions": ["self_report_daily_aggregate.v1"]
         },

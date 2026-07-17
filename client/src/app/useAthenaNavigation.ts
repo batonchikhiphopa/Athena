@@ -12,6 +12,7 @@ type AthenaNavigationOptions = {
     persistEditorText: (text: string) => Promise<void>;
   };
   entries: {
+    refreshEntries: () => Promise<EntryView[]>;
     selectEntry: (entryId: string | null) => void;
   };
   insights: {
@@ -47,6 +48,10 @@ export function useAthenaNavigation({
     }
 
     setPage(nextPage);
+
+    if (nextPage === "results") {
+      await entries.refreshEntries();
+    }
 
     if (nextPage === "entries") {
       const activeEntryId = editor.activeEntryId();

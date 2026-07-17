@@ -5,7 +5,12 @@ import {
 } from "../platform/storage/athenaDb";
 import { ENTRY_SORT_DIRECTION_KEY } from "../features/entries/entryPreferences";
 import { GEMINI_QUOTA_STORAGE_KEYS } from "../features/extraction/geminiQuota";
-import { SEEN_EDITOR_INSIGHT_IDS_KEY } from "../features/insights/seenInsights";
+import {
+  SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
+  SEEN_EDITOR_INSIGHT_IDS_KEY,
+  SEEN_OBSERVATION_IDS_KEY,
+} from "../features/insights/seenInsights";
+import { ACTIVITY_INSIGHT_STORAGE_KEYS } from "../features/results/activityInsightQuota";
 import { SETTINGS_STORAGE_KEYS } from "../features/settings/settingsStorage";
 import {
   getProfileScopedStorageKey,
@@ -17,9 +22,12 @@ const VAULT_CONFIG_KEY = "athena_vault_config";
 const PROFILE_KEYS = [
   ...SETTINGS_STORAGE_KEYS,
   ...GEMINI_QUOTA_STORAGE_KEYS,
+  ...ACTIVITY_INSIGHT_STORAGE_KEYS,
   ENTRY_SORT_DIRECTION_KEY,
   LANGUAGE_STORAGE_KEY,
+  SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
   SEEN_EDITOR_INSIGHT_IDS_KEY,
+  SEEN_OBSERVATION_IDS_KEY,
   VAULT_CONFIG_KEY,
 ] as const;
 const PROFILE_PREFIXES = [

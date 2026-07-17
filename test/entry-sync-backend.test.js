@@ -19,8 +19,8 @@ function entryInput(overrides = {}) {
     source_text_hash: "a".repeat(64),
     signal: validSignal(),
     metadata: {
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       provider: "off",
       model: "fallback",
       error_code: null,

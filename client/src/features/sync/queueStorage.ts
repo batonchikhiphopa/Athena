@@ -24,7 +24,6 @@ const NON_TERMINAL_STATUSES = new Set<QueueJobStatus>([
 
 const SIGNAL_VALIDATION_JOB_TYPES = new Set([
   "entry.sync",
-  "entry.append_signal",
   "entry.reprocess_signal",
 ]);
 

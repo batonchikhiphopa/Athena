@@ -7,7 +7,6 @@ import type {
   SignalLevel,
   StateInference,
 } from "../contracts/index.js";
-import { createDefaultSignalContext } from "../contracts/signalAnalysis.js";
 
 type SignalCandidate = Omit<
   Signal,
@@ -24,14 +23,6 @@ type WeightedAxis = {
 type MetricMapResult = {
   score: number | null;
   confidence: ConfidenceLevel;
-  emotionAdjustment: EmotionMetricAdjustment | null;
-};
-
-type EmotionMetricAdjustment = {
-  metric: MetricName;
-  label: string;
-  score: number;
-  direction: 1 | -1;
 };
 
 const DEFAULT_METRIC_CONFIDENCE: MetricConfidence = {
@@ -39,8 +30,6 @@ const DEFAULT_METRIC_CONFIDENCE: MetricConfidence = {
   fatigue: "low",
   focus: "low",
 };
-
-const EMOTION_ADJUSTMENT_THRESHOLD = 0.55;
 
 const METRIC_AXES: Record<MetricName, WeightedAxis[]> = {
   load: [
@@ -83,41 +72,36 @@ const CONFIDENCE_RANK: Record<ConfidenceLevel, number> = {
 };
 
 export function mapSignalCandidate(candidate: SignalCandidate): Signal {
-  const context = createDefaultSignalContext();
-  const emotionLabels = extractEmotionLabels(candidate.emotion_signals);
-  const load = mapMetric("load", candidate.state_inference, emotionLabels);
-  const fatigue = mapMetric("fatigue", candidate.state_inference, emotionLabels);
-  const focus = mapMetric("focus", candidate.state_inference, emotionLabels);
+  const load = mapMetric("load", candidate.state_inference);
+  const fatigue = mapMetric("fatigue", candidate.state_inference);
+  const focus = mapMetric("focus", candidate.state_inference);
   const metric_confidence: MetricConfidence = {
     load: load.confidence,
     fatigue: fatigue.confidence,
     focus: focus.confidence,
   };
   const hasMetric = load.score !== null || fatigue.score !== null || focus.score !== null;
-  const hasEmotionSignal = Object.keys(emotionLabels).length > 0;
   const hasTextSignal =
     candidate.topics.length > 0 ||
     candidate.activities.length > 0 ||
+    candidate.activity_contexts.length > 0 ||
     candidate.markers.length > 0 ||
-    Object.keys(candidate.state_inference).length > 0 ||
-    Object.keys(candidate.emotion_signals).length > 0;
+    Object.keys(candidate.state_inference).length > 0;
 
   return {
     topics: candidate.topics,
     activities: candidate.activities,
+    activity_contexts: candidate.activity_contexts,
     markers: candidate.markers,
     state_inference: candidate.state_inference,
-    emotion_signals: candidate.emotion_signals,
     metric_confidence,
-    entry_intent: candidate.entry_intent ?? context.entry_intent,
-    structure_signal: candidate.structure_signal ?? context.structure_signal,
-    temporal_context: candidate.temporal_context ?? context.temporal_context,
+    entry_intent: candidate.entry_intent,
+    structure_signal: candidate.structure_signal,
+    temporal_context: candidate.temporal_context,
     quality_reason: getQualityReason(
       candidate.state_inference,
       hasMetric,
       hasTextSignal,
-      hasEmotionSignal,
-      [load, fatigue, focus],
     ),
     load: load.score,
     fatigue: fatigue.score,
@@ -133,7 +117,6 @@ export function createEmptyMetricConfidence(): MetricConfidence {
 function mapMetric(
   metric: MetricName,
   stateInference: StateInference,
-  emotionLabels: Record<string, number>,
 ): MetricMapResult {
   const weightedAxes = METRIC_AXES[metric]
     .map((config) => {
@@ -160,7 +143,6 @@ function mapMetric(
     return {
       score: null,
       confidence: "low",
-      emotionAdjustment: null,
     };
   }
 
@@ -170,14 +152,10 @@ function mapMetric(
     totalWeight;
   const baseScore = clampScore(Math.round(weightedScore));
   const baseConfidence = highestConfidence(weightedAxes.map((item) => item.confidence));
-  const emotionAdjustment = getEmotionMetricAdjustment(metric, emotionLabels);
 
   return {
-    score: emotionAdjustment
-      ? clampScore(baseScore + emotionAdjustment.direction)
-      : baseScore,
-    confidence: adjustConfidence(baseConfidence, emotionAdjustment),
-    emotionAdjustment,
+    score: baseScore,
+    confidence: baseConfidence,
   };
 }
 
@@ -200,17 +178,6 @@ function highestConfidence(confidences: ConfidenceLevel[]): ConfidenceLevel {
   "low");
 }
 
-function adjustConfidence(
-  confidence: ConfidenceLevel,
-  emotionAdjustment: EmotionMetricAdjustment | null,
-): ConfidenceLevel {
-  if (!emotionAdjustment || confidence !== "low" || emotionAdjustment.score < 0.75) {
-    return confidence;
-  }
-
-  return "medium";
-}
-
 function clampScore(score: number): number {
   return Math.max(0, Math.min(10, score));
 }
@@ -219,8 +186,6 @@ function getQualityReason(
   stateInference: StateInference,
   hasMetric: boolean,
   hasTextSignal: boolean,
-  hasEmotionSignal: boolean,
-  metrics: MetricMapResult[],
 ): string {
   const primaryAxis = Object.entries(stateInference)
     .sort((left, right) => {
@@ -236,117 +201,10 @@ function getQualityReason(
       ? `state_${primaryAxis[0]}_${primaryAxis[1].level}`
       : "state_without_metric_projection";
 
-    return withEmotionReason(reason, metrics);
+    return reason;
   }
 
-  if (hasEmotionSignal) return "emotion_context_only";
   if (hasTextSignal) return "text_context_only";
 
   return "no_relevant_signal";
-}
-
-function withEmotionReason(reason: string, metrics: MetricMapResult[]): string {
-  const adjustments = metrics
-    .map((metric) => metric.emotionAdjustment)
-    .filter((adjustment): adjustment is EmotionMetricAdjustment => adjustment !== null);
-
-  if (adjustments.length === 0) return reason;
-
-  const labels = [...new Set(adjustments.map((adjustment) => adjustment.label))]
-    .slice(0, 2)
-    .join("_");
-  const metricNames = adjustments
-    .map((adjustment) => adjustment.metric)
-    .join("_");
-
-  return `${reason}_emotion_${labels}_${metricNames}`.slice(0, 128);
-}
-
-function extractEmotionLabels(signals: Record<string, unknown>): Record<string, number> {
-  const nestedLabels = isRecord(signals.labels) ? signals.labels : signals;
-
-  return Object.entries(nestedLabels).reduce<Record<string, number>>(
-    (result, [label, rawScore]) => {
-      if (typeof rawScore !== "number" || !Number.isFinite(rawScore)) return result;
-
-      const normalizedLabel = normalizeEmotionLabel(label);
-      if (!normalizedLabel) return result;
-
-      result[normalizedLabel] = Math.max(0, Math.min(1, rawScore));
-      return result;
-    },
-    {},
-  );
-}
-
-function getEmotionMetricAdjustment(
-  metric: MetricName,
-  labels: Record<string, number>,
-): EmotionMetricAdjustment | null {
-  const candidates = getEmotionAdjustmentCandidates(metric, labels)
-    .filter((candidate) => candidate.score >= EMOTION_ADJUSTMENT_THRESHOLD)
-    .sort((left, right) => right.score - left.score);
-
-  return candidates[0] ?? null;
-}
-
-function getEmotionAdjustmentCandidates(
-  metric: MetricName,
-  labels: Record<string, number>,
-): EmotionMetricAdjustment[] {
-  if (metric === "load") {
-    return [
-      emotionCandidate(metric, "fear", labels, 1),
-      emotionCandidate(metric, "anger", labels, 1),
-      emotionCandidate(metric, "sadness", labels, 1),
-      emotionCandidate(metric, "disgust", labels, 1),
-      emotionCandidate(metric, "joy", labels, -1),
-      emotionCandidate(metric, "happiness", labels, -1),
-    ];
-  }
-
-  if (metric === "fatigue") {
-    return [
-      emotionCandidate(metric, "sadness", labels, 1),
-      emotionCandidate(metric, "joy", labels, -1),
-      emotionCandidate(metric, "happiness", labels, -1),
-      emotionCandidate(metric, "excitement", labels, -1),
-    ];
-  }
-
-  return [
-    emotionCandidate(metric, "joy", labels, 1),
-    emotionCandidate(metric, "happiness", labels, 1),
-    emotionCandidate(metric, "excitement", labels, 1),
-    emotionCandidate(metric, "fear", labels, -1),
-    emotionCandidate(metric, "anger", labels, -1),
-    emotionCandidate(metric, "sadness", labels, -1),
-  ];
-}
-
-function emotionCandidate(
-  metric: MetricName,
-  label: string,
-  labels: Record<string, number>,
-  direction: 1 | -1,
-): EmotionMetricAdjustment {
-  return {
-    metric,
-    label,
-    score: labels[label] ?? 0,
-    direction,
-  };
-}
-
-function normalizeEmotionLabel(label: string): string {
-  return label
-    .trim()
-    .toLocaleLowerCase()
-    .replace(/^label_/, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

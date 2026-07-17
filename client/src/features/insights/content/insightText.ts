@@ -84,8 +84,7 @@ function findTopicProfile(topic: string, topics: InsightTopic[]) {
 function getInsightTopic(insight: InsightSnapshot) {
   if (insight.topic?.trim()) return insight.topic.trim();
 
-  const legacyTopic = insight.text.match(/тема:\s*([^.;]+)/i)?.[1]?.trim();
-  return legacyTopic || null;
+  return null;
 }
 
 function fallbackTemplate(

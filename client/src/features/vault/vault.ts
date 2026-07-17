@@ -32,7 +32,6 @@ export type { VaultEncryptedPayload };
 
 const VAULT_CONFIG_KEY = "athena_vault_config";
 const VAULT_CONFIG_VERSION = 3;
-const LEGACY_VAULT_CONFIG_VERSION = 2;
 const VAULT_VERIFIER_TEXT = "athena:vault:verifier:v1";
 const VAULT_VERIFIER_AAD = "athena:vault:verifier:v1";
 const VAULT_DATA_KEY_AAD = "athena:vault:data-key:v1";
@@ -40,14 +39,6 @@ const VAULT_PASSWORDLESS_SECRET = "athena:vault:passwordless:v1";
 const VAULT_PASSWORDLESS_LABEL = "Вход без пароля";
 
 export type VaultCredentialKind = "passphrase" | "passwordless";
-
-type LegacyVaultConfig = {
-  version: typeof LEGACY_VAULT_CONFIG_VERSION;
-  created_at: string;
-  kdf: VaultKdfConfig;
-  encrypted_data_key: VaultEncryptedPayload;
-  verifier: VaultEncryptedPayload;
-};
 
 export type VaultCredential = {
   id: string;
@@ -421,23 +412,21 @@ export async function createVaultConfigWithoutSecret(
 }
 
 export async function unlockVaultKeyFromConfig(
-  config: VaultConfig | LegacyVaultConfig,
+  config: VaultConfig,
   passphrase: string,
 ): Promise<CryptoKey> {
-  const normalizedConfig = normalizeStoredVaultConfig(config);
-  assertValidVaultConfig(normalizedConfig);
-  return findCredentialForSecret(normalizedConfig, passphrase).then(
+  assertValidVaultConfig(config);
+  return findCredentialForSecret(config, passphrase).then(
     (result) => result.key,
   );
 }
 
 export async function unlockVaultKeyFromPasswordlessConfig(
-  config: VaultConfig | LegacyVaultConfig,
+  config: VaultConfig,
   profileId = "personal",
 ): Promise<CryptoKey> {
-  const normalizedConfig = normalizeStoredVaultConfig(config);
-  assertValidVaultConfig(normalizedConfig);
-  return findPasswordlessCredential(normalizedConfig, profileId).then(
+  assertValidVaultConfig(config);
+  return findPasswordlessCredential(config, profileId).then(
     (result) => result.key,
   );
 }
@@ -601,14 +590,8 @@ function readVaultConfig(): VaultConfig | null {
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as VaultConfig | LegacyVaultConfig;
-    const config = normalizeStoredVaultConfig(parsed);
+    const config = JSON.parse(raw) as VaultConfig;
     assertValidVaultConfig(config);
-
-    if (parsed.version !== VAULT_CONFIG_VERSION) {
-      localStorage.setItem(configKey, JSON.stringify(config));
-    }
-
     return config;
   } catch {
     return null;
@@ -617,37 +600,6 @@ function readVaultConfig(): VaultConfig | null {
 
 function getVaultConfigKey() {
   return getProfileScopedStorageKey(VAULT_CONFIG_KEY);
-}
-
-function normalizeStoredVaultConfig(
-  config: VaultConfig | LegacyVaultConfig,
-): VaultConfig {
-  if (config.version === LEGACY_VAULT_CONFIG_VERSION) {
-    return {
-      version: VAULT_CONFIG_VERSION,
-      created_at: config.created_at,
-      credentials: [
-        {
-          id: "legacy-primary",
-          profile_id: "personal",
-          label: "Основной",
-          created_at: config.created_at,
-          kind: "passphrase",
-          kdf: config.kdf,
-          encrypted_data_key: config.encrypted_data_key,
-          verifier: config.verifier,
-        },
-      ],
-    };
-  }
-
-  return {
-    ...config,
-    credentials: config.credentials.map((credential) => ({
-      ...credential,
-      kind: credential.kind ?? "passphrase",
-    })),
-  };
 }
 
 function requireVaultKey(): CryptoKey {

@@ -37,13 +37,13 @@ export function validSignal(overrides = {}) {
   return {
     topics: ["работа"],
     activities: ["кодинг"],
+    activity_contexts: [],
     markers: ["deep_work"],
     state_inference: {
       load: state("medium"),
       fatigue: state("medium"),
       focus: state("medium"),
     },
-    emotion_signals: {},
     metric_confidence: metricConfidence(),
     ...signalContext(),
     quality_reason: "test_signal",
@@ -59,9 +59,9 @@ export function sparseSignal(overrides = {}) {
   return {
     topics: ["работа"],
     activities: [],
+    activity_contexts: [],
     markers: [],
     state_inference: {},
-    emotion_signals: {},
     metric_confidence: metricConfidence("low"),
     ...signalContext(),
     quality_reason: "text_context_only",
@@ -77,9 +77,9 @@ export function fallbackSignal(overrides = {}) {
   return {
     topics: [],
     activities: [],
+    activity_contexts: [],
     markers: [],
     state_inference: {},
-    emotion_signals: {},
     metric_confidence: metricConfidence("low"),
     ...signalContext(),
     quality_reason: "fallback",

@@ -10,7 +10,19 @@ import {
   DEFAULT_OLLAMA_MODEL,
 } from "../../config/versions.js";
 import { MARKERS } from "./markers.js";
-import { SIGNAL_AXES } from "./signal.schema.js";
+import {
+  ACTIVITY_CONTEXT_AGENCIES,
+  ACTIVITY_CONTEXT_BLOCKERS,
+  ACTIVITY_CONTEXT_EFFECTS,
+  ACTIVITY_CONTEXT_EVENTS,
+  ACTIVITY_CONTEXT_KINDS,
+  ACTIVITY_CONTEXT_NEXT_STEPS,
+  ACTIVITY_CONTEXT_OUTCOMES,
+  ACTIVITY_CONTEXT_STRATEGIES,
+  CONFIDENCE_LEVELS,
+  METRIC_NAMES,
+  SIGNAL_AXES,
+} from "../../../shared/contracts/signal.js";
 import type {
   ExtractionProvider,
   ExtractionResult,
@@ -55,11 +67,9 @@ export const EXTRACTION_PROVIDERS: ExtractionProviderMap = {
   OFF: "off",
 };
 
-const GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash"];
 const ALLOWED_MARKERS = MARKERS;
-const CONFIDENCE_LEVELS = ["low", "medium", "high"];
 const STATE_LEVELS = ["low", "medium", "high"];
-const METRIC_NAMES = ["load", "fatigue", "focus"];
 
 const STATE_INFERENCE_JSON_SCHEMA = {
   type: "object",
@@ -84,6 +94,39 @@ const STATE_INFERENCE_JSON_SCHEMA = {
   },
 };
 
+const ACTIVITY_CONTEXT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    activity: { type: "string" },
+    kind: { type: "string", enum: ACTIVITY_CONTEXT_KINDS },
+    event: { type: "string", enum: ACTIVITY_CONTEXT_EVENTS },
+    outcome: { type: "string", enum: ACTIVITY_CONTEXT_OUTCOMES },
+    blockers: {
+      type: "array",
+      maxItems: 2,
+      items: { type: "string", enum: ACTIVITY_CONTEXT_BLOCKERS },
+    },
+    strategy: { type: "string", enum: ACTIVITY_CONTEXT_STRATEGIES },
+    next_step: { type: "string", enum: ACTIVITY_CONTEXT_NEXT_STEPS },
+    agency: { type: "string", enum: ACTIVITY_CONTEXT_AGENCIES },
+    effect: { type: "string", enum: ACTIVITY_CONTEXT_EFFECTS },
+    confidence: { type: "string", enum: CONFIDENCE_LEVELS },
+  },
+  required: [
+    "activity",
+    "kind",
+    "event",
+    "outcome",
+    "blockers",
+    "strategy",
+    "next_step",
+    "agency",
+    "effect",
+    "confidence",
+  ],
+  additionalProperties: false,
+};
+
 const SIGNAL_JSON_SCHEMA = {
   type: "object",
   properties: {
@@ -94,8 +137,13 @@ const SIGNAL_JSON_SCHEMA = {
     },
     activities: {
       type: "array",
-      maxItems: 5,
+      maxItems: 2,
       items: { type: "string" },
+    },
+    activity_contexts: {
+      type: "array",
+      maxItems: 2,
+      items: ACTIVITY_CONTEXT_JSON_SCHEMA,
     },
     markers: {
       type: "array",
@@ -103,10 +151,6 @@ const SIGNAL_JSON_SCHEMA = {
       items: { type: "string" },
     },
     state_inference: STATE_INFERENCE_JSON_SCHEMA,
-    emotion_signals: {
-      type: "object",
-      additionalProperties: true,
-    },
     metric_confidence: {
       type: "object",
       properties: Object.fromEntries(
@@ -133,9 +177,9 @@ const SIGNAL_JSON_SCHEMA = {
   required: [
     "topics",
     "activities",
+    "activity_contexts",
     "markers",
     "state_inference",
-    "emotion_signals",
     "metric_confidence",
     "quality_reason",
     "load",
@@ -410,7 +454,7 @@ function buildExtractionMessages(rawText: string) {
 function buildSystemInstruction(): string {
   return [
     "You are the extraction layer of Athena.",
-    "Read as a careful attentive reader of a diary entry.",
+    "Read as a precise analyst of one diary entry, not as a keyword classifier.",
     "You see only the current raw entry.",
     "Do not use history, assumptions, external context, or prior trends.",
     "Do not claim clinical authority.",
@@ -418,12 +462,19 @@ function buildSystemInstruction(): string {
     "Do not reduce extraction to keyword search.",
     "Return only valid JSON.",
     "No markdown. No explanation. No text outside JSON.",
-    "Use the same language as the entry for topics and activities.",
+    "Use the same language as the entry for topics, activities, and activity_contexts.activity.",
     "Do not translate.",
+    "Write activity names as concise sentence-case phrases whose first meaningful letter is uppercase.",
+    "Activities are only the entry's primary intentional tasks, projects, or repeatable practices.",
+    "A task has a finite result or completion condition even when it recurs; an activity is a repeatable practice whose value lies in continuing it.",
+    "Never use activities as a second topic list.",
+    "For every returned activity, return exactly one activity_context object with the same activity name.",
+    "Attribute context to a specific activity only when the entry supports that link; never copy the entry's general mood, strain, or blocker onto every activity.",
+    "Activity context is structured evidence, not advice, biography, or a free-text summary.",
     "Markers are first-class context and event flags, not weak numeric scores.",
     "Use concrete markers when the entry directly names a context, symptom, rhythm, or event.",
     "State inference separates observed context, inferred state, uncertainty, and final numeric projection.",
-    "The app recomputes final metrics deterministically from state_inference, but you must still provide the full v3 shape.",
+    "The app recomputes final metrics deterministically from state_inference, but you must still provide the full Signal v5 shape.",
     "The app also computes entry_intent, structure_signal, and temporal_context deterministically; do not include those fields.",
     "Use null for load, fatigue, or focus only if the entry contains no relevant signal for that metric at all.",
     "Prefer a cautious estimate over null when the entry gives any directional evidence.",
@@ -435,17 +486,17 @@ function buildSystemInstruction(): string {
 
 function buildUserExtractionPrompt(rawText: string): string {
   return [
-    "Extract a Signal v4 candidate from this entry.",
+    "Extract a Signal v5 candidate from this entry.",
     "",
     "Return exactly this JSON shape:",
     "{",
     '  "topics": [],',
     '  "activities": [],',
+    '  "activity_contexts": [],',
     '  "markers": [],',
     '  "state_inference": {',
     '    "distress": { "level": "low", "confidence": "low", "basis": [] }',
     "  },",
-    '  "emotion_signals": {},',
     '  "metric_confidence": {',
     '    "load": "low",',
     '    "fatigue": "low",',
@@ -459,17 +510,46 @@ function buildUserExtractionPrompt(rawText: string): string {
     "}",
     "",
     "Rules:",
-    "- topics: string[], 0-5",
-    "- activities: string[], 0-5",
+    "- topics: string[], 0-5; keep salient burnout context here even when it is not an activity",
+    "- activities: string[], 0-2; only primary intentional activities, projects, or practices central to the entry",
+    "- activity names must be concise, stable, in the entry language, and start with an uppercase letter",
+    "- return activities: [] when the entry has no clear central activity",
+    "- an activity must be something the author intentionally did, pursued, practiced, or worked on",
+    "- exclude states, emotions, places, people, weather, abstract themes, entry metadata, and incidental actions from activities",
+    "- normalize an object or topic to a stable action only when the action is explicit and safe: books -> reading",
+    "- do not infer an activity from an object alone; body becomes training only when the entry is actually about training",
+    "- prefer the one or two activities that best explain what the entry is mainly about",
+    "- activity_contexts: one object per activity, in the same order, with an exactly matching activity name",
+    "- kind: task when there is a finite outcome or completion condition; activity for an ongoing repeatable practice; unknown only when the distinction is genuinely unsupported",
+    "- event: the most specific supported event; maintained means a repeatable practice continued normally",
+    "- outcome: achieved for a realized intended result, partial for limited progress, missed for an explicitly failed expected result, none when no result occurred yet, unknown when the entry does not establish it",
+    "- blockers: at most two activity-specific obstacles; [] means no obstacle is supported, not that none exists",
+    "- strategy: describe only the approach visible in this entry; repeated_attempt requires explicit language such as again or the same approach",
+    "- next_step: explicit when a concrete next action is stated, vague when only an intention is stated, not_mentioned otherwise",
+    "- agency: active for self-directed action, constrained when external conditions dominate, passive only when inaction or pure reaction is explicit, mixed when both are supported",
+    "- effect: use draining, restorative, neutral, or mixed only when the entry links that effect to this activity; otherwise unclear",
+    "- confidence: confidence in the activity-specific context as a whole",
+    "- never infer a cross-entry pattern inside activity_contexts; extraction sees only this entry",
+    "- do not add quotes, summaries, names of people or organizations, locations, or any free-text evidence to activity_contexts",
     "- markers: enum[], 0-8",
     "- state_inference: object keyed only by allowed state axes; omit axes with no evidence",
     "- state_inference values: { level: low|medium|high, confidence: low|medium|high, basis: string[] }",
     "- basis: short observed reasons from this entry, not quotes of the full entry",
-    "- emotion_signals: object, keep {} in this sprint unless explicit local emotion evidence is supplied",
     "- metric_confidence: confidence for final load/fatigue/focus projection",
     "- quality_reason: short snake_case reason for the projection or abstention",
     "- load/fatigue/focus: integer 0-10 or null",
     "- do not include entry_intent, structure_signal, temporal_context, coaching, advice, or diagnosis",
+    "- no extra fields",
+    "",
+    "Allowed activity context values:",
+    `- kind: ${ACTIVITY_CONTEXT_KINDS.join(", ")}`,
+    `- event: ${ACTIVITY_CONTEXT_EVENTS.join(", ")}`,
+    `- outcome: ${ACTIVITY_CONTEXT_OUTCOMES.join(", ")}`,
+    `- blockers: ${ACTIVITY_CONTEXT_BLOCKERS.join(", ")}`,
+    `- strategy: ${ACTIVITY_CONTEXT_STRATEGIES.join(", ")}`,
+    `- next_step: ${ACTIVITY_CONTEXT_NEXT_STEPS.join(", ")}`,
+    `- agency: ${ACTIVITY_CONTEXT_AGENCIES.join(", ")}`,
+    `- effect: ${ACTIVITY_CONTEXT_EFFECTS.join(", ")}`,
     "",
     "Allowed state axes:",
     SIGNAL_AXES.join(", "),
@@ -500,7 +580,16 @@ function buildUserExtractionPrompt(rawText: string): string {
     "Metric rule:",
     "- Use null only if the entry contains no relevant signal at all.",
     "- Prefer a cautious estimate over null when the entry gives any directional evidence.",
-    "- no extra fields",
+    "",
+    "Activity examples:",
+    '- Entry: "An ordinary daily note from home and the flat. A good day, but also boredom, frustration, mental noise, overthinking, and thoughts about balance."',
+    '  activities: []; activity_contexts: [] (home, balance, boredom, frustration, daily, flat, good_day, mental_noise, notes, ordinary, and overthinking are not activities)',
+    '- Entry: "Went for a walk and spent the evening reading; those were the main things I did."',
+    '  activities: ["Walk", "Reading"]; both are activity; event is maintained; effect is unclear unless the entry links a felt effect to them',
+    '- Entry: "Sent three applications, received no replies, and will rewrite the cover letter tomorrow."',
+    '  activities: ["Job search"]; kind is task; event is progressed; outcome is none; next_step is explicit; rejection is not a blocker because no rejection was stated',
+    '- Entry: "Training was the main thing today; my body felt tired afterwards."',
+    '  activities: ["Training"]; kind is activity; event is maintained; effect is draining (body and tiredness are context, not activities)',
     "",
     "Marker guidance:",
     "- insomnia, бессонница, poor sleep, waking at night -> sleep_issue",

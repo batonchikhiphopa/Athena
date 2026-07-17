@@ -35,7 +35,6 @@ function entry(overrides = {}) {
       activities: [],
       markers: [],
       state_inference: {},
-      emotion_signals: {},
       metric_confidence: {
         load: "low",
         fatigue: "low",
@@ -48,8 +47,8 @@ function entry(overrides = {}) {
       signal_quality: "fallback",
     },
     metadata: {
-      schema_version: "signal.v4",
-      prompt_version: "extraction.v5",
+      schema_version: "signal.v5",
+      prompt_version: "extraction.v7",
       provider: "off",
       model: "fallback",
       error_code: null,

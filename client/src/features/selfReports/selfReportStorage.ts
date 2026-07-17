@@ -6,7 +6,6 @@ import {
 import {
   decryptVaultJson,
   encryptVaultJson,
-  isVaultEncryptedPayload,
   type VaultEncryptedPayload,
 } from "../vault/vaultApi";
 import {
@@ -35,10 +34,6 @@ type EncryptedSelfReportEventRecord = {
   vault_payload: VaultEncryptedPayload;
 };
 
-type StoredSelfReportEventRecord =
-  | SelfReportEvent
-  | EncryptedSelfReportEventRecord;
-
 type EncryptedSelfReportDailyAggregateRecord = {
   id: string;
   local_day: string;
@@ -47,10 +42,6 @@ type EncryptedSelfReportDailyAggregateRecord = {
   vault_version: 1;
   vault_payload: VaultEncryptedPayload;
 };
-
-type StoredSelfReportDailyAggregateRecord =
-  | SelfReportDailyAggregate
-  | EncryptedSelfReportDailyAggregateRecord;
 
 export type ReplaceSelfReportEventsResult = {
   events: SelfReportEvent[];
@@ -62,7 +53,7 @@ export async function getEntrySelfReport(entryId: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
   const index = transaction.objectStore(SELF_REPORT_STORE).index("entry_id");
-  const report = await idbRequest<StoredSelfReportEventRecord | undefined>(
+  const report = await idbRequest<EncryptedSelfReportEventRecord | undefined>(
     index.get(entryId),
   );
 
@@ -166,7 +157,7 @@ export async function getSelfReportDailyAggregates(localDay: string) {
   const index = transaction
     .objectStore(SELF_REPORT_DAILY_AGGREGATES_STORE)
     .index("local_day");
-  const aggregates = await idbRequest<StoredSelfReportDailyAggregateRecord[]>(
+  const aggregates = await idbRequest<EncryptedSelfReportDailyAggregateRecord[]>(
     index.getAll(localDay),
   );
   const decryptedAggregates = await Promise.all(
@@ -245,7 +236,7 @@ export async function recomputeSelfReportDailyAggregates(localDay: string) {
 export async function getAllSelfReportEvents() {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
-  const reports = await idbRequest<StoredSelfReportEventRecord[]>(
+  const reports = await idbRequest<EncryptedSelfReportEventRecord[]>(
     transaction.objectStore(SELF_REPORT_STORE).getAll(),
   );
 
@@ -262,7 +253,7 @@ async function getSelfReportsForLocalDay(localDay: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
   const index = transaction.objectStore(SELF_REPORT_STORE).index("local_day");
-  const reports = await idbRequest<StoredSelfReportEventRecord[]>(
+  const reports = await idbRequest<EncryptedSelfReportEventRecord[]>(
     index.getAll(localDay),
   );
 
@@ -271,13 +262,6 @@ async function getSelfReportsForLocalDay(localDay: string) {
   );
 
   return decryptedReports.map(normalizeSelfReportEvent);
-}
-
-export async function migrateSelfReportsToVault() {
-  const db = await openAthenaLocalDb();
-
-  await migrateSelfReportEventsToVault(db);
-  await migrateSelfReportDailyAggregatesToVault(db);
 }
 
 function buildAxisAggregate(
@@ -350,53 +334,9 @@ function clampSelfReportValue(value: number | null | undefined) {
   return Math.max(0, Math.min(10, Math.round(value)));
 }
 
-async function migrateSelfReportEventsToVault(db: IDBDatabase) {
-  const transaction = db.transaction(SELF_REPORT_STORE, "readonly");
-  const records = await idbRequest<StoredSelfReportEventRecord[]>(
-    transaction.objectStore(SELF_REPORT_STORE).getAll(),
-  );
-
-  for (const record of records) {
-    if (isEncryptedSelfReportEventRecord(record)) continue;
-
-    const encryptedRecord = await encryptSelfReportEvent(record);
-    const writeTransaction = db.transaction(SELF_REPORT_STORE, "readwrite");
-    await idbRequest(
-      writeTransaction.objectStore(SELF_REPORT_STORE).put(encryptedRecord),
-    );
-  }
-}
-
-async function migrateSelfReportDailyAggregatesToVault(db: IDBDatabase) {
-  const transaction = db.transaction(
-    SELF_REPORT_DAILY_AGGREGATES_STORE,
-    "readonly",
-  );
-  const records = await idbRequest<StoredSelfReportDailyAggregateRecord[]>(
-    transaction.objectStore(SELF_REPORT_DAILY_AGGREGATES_STORE).getAll(),
-  );
-
-  for (const record of records) {
-    if (isEncryptedSelfReportDailyAggregateRecord(record)) continue;
-
-    const encryptedRecord = await encryptSelfReportDailyAggregate(record);
-    const writeTransaction = db.transaction(
-      SELF_REPORT_DAILY_AGGREGATES_STORE,
-      "readwrite",
-    );
-    await idbRequest(
-      writeTransaction
-        .objectStore(SELF_REPORT_DAILY_AGGREGATES_STORE)
-        .put(encryptedRecord),
-    );
-  }
-}
-
 async function readStoredSelfReportEvent(
-  record: StoredSelfReportEventRecord,
+  record: EncryptedSelfReportEventRecord,
 ): Promise<SelfReportEvent> {
-  if (!isEncryptedSelfReportEventRecord(record)) return record;
-
   return decryptVaultJson<SelfReportEvent>(
     record.vault_payload,
     createSelfReportVaultAssociatedData(record.id),
@@ -404,10 +344,8 @@ async function readStoredSelfReportEvent(
 }
 
 async function readStoredSelfReportDailyAggregate(
-  record: StoredSelfReportDailyAggregateRecord,
+  record: EncryptedSelfReportDailyAggregateRecord,
 ): Promise<SelfReportDailyAggregate> {
-  if (!isEncryptedSelfReportDailyAggregateRecord(record)) return record;
-
   return decryptVaultJson<SelfReportDailyAggregate>(
     record.vault_payload,
     createSelfReportDailyAggregateVaultAssociatedData(record.id),
@@ -444,28 +382,6 @@ async function encryptSelfReportDailyAggregate(
       createSelfReportDailyAggregateVaultAssociatedData(aggregate.id),
     ),
   };
-}
-
-function isEncryptedSelfReportEventRecord(
-  record: StoredSelfReportEventRecord,
-): record is EncryptedSelfReportEventRecord {
-  return (
-    typeof record === "object" &&
-    record !== null &&
-    "vault_payload" in record &&
-    isVaultEncryptedPayload(record.vault_payload)
-  );
-}
-
-function isEncryptedSelfReportDailyAggregateRecord(
-  record: StoredSelfReportDailyAggregateRecord,
-): record is EncryptedSelfReportDailyAggregateRecord {
-  return (
-    typeof record === "object" &&
-    record !== null &&
-    "vault_payload" in record &&
-    isVaultEncryptedPayload(record.vault_payload)
-  );
 }
 
 function createSelfReportVaultAssociatedData(reportId: string) {

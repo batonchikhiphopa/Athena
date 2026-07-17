@@ -18,12 +18,12 @@ The surface is calm. The engine is strict.
 
 ![Editor screen](client/assets/editor.png)
 
-Athena now presents a light, paper-like workspace with a narrow icon rail, a
+Athena presents a light, paper-like workspace with a narrow icon rail, a
 spacious writing surface, and floating panels for secondary views. The UI keeps
-the diary surface quiet while making archive search, observations, and settings
-reachable without leaving the current context.
+the diary surface quiet while making the archive, results, observations, and
+settings reachable without turning the diary into a dashboard.
 
-Athena currently has four visible work surfaces:
+Athena currently has three primary pages:
 
 - **Editor** - the primary writing surface. It has local autosave, tags, an
   analysis toggle for the current entry, voluntary self-report scales in a
@@ -32,14 +32,20 @@ Athena currently has four visible work surfaces:
   supports one hybrid local search across text, dates, tags, and semantic
   similarity; filtering; sorting; reading; editing; deletion; and per-entry
   analysis control.
-- **Observations** - a floating observation history panel for saved day, week,
-  and month observations. New snapshots are derived from deterministic analytics
-  and include explicit evidence-backed support text after sufficiency rules
-  pass: one valid day for yesterday, three distinct valid days in the current
-  7-day window, or fourteen valid days in the current 30-day window.
-- **Settings** - a floating settings panel for interface language, app
-  protection, extraction settings, processing queue state, reprocessing
-  controls, debug mode, and local data controls.
+- **Results** - one unified local list of concrete tasks/projects and repeatable
+  activities reconstructed from analyzed entries. Clicking a row expands its
+  current status, rhythm, verbal insight, activity graph, and the same source
+  entry tiles used in Entries. There are currently no task/activity filters,
+  renaming, merging, or manual entry-linking controls.
+
+Two floating panels sit above all three pages:
+
+- **Observations** combines saved day, week, and month observations with current
+  activity insights and links back to Results. Snapshot sufficiency is one valid
+  day for yesterday, three distinct valid days in the current 7-day window, or
+  fourteen valid days in the current 30-day window.
+- **Settings** controls interface language, app protection, extraction,
+  processing and reprocessing, debug mode, and local data.
 
 ![Entries screen](client/assets/entries.png)
 
@@ -54,14 +60,25 @@ backend is temporarily unavailable.
 ## What Athena Does
 
 - stores raw diary text in the browser;
-- encrypts browser-local entries and drafts through the local vault when app
-  protection is enabled;
+- encrypts browser-local entries, drafts, self-reports, and activity-insight
+  cache records through the local vault; the vault may use passwordless access
+  or passphrase credentials;
 - stores only textless structure on the backend: ids, dates, tags, hashes,
   signals, metadata, self-report aggregates, and insight snapshots;
 - extracts signals from the current entry only, without history, RAG, hidden
   memory, or prior trends;
 - supports `ollama`, `gemini`, and `off` extraction providers;
-- validates and sanitizes Signal v4 payloads before persistence;
+- validates and sanitizes Signal v5 payloads before persistence;
+- extracts bounded activity-specific context for tasks and repeatable practices without storing diary prose;
+- builds Results locally from extracted activities and exact, deliberately
+  narrow identity rules; a single specific project tag may supply the project
+  identity only when the entry also contains task/project evidence, while broad
+  or ambiguous tags do not become projects;
+- groups only explicit high-confidence aliases such as multilingual job-search
+  or German-learning labels; it does not fuzzy-merge similar names;
+- generates a deidentified activity-insight batch through Gemini at most once
+  per day when enough evidence has changed, and keeps the cache encrypted in the
+  local vault;
 - recomputes `load`, `fatigue`, `focus`, confidence, and quality through a
   deterministic mapper;
 - keeps a durable browser-local queue for signal reprocessing;
@@ -81,11 +98,18 @@ The backend is not a diary-text store. It keeps the textless data needed for
 analytics and observation history: `source_text_hash`, sanitized signals,
 effective signals, metadata, daily aggregates, and snapshots.
 
-There is one important boundary: when analysis is enabled, the current entry
-text is passed transiently to the selected extraction provider. With `ollama`,
-that provider is intended to run locally. With `gemini`, the current entry text
-is sent to the Gemini API. With `off`, no model is called and Athena uses the
-fallback path.
+There are two provider boundaries:
+
+- When entry analysis is enabled, that entry's current text is passed
+  transiently to the selected extraction provider. With `ollama`, the provider
+  is intended to run locally. With `gemini`, the current entry text is sent to
+  the Gemini API. With `off`, no model is called and Athena uses the fallback
+  path.
+- Results insight generation never resends diary prose, activity labels, local
+  entry ids, or local activity ids. It sends Gemini a bounded batch of enum-only
+  activity context and aggregate counts under temporary correlation ids. The
+  returned text is validated before it enters the encrypted browser-local
+  cache.
 
 ## Access Model
 
@@ -96,18 +120,18 @@ Athena has two independent access rings:
   `ATHENA_AUTH_REQUIRED=true` to enable owner login with Argon2id password
   hashes, HttpOnly session cookies, hashed session tokens in SQLite, and CSRF
   checks for mutating requests.
-- **Local app protection** - optional protection for local diary data. It is
-  enabled from Settings and uses the local vault to encrypt entries and drafts
-  in IndexedDB. Athena can auto-lock or be locked manually.
+- **Local vault** - browser-local diary data is encrypted in IndexedDB. The
+  default credential may be passwordless; Settings can add passphrases and
+  Athena can auto-lock or be locked manually.
 
 ## Stack
 
 - React 19, TypeScript, Vite, Tailwind CSS;
-- IndexedDB for local entries, draft state, queue state, and vault envelopes;
+- IndexedDB for encrypted local entries, drafts, self-reports, activity
+  insights, queue state, and vault envelopes;
 - Express 4 backend;
 - SQLite migrations and repositories;
 - Zod schemas for strict API contracts;
-- optional browser ONNX emotion spike through `@huggingface/transformers`;
 - service worker for app shell caching.
 
 ## Documentation

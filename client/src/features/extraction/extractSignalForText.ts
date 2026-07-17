@@ -1,5 +1,4 @@
 import type { ExtractionSettings } from "../../shared/contracts";
-import type { LocalEmotionResult } from "../emotion/localEmotion";
 import { extractSignal } from "./extractionApi";
 import { createFallbackMetadata, createFallbackSignal } from "./signals";
 import {
@@ -10,8 +9,6 @@ import {
   releaseGeminiDailyExtraction,
   reserveGeminiDailyExtraction,
 } from "./geminiQuota";
-import { getLocalEmotionSpikeEnabled } from "../settings/settingsStorage";
-import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY } from "../../i18n/languages";
 
 export async function extractSignalForText(
   rawText: string,
@@ -31,47 +28,34 @@ export async function extractSignalForText(
     hasGeminiReservation = false;
   };
 
-  const emotionModule = await loadLocalEmotionModuleIfAllowed();
-  const emotionResult = emotionModule
-    ? await emotionModule.extractLocalEmotionSignals(rawText)
-    : null;
-
-  if (signal?.aborted) {
-    throw new Error("Job was cancelled.");
-  }
-
   if (settings.provider === "gemini" && !reserveGeminiDailyExtraction()) {
-    return mergeEmotionIfAvailable(
-      withSignalContext({
+    return withSignalContext(
+      {
         signal: createFallbackSignal(),
         metadata: createFallbackMetadata(
           settings.provider,
           settings.model,
           "gemini_daily_limit",
         ),
-      }, rawText, context),
-      emotionResult,
-      emotionModule?.mergeLocalEmotionSignals,
+      },
+      rawText,
+      context,
     );
   }
 
   hasGeminiReservation = settings.provider === "gemini";
 
   try {
-    const extraction = mergeEmotionIfAvailable(
-      withSignalContext(
-        await extractSignal({
-          text: rawText,
-          settings,
-          entryDate: context.entryDate ?? undefined,
-          capturedAt: context.capturedAt ?? undefined,
-          signal,
-        }),
-        rawText,
-        context,
-      ),
-      emotionResult,
-      emotionModule?.mergeLocalEmotionSignals,
+    const extraction = withSignalContext(
+      await extractSignal({
+        text: rawText,
+        settings,
+        entryDate: context.entryDate ?? undefined,
+        capturedAt: context.capturedAt ?? undefined,
+        signal,
+      }),
+      rawText,
+      context,
     );
 
     if (hasExtractionError(extraction)) {
@@ -83,17 +67,17 @@ export async function extractSignalForText(
     releaseGeminiReservation();
     console.warn("[client-extraction] using fallback:", error);
 
-    return mergeEmotionIfAvailable(
-      withSignalContext({
+    return withSignalContext(
+      {
         signal: createFallbackSignal(),
         metadata: createFallbackMetadata(
           settings.provider,
           settings.model,
           "backend_unavailable",
         ),
-      }, rawText, context),
-      emotionResult,
-      emotionModule?.mergeLocalEmotionSignals,
+      },
+      rawText,
+      context,
     );
   }
 }
@@ -116,33 +100,4 @@ function hasExtractionError(
   extraction: Awaited<ReturnType<typeof extractSignal>>,
 ) {
   return Boolean(extraction.metadata.error_code);
-}
-
-function mergeEmotionIfAvailable(
-  extraction: Awaited<ReturnType<typeof extractSignal>>,
-  emotionResult: LocalEmotionResult | null,
-  mergeLocalEmotionSignals?: (
-    extraction: Awaited<ReturnType<typeof extractSignal>>,
-    emotion: LocalEmotionResult,
-  ) => Awaited<ReturnType<typeof extractSignal>>,
-) {
-  if (!emotionResult || !mergeLocalEmotionSignals) return extraction;
-  return mergeLocalEmotionSignals(extraction, emotionResult);
-}
-
-async function loadLocalEmotionModuleIfAllowed() {
-  if (!getLocalEmotionSpikeEnabled()) return null;
-  if (getCurrentInterfaceLanguage() !== "ru") return null;
-
-  return import("../emotion/localEmotion");
-}
-
-function getCurrentInterfaceLanguage() {
-  if (typeof localStorage === "undefined") return DEFAULT_LANGUAGE;
-
-  try {
-    return localStorage.getItem(LANGUAGE_STORAGE_KEY) ?? DEFAULT_LANGUAGE;
-  } catch {
-    return DEFAULT_LANGUAGE;
-  }
 }

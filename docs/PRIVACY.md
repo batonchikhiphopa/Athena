@@ -18,9 +18,12 @@ IndexedDB stores:
 - analysis toggles;
 - raw self-report events;
 - queue state;
-- vault envelopes when protection is enabled.
+- encrypted activity-insight cache;
+- encrypted vault envelopes for entries, drafts, self-reports, aggregates, and
+  activity insights.
 
-When local app protection is enabled, diary data and self-report records are migrated into encrypted vault envelopes.
+The vault always stores those records as encrypted envelopes. Passwordless
+access changes the unlock experience, not the at-rest record format.
 
 ## Backend Textless Data
 
@@ -30,7 +33,7 @@ SQLite stores:
 - `source_text_hash`;
 - sanitized signal rows;
 - effective signal rows;
-- Signal v4 detail JSON;
+- Signal v5 detail JSON, including enum-only activity context;
 - self-report daily aggregate rows;
 - insight snapshots;
 - auth/session data.
@@ -61,7 +64,36 @@ Extraction must not use:
 - prior trends;
 - unrelated entries.
 
-Signal v4 adds deterministic context fields for entry intent, structure, and local time context. These fields are computed by Athena from the current entry text shape and metadata, stored without raw text, and do not give the provider access to history or hidden memory.
+The current signal includes deterministic context fields for entry intent,
+structure, and local time context. These fields are computed by Athena from the
+current entry text shape and metadata, stored without raw text, and do not give
+the provider access to history or hidden memory.
+
+Signal v5 adds activity-specific structured context. It is limited to controlled
+enum values and an activity label already present in `activities`; it does not
+store excerpts, free-text summaries, people, organizations, or locations.
+
+## Results Insight Boundary
+
+Results grouping is browser-local. The activity-insight endpoint receives a
+bounded textless batch containing local activity ids and labels so it can
+validate and correlate the response, but it does not persist that request or
+the generated prose in SQLite.
+
+Before calling Gemini, the provider adapter strips activity labels and replaces
+local ids with temporary tokens such as `activity_1`. Gemini receives only:
+
+- task/activity kind, stage, rhythm, and burnout relation enums;
+- recent event enums and bounded enum-only activity contexts;
+- evidence, observation, and span counts;
+- the requested UI language.
+
+It does not receive diary prose, entry ids, activity labels, local activity ids,
+tags, excerpts, semantic vectors, or RAG evidence. Provider output must match a
+strict schema, map one-to-one to the temporary tokens, and pass text
+sanitization before the client stores it in the encrypted local cache. The
+server keeps only an in-memory daily quota marker, which resets on process
+restart.
 
 ## Self-Report Boundary
 

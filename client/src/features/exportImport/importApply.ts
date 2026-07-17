@@ -1,16 +1,11 @@
 import type { LocalEntry } from "../entries/entryTypes";
-import {
-  createTextHash,
-  replaceAllLocalEntries,
-} from "../entries/localEntryRepository";
+import { replaceAllLocalEntries } from "../entries/localEntryRepository";
 import {
   replaceAllSelfReportEvents,
   type ReplaceSelfReportEventsResult,
 } from "../selfReports/selfReportStorage";
 import {
-  EXPORT_PROMPT_VERSION,
   EXPORT_SELF_REPORT_SCHEMA_VERSION,
-  EXPORT_SIGNAL_SCHEMA_VERSION,
   type AthenaLocalExportV1,
   type LocalExportEntryV1,
   type LocalExportSelfReportEventV1,
@@ -49,9 +44,7 @@ export async function applyLocalImportReplace(
 ): Promise<LocalImportApplyResult> {
   const validatedPackage = validateLocalExportPackage(packageData);
 
-  const entries = await Promise.all(
-    validatedPackage.entries.map(toImportedLocalEntry),
-  );
+  const entries = validatedPackage.entries.map(toImportedLocalEntry);
   const selfReportEvents = validatedPackage.self_reports.events.map(
     toImportedSelfReportEvent,
   );
@@ -71,9 +64,9 @@ export async function applyLocalImportReplace(
   };
 }
 
-export async function toImportedLocalEntry(
+export function toImportedLocalEntry(
   entry: LocalExportEntryV1,
-): Promise<LocalEntry> {
+): LocalEntry {
   return {
     id: entry.id,
     serverId: entry.server_id,
@@ -81,10 +74,9 @@ export async function toImportedLocalEntry(
     entry_date: entry.entry_date,
     tags: entry.tags,
     analysis_enabled: entry.analysis_enabled,
-    source_text_hash: entry.source_text_hash ?? (await createTextHash(entry.text)),
-    signals: (entry.signal ?? createFallbackSignal(entry.entry_date)) as LocalEntry["signals"],
-    metadata: (entry.metadata ??
-      createImportFallbackMetadata(entry.updated_at)) as LocalEntry["metadata"],
+    source_text_hash: entry.source_text_hash,
+    signals: entry.signal,
+    metadata: entry.metadata,
     sync_status: "local_only",
     createdAt: entry.created_at,
     updatedAt: entry.updated_at,
@@ -123,44 +115,4 @@ function normalizeSelfReportValue(value: number | null) {
   if (!Number.isFinite(value)) return null;
 
   return Math.max(0, Math.min(10, Math.round(value)));
-}
-
-function createFallbackSignal(entryDate: string) {
-  return {
-    topics: [],
-    activities: [],
-    markers: [],
-    load: null,
-    fatigue: null,
-    focus: null,
-    signal_quality: "fallback",
-    entry_intent: {
-      intent: "unknown",
-      confidence: "low",
-      basis: [],
-    },
-    structure_signal: {
-      density: "empty",
-      coherence: "low",
-      has_question: false,
-      has_plan: false,
-      basis: [],
-    },
-    temporal_context: {
-      local_date: entryDate,
-      time_bucket: "unknown",
-      source: "entry_date",
-    },
-  };
-}
-
-function createImportFallbackMetadata(createdAt: string) {
-  return {
-    schema_version: EXPORT_SIGNAL_SCHEMA_VERSION,
-    prompt_version: EXPORT_PROMPT_VERSION,
-    provider: "off",
-    model: "imported-without-signal",
-    error_code: "import_missing_signal",
-    created_at: createdAt,
-  };
 }

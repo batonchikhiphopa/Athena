@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Language } from "../../i18n/languages";
 import { translateMessage } from "../../i18n/messages";
 import type {
@@ -15,15 +15,12 @@ import {
 import {
   getDebugMode,
   getExtractionSettings,
-  getLocalEmotionSpikeEnabled,
   getPersonaTextEnabled,
   setDebugMode as persistDebugMode,
   setExtractionSettings as persistExtractionSettings,
-  setLocalEmotionSpikeEnabled as persistLocalEmotionSpikeEnabled,
   setPersonaTextEnabled as persistPersonaTextEnabled,
 } from "./settingsStorage";
 import { updateLocalEntry } from "../entries/localEntryRepository";
-import type { LocalEmotionResult } from "../emotion/localEmotion";
 import { enqueueEntrySignalReprocessJob } from "../sync/entryReprocessJob";
 import {
   getSignalReprocessReason,
@@ -43,15 +40,7 @@ type ReprocessCallbacks = {
 };
 
 export function useSettingsState(language: Language) {
-  const localEmotionSpikeAvailable = language === "ru";
   const [debugMode, setDebugMode] = useState(() => getDebugMode());
-  const [localEmotionSpikeEnabled, setLocalEmotionSpikeEnabled] = useState(() =>
-    getLocalEmotionSpikeEnabled(),
-  );
-  const [localEmotionSpikeStatus, setLocalEmotionSpikeStatus] =
-    useState<"idle" | "running" | "done" | "error">("idle");
-  const [localEmotionSpikeResult, setLocalEmotionSpikeResult] =
-    useState<LocalEmotionResult | null>(null);
   const [personaTextEnabled, setPersonaTextEnabled] = useState(() =>
     getPersonaTextEnabled(),
   );
@@ -64,15 +53,6 @@ export function useSettingsState(language: Language) {
   const [reprocessStatus, setReprocessStatus] =
     useState<ReprocessStatus>("idle");
   const [reprocessMessage, setReprocessMessage] = useState("");
-
-  useEffect(() => {
-    if (localEmotionSpikeAvailable) return;
-
-    setLocalEmotionSpikeEnabled(false);
-    persistLocalEmotionSpikeEnabled(false);
-    setLocalEmotionSpikeResult(null);
-    setLocalEmotionSpikeStatus("idle");
-  }, [localEmotionSpikeAvailable]);
 
   const refreshExtractionStatus = useCallback(
     async (settings: ExtractionSettings) => {
@@ -126,43 +106,9 @@ export function useSettingsState(language: Language) {
     persistDebugMode(nextValue);
   }
 
-  function toggleLocalEmotionSpike(nextValue: boolean) {
-    const enabled = localEmotionSpikeAvailable && nextValue;
-
-    setLocalEmotionSpikeEnabled(enabled);
-    persistLocalEmotionSpikeEnabled(enabled);
-
-    if (!enabled) {
-      setLocalEmotionSpikeResult(null);
-      setLocalEmotionSpikeStatus("idle");
-    }
-  }
-
   function togglePersonaText(nextValue: boolean) {
     setPersonaTextEnabled(nextValue);
     persistPersonaTextEnabled(nextValue);
-  }
-
-  async function runLocalEmotionSpikeDemo() {
-    if (!localEmotionSpikeAvailable) {
-      setLocalEmotionSpikeEnabled(false);
-      persistLocalEmotionSpikeEnabled(false);
-      setLocalEmotionSpikeResult(null);
-      setLocalEmotionSpikeStatus("idle");
-      return;
-    }
-
-    setLocalEmotionSpikeStatus("running");
-
-    const { extractLocalEmotionSignals } = await import(
-      "../emotion/localEmotion"
-    );
-    const result = await extractLocalEmotionSignals(
-      translateMessage(language, "settings.records.localEmotionDemoText"),
-    );
-
-    setLocalEmotionSpikeResult(result);
-    setLocalEmotionSpikeStatus(result.ok ? "done" : "error");
   }
 
   async function reprocessFallbackEntries(
@@ -249,9 +195,6 @@ export function useSettingsState(language: Language) {
 
   function resetAfterLocalDataClear() {
     setDebugMode(false);
-    setLocalEmotionSpikeEnabled(false);
-    setLocalEmotionSpikeResult(null);
-    setLocalEmotionSpikeStatus("idle");
     setPersonaTextEnabled(true);
     setReprocessStatus("idle");
     setReprocessMessage("");
@@ -263,9 +206,6 @@ export function useSettingsState(language: Language) {
     extractionConfig,
     extractionSettings,
     extractionStatus,
-    localEmotionSpikeEnabled,
-    localEmotionSpikeResult,
-    localEmotionSpikeStatus,
     reprocessMessage,
     reprocessStatus,
     changeExtractionSettings,
@@ -273,9 +213,7 @@ export function useSettingsState(language: Language) {
     refreshExtractionStatus,
     reprocessFallbackEntries,
     resetAfterLocalDataClear,
-    runLocalEmotionSpikeDemo,
     toggleDebugMode,
-    toggleLocalEmotionSpike,
     togglePersonaText,
   };
 }

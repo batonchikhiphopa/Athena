@@ -1,2 +1,7 @@
-export const CLIENT_ACTIVE_SCHEMA_VERSION = "signal.v4";
-export const CLIENT_ACTIVE_PROMPT_VERSION = "extraction.v5";
+import {
+  ACTIVE_EXTRACTION_PROMPT_VERSION,
+  ACTIVE_SIGNAL_SCHEMA_VERSION,
+} from "../../../../shared/contracts/signalVersions.js";
+
+export const CLIENT_ACTIVE_SCHEMA_VERSION = ACTIVE_SIGNAL_SCHEMA_VERSION;
+export const CLIENT_ACTIVE_PROMPT_VERSION = ACTIVE_EXTRACTION_PROMPT_VERSION;

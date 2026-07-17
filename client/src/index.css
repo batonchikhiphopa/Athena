@@ -150,10 +150,44 @@ input {
   overflow: hidden;
 }
 
+.athena-entry-tile[data-compact="true"] .athena-entry-tile-body-content {
+  -webkit-line-clamp: 2;
+}
+
 .athena-entry-tile[data-expanded="true"] .athena-entry-tile-body-content {
   display: block;
   -webkit-line-clamp: unset;
   overflow: visible;
+}
+
+.athena-observations-unread::before {
+  animation: athena-observations-glow 1800ms ease-in-out infinite;
+  border: 1px solid rgb(217 119 6 / 0.28);
+  border-radius: 999px;
+  box-shadow: 0 0 18px rgb(245 158 11 / 0.42);
+  content: "";
+  inset: -0.18rem;
+  pointer-events: none;
+  position: absolute;
+}
+
+@keyframes athena-observations-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .athena-observations-unread::before {
+    animation: none;
+  }
 }
 
 .heart-double-pulse {

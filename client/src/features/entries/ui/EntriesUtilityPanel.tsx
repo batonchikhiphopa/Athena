@@ -1,6 +1,4 @@
 import { useI18n } from "../../../i18n/useI18n";
-import { Icon } from "../../../components/icon";
-import { TooltipButton } from "../../../components/TooltipButton";
 import { CloseIcon } from "./entryUiHelpers";
 import { tagTestIdValue } from "./entryTagId";
 
@@ -11,7 +9,6 @@ export function EntriesUtilityPanel({
   hasActiveFilters,
   isSearching,
   onClearFilters,
-  onOpenObservations,
   onSearchQueryChange,
   onToggleExcludedTag,
   onToggleTag,
@@ -22,7 +19,6 @@ export function EntriesUtilityPanel({
   hasActiveFilters: boolean;
   isSearching: boolean;
   onClearFilters: () => void;
-  onOpenObservations: () => void;
   onSearchQueryChange: (query: string) => void;
   onToggleExcludedTag: (tag: string) => void;
   onToggleTag: (tag: string) => void;
@@ -85,21 +81,7 @@ export function EntriesUtilityPanel({
         </div>
       )}
 
-      <TooltipButton
-        aria-label={t("nav.observations")}
-        className="
-          -mr-1 ml-auto relative flex h-9 w-9 shrink-0 items-center justify-center
-          overflow-visible rounded-full bg-transparent text-zinc-400 opacity-50
-          transition hover:bg-transparent hover:text-zinc-700 hover:opacity-100
-        "
-        data-testid="entries-open-observations"
-        onClick={onOpenObservations}
-        tooltip={t("nav.observations")}
-        tooltipPlacement="left"
-        type="button"
-      >
-        <Icon name="observations" className="relative z-10 h-5 w-5" />
-      </TooltipButton>
+      <div aria-hidden className="-mr-1 ml-auto h-9 w-9 shrink-0" />
     </aside>
   );
 }

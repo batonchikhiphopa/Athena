@@ -5,13 +5,39 @@ import { mapSignalCandidate } from "../shared/signal/signalMapper.js";
 import { sanitizeSignalCandidate } from "../server/modules/extraction/sanitization.service.js";
 import { metricConfidence, sparseSignal, state, validSignal } from "./signal-fixtures.js";
 
-test("accepts valid Signal v4 candidate", () => {
+test("accepts valid Signal v5 candidate", () => {
   const result = sanitizeSignalCandidate(validSignal());
 
   assert.equal(result.ok, true);
   assert.equal(result.data.signal_quality, "valid");
   assert.equal(result.data.load, 5);
   assert.equal(result.data.metric_confidence.load, "medium");
+});
+
+test("keeps only activity-specific contexts that match extracted activities", () => {
+  const result = sanitizeSignalCandidate(
+    validSignal({
+      activities: ["Поиск работы"],
+      activity_contexts: [
+        {
+          activity: "поиск работы",
+          kind: "task",
+          event: "progressed",
+          outcome: "partial",
+          blockers: ["uncertainty"],
+          strategy: "clear_plan",
+          next_step: "explicit",
+          agency: "active",
+          effect: "draining",
+          confidence: "medium",
+        },
+      ],
+    }),
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.activity_contexts[0].activity, "Поиск работы");
+  assert.equal(result.data.activity_contexts[0].event, "progressed");
 });
 
 test("rejects number as string", () => {
@@ -153,63 +179,6 @@ test("mapper produces metrics for distress, self-attack, and avoidance evidence"
   assert.equal(mapped.focus <= 4, true);
   assert.equal(mapped.metric_confidence.load, "high");
   assert.equal(mapped.quality_reason, "state_self_attack_high");
-});
-
-test("mapper uses emotion as bounded secondary evidence", () => {
-  const mapped = mapSignalCandidate(
-    validSignal({
-      state_inference: {
-        load: state("medium", "low"),
-        fatigue: state("medium", "low"),
-        focus: state("medium", "low"),
-      },
-      emotion_signals: {
-        labels: {
-          sadness: 0.82,
-          joy: 0.04,
-        },
-        top_label: "sadness",
-        top_score: 0.82,
-      },
-      metric_confidence: metricConfidence("low"),
-      quality_reason: "model_supplied_reason",
-      load: 0,
-      fatigue: 0,
-      focus: 10,
-      signal_quality: "sparse",
-    }),
-  );
-
-  assert.equal(mapped.load, 6);
-  assert.equal(mapped.fatigue, 6);
-  assert.equal(mapped.focus, 4);
-  assert.equal(mapped.metric_confidence.load, "medium");
-  assert.equal(
-    mapped.quality_reason,
-    "state_fatigue_medium_emotion_sadness_load_fatigue_focus",
-  );
-});
-
-test("mapper never creates metrics from emotion alone", () => {
-  const mapped = mapSignalCandidate(
-    sparseSignal({
-      topics: [],
-      emotion_signals: {
-        labels: {
-          fear: 0.91,
-        },
-        top_label: "fear",
-        top_score: 0.91,
-      },
-      quality_reason: "model_supplied_reason",
-    }),
-  );
-
-  assert.equal(mapped.load, null);
-  assert.equal(mapped.fatigue, null);
-  assert.equal(mapped.focus, null);
-  assert.equal(mapped.signal_quality, "sparse");
-  assert.equal(mapped.quality_reason, "emotion_context_only");
 });
 
 test("mapper abstains on dry entries with no relevant signal", () => {

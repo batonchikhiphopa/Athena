@@ -8,7 +8,6 @@ import {
 import {
   decryptVaultJson,
   encryptVaultJson,
-  isVaultEncryptedPayload,
   type VaultEncryptedPayload,
 } from "../vault/vault";
 
@@ -20,12 +19,10 @@ type EncryptedLocalEntryRecord = {
   vault_payload: VaultEncryptedPayload;
 };
 
-type StoredLocalEntryRecord = LocalEntry | EncryptedLocalEntryRecord;
-
 export async function getAllLocalEntries() {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
-  const entries = await idbRequest<StoredLocalEntryRecord[]>(
+  const entries = await idbRequest<EncryptedLocalEntryRecord[]>(
     transaction.objectStore(ENTRY_STORE).getAll(),
   );
   const decrypted = await Promise.all(entries.map(readStoredLocalEntry));
@@ -35,7 +32,7 @@ export async function getAllLocalEntries() {
 export async function getLocalEntry(id: string) {
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ENTRY_STORE, "readonly");
-  const entry = await idbRequest<StoredLocalEntryRecord | undefined>(
+  const entry = await idbRequest<EncryptedLocalEntryRecord | undefined>(
     transaction.objectStore(ENTRY_STORE).get(id),
   );
   return entry ? normalizeLocalEntry(await readStoredLocalEntry(entry)) : undefined;
@@ -75,21 +72,6 @@ export async function replaceAllLocalEntries(entries: LocalEntry[]) {
   for (const entry of encrypted) await idbRequest(store.put(entry));
 }
 
-export async function migrateEntriesToVault() {
-  const db = await openAthenaLocalDb();
-  const transaction = db.transaction(ENTRY_STORE, "readonly");
-  const records = await idbRequest<StoredLocalEntryRecord[]>(
-    transaction.objectStore(ENTRY_STORE).getAll(),
-  );
-
-  for (const record of records) {
-    if (isEncryptedLocalEntryRecord(record)) continue;
-    const encrypted = await encryptLocalEntry(record);
-    const writeTransaction = db.transaction(ENTRY_STORE, "readwrite");
-    await idbRequest(writeTransaction.objectStore(ENTRY_STORE).put(encrypted));
-  }
-}
-
 export function createClientEntryId() {
   if (crypto.randomUUID) return crypto.randomUUID();
   return `entry-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -115,9 +97,8 @@ function normalizeLocalEntry(entry: LocalEntry): LocalEntry {
 }
 
 async function readStoredLocalEntry(
-  record: StoredLocalEntryRecord,
+  record: EncryptedLocalEntryRecord,
 ): Promise<LocalEntry> {
-  if (!isEncryptedLocalEntryRecord(record)) return record;
   return decryptVaultJson<LocalEntry>(
     record.vault_payload,
     createEntryVaultAssociatedData(record.id),
@@ -137,17 +118,6 @@ async function encryptLocalEntry(
       createEntryVaultAssociatedData(entry.id),
     ),
   };
-}
-
-function isEncryptedLocalEntryRecord(
-  record: StoredLocalEntryRecord,
-): record is EncryptedLocalEntryRecord {
-  return (
-    typeof record === "object" &&
-    record !== null &&
-    "vault_payload" in record &&
-    isVaultEncryptedPayload(record.vault_payload)
-  );
 }
 
 function createEntryVaultAssociatedData(entryId: string) {
