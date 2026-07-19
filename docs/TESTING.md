@@ -29,12 +29,12 @@ lint, client build, and the Playwright smoke flow on pushes and pull requests.
 
 Server:
 
-- auth setup, login, logout, expired sessions;
-- CSRF protection for mutating requests;
+- open API behavior and absence of retired auth mutation routes;
+- removal of retired auth tables without resetting other backend data;
 - entry create/update/delete without raw text storage;
 - idempotent entry create and source hash mismatch;
 - entry server-sync policy and source-hash conflict behavior;
-- SQLite migration and write transaction behavior;
+- canonical SQLite initialization, fingerprint rejection, and write transaction behavior;
 - self-report aggregate API;
 - analytics summaries, Analytics V2 summaries, and Insight V3 snapshots.
 
@@ -58,6 +58,15 @@ Results pipeline:
 
 - exact multilingual identity aliases and task/activity classification;
 - specific project tags as bounded identity hints;
+- pending extraction proposals do not enter Results before user confirmation;
+- user corrections are canonical while original extraction remains unchanged;
+- rename, merge, split, aliases, tag rules, manual links, and exclusions are reversible;
+- a per-item tag rule links matching analyzable entries, excludes entries with
+  analysis disabled, and loads old customization records without tag rules;
+- day/week facts are deterministic and remain attached to their owning Results item;
+- the owning Results item, not Observations, displays its narrative or a phrase-pool fallback;
+- activity-review requests omit local ids and labels, enable Google Search, and
+  retain only sanitized grounding source links;
 - rejection of broad or ambiguous tag-only project candidates;
 - deidentified activity-specific context aggregation for insights.
 
@@ -86,7 +95,7 @@ Before a public release, also verify the visible current product shape:
 3. Observation history opens as a floating panel and refreshes without sending
    local RAG excerpts to the backend.
 4. Results renders one unified list; a row expands by clicking the row itself,
-   without filter, rename, merge, or manual-link controls, and its source entry
-   tiles retain Entries actions.
+   its source entry tiles retain Entries actions, and its gear opens the
+   separate correction panel without adding controls to the primary row.
 5. Settings opens as a floating panel with Interface, Access, Records, and Data
    tabs.

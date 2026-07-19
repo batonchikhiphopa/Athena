@@ -5,45 +5,45 @@ import type { MessageKey } from "../../../i18n/messages";
 import { formatInsightText } from "../content/insightText";
 import type { InsightSnapshot } from "../../../shared/contracts";
 import { TooltipButton } from "../../../components/TooltipButton";
-import { getResultsCopy } from "../../results/resultsCopy";
-import type { ActivityGroup } from "../../results/resultsTypes";
-import type { ActivityInsightView } from "../../results/activityInsightTypes";
+import { CloseIcon } from "../../entries/ui/entryUiHelpers";
+import type { ExtractionProposal } from "../../results/resultsCorrections";
+import type { CorrectProposalInput } from "../../results/useResultsCustomization";
+import { ExtractionProposalCards } from "../../results/ui/ExtractionProposalCards";
 
 type ObservationsProps = {
-  activities: ActivityGroup[];
-  activityInsights: Map<string, ActivityInsightView>;
   insights: InsightSnapshot[];
+  proposals: ExtractionProposal[];
   personaTextEnabled: boolean;
+  onAcceptProposal: (proposal: ExtractionProposal) => void;
   onClose: () => void;
+  onCorrectProposal: (
+    proposal: ExtractionProposal,
+    input: CorrectProposalInput,
+  ) => void;
   onDeleteInsight: (insight: InsightSnapshot) => void;
-  onOpenActivity: (activityId: string) => void;
+  onRejectProposal: (proposal: ExtractionProposal) => void;
+  onRestoreProposal: (proposal: ExtractionProposal) => void;
   onRefresh: () => void;
 };
 
 export function Observations({
-  activities,
-  activityInsights,
   insights,
+  proposals,
   personaTextEnabled,
+  onAcceptProposal,
   onClose,
+  onCorrectProposal,
   onDeleteInsight,
-  onOpenActivity,
+  onRejectProposal,
+  onRestoreProposal,
   onRefresh,
 }: ObservationsProps) {
   const { language, t } = useI18n();
   const groups = groupInsightsByDate(insights);
-  const resultsCopy = getResultsCopy(language);
-  const activityById = new Map(
-    activities.map((activity) => [activity.id, activity]),
+  const visibleProposals = proposals.filter(
+    (proposal) =>
+      proposal.status === "pending" || proposal.status === "rejected",
   );
-  const visibleActivityInsights = [...activityInsights.values()]
-    .flatMap((insight) => {
-      const activity = activityById.get(insight.activityId);
-      return activity ? [{ activity, insight }] : [];
-    })
-    .sort((left, right) =>
-      right.insight.generatedAt.localeCompare(left.insight.generatedAt),
-    );
 
   return (
     <section className="flex h-full min-h-0 flex-col text-zinc-800">
@@ -87,46 +87,14 @@ export function Observations({
         className="entries-feed-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5"
         data-no-drag
       >
-        {groups.length === 0 && visibleActivityInsights.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/50 bg-white/30 p-5 text-sm text-zinc-400">
-            {t("observations.empty")}
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {visibleActivityInsights.length > 0 && (
-              <section>
-                <div className="mb-2 text-sm font-medium text-zinc-500">
-                  {resultsCopy.tasks} / {resultsCopy.activities}
-                </div>
-                <div className="space-y-2">
-                  {visibleActivityInsights.map(({ activity, insight }) => (
-                    <article
-                      className="rounded-lg border border-amber-900/10 bg-amber-50/35 p-4 shadow-sm shadow-zinc-900/5"
-                      key={`${insight.activityId}-${insight.generatedAt}`}
-                    >
-                      <div className="text-xs uppercase text-zinc-400">
-                        {activity.label} · {resultsCopy.stage[activity.insightInput.stage]}
-                      </div>
-                      <p className="mt-2 text-sm leading-6 text-zinc-800">
-                        {insight.text}
-                      </p>
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="text-xs text-zinc-400">
-                          {formatGeneratedAt(insight.generatedAt, language)}
-                        </span>
-                        <button
-                          className="rounded-full bg-white/55 px-3 py-1.5 text-xs text-zinc-500 transition hover:bg-white/85 hover:text-zinc-900"
-                          onClick={() => onOpenActivity(activity.id)}
-                          type="button"
-                        >
-                          {resultsCopy.openInResults} →
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
+        <div className="space-y-5">
+          <ExtractionProposalCards
+            proposals={visibleProposals}
+            onAccept={onAcceptProposal}
+            onCorrect={onCorrectProposal}
+            onReject={onRejectProposal}
+            onRestore={onRestoreProposal}
+          />
 
             {groups.map((group) => (
               <section key={group.date}>
@@ -163,17 +131,16 @@ export function Observations({
                         <TooltipButton
                           aria-label={t("observations.action.delete")}
                           className="
-                            flex h-8 w-8 shrink-0 items-center justify-center
-                            rounded-full text-zinc-400 opacity-0 transition
-                            hover:bg-red-50 hover:text-red-700
-                            group-hover:opacity-100 group-focus-within:opacity-100
+                            flex h-6 w-6 shrink-0 items-center justify-center
+                            rounded-full text-zinc-400 opacity-70 transition
+                            hover:bg-red-50 hover:text-red-700 hover:opacity-100
                           "
                           onClick={() => onDeleteInsight(insight)}
                           tooltip={t("observations.action.delete")}
                           tooltipPlacement="left"
                           type="button"
                         >
-                          ×
+                          <CloseIcon />
                         </TooltipButton>
                       </div>
                     </article>
@@ -181,8 +148,12 @@ export function Observations({
                 </div>
               </section>
             ))}
-          </div>
-        )}
+          {visibleProposals.length === 0 && groups.length === 0 && (
+            <p className="rounded-lg border border-white/25 bg-white/25 px-4 py-3 text-sm text-zinc-400">
+              {t("observations.empty")}
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );

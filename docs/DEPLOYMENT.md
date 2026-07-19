@@ -7,7 +7,6 @@ Athena can run in development mode or as a production-style self-hosted app.
 ```powershell
 npm install
 Copy-Item .env.example .env
-npm run migrate
 npm run dev
 ```
 
@@ -28,7 +27,13 @@ npm run start
 
 `npm run build` builds the Vite client and compiled TypeScript server.
 
-`npm run start` runs compiled SQLite migrations first, then starts the compiled Node server. Express serves the built client from `client/dist`.
+`npm run start` verifies the canonical SQLite schema, initializes a fresh
+database when needed, and starts the compiled Node server. Express serves the
+built client from `client/dist`.
+
+Athena does not upgrade older backend schemas during active development. Use
+`npm run db:reset` when intentionally replacing a non-canonical textless backend
+database.
 
 ## Docker
 

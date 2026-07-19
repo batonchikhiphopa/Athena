@@ -4,8 +4,7 @@ import type {
 } from "../../shared/contracts";
 import {
   createApiHttpError,
-  csrfJsonHeaders,
-  handleUnauthorized,
+  jsonHeaders,
 } from "../../shared/http/httpClient";
 
 export async function generateActivityInsights(
@@ -15,12 +14,10 @@ export async function generateActivityInsights(
   const response = await fetch("/results/activity-insights", {
     body: JSON.stringify(payload),
     credentials: "same-origin",
-    headers: csrfJsonHeaders(),
+    headers: jsonHeaders(),
     method: "POST",
     signal,
   });
-  handleUnauthorized(response);
-
   if (!response.ok) {
     throw await createApiHttpError(
       response,

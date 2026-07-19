@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ExtractionSettings } from "../../shared/contracts";
 import type { Language } from "../../i18n/languages";
 import { generateActivityInsights } from "./activityInsightApi";
 import {
+  deleteActivityInsight,
   loadActivityInsightCache,
   saveActivityInsights,
 } from "./activityInsightCache";
@@ -13,8 +14,9 @@ import type {
 } from "./activityInsightTypes";
 import { reserveActivityInsightGeneration } from "./activityInsightQuota";
 import type { ActivityGroup } from "./resultsTypes";
+import { buildWeeklyReviewActivities } from "./reviewModel";
 
-const ACTIVITY_INSIGHT_FINGERPRINT_VERSION = "activity-insight.v2";
+const ACTIVITY_INSIGHT_FINGERPRINT_VERSION = "activity-insight.v3";
 const MAX_BATCH_SIZE = 8;
 
 export function useActivityInsights({
@@ -34,6 +36,10 @@ export function useActivityInsights({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const reviewActivities = useMemo(
+    () => buildWeeklyReviewActivities(activities),
+    [activities],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +62,7 @@ export function useActivityInsights({
         const [cached, fingerprints] = await Promise.all([
           loadActivityInsightCache(),
           createFingerprints(
-            activities,
+            reviewActivities,
             language,
             extractionSettings.model,
           ),
@@ -76,52 +82,6 @@ export function useActivityInsights({
         setInsights(visibleCache);
         setIsLoading(false);
 
-        if (extractionSettings.provider !== "gemini") return;
-
-        const dirtyActivities = activities
-          .filter(
-            (activity) =>
-              activity.insightInput.observationCount >= 2 &&
-              activity.insightInput.rhythm !== "insufficient" &&
-              cached.get(activity.id)?.fingerprint !==
-                fingerprints.get(activity.id),
-          )
-          .slice(0, MAX_BATCH_SIZE);
-
-        if (
-          dirtyActivities.length === 0 ||
-          !reserveActivityInsightGeneration()
-        ) {
-          return;
-        }
-
-        setIsRefreshing(true);
-        const response = await generateActivityInsights({
-          activities: dirtyActivities.map((activity) => activity.insightInput),
-          language,
-          model: extractionSettings.model,
-        });
-        const generatedAt = new Date().toISOString();
-        const generated = response.insights.map((insight) => ({
-          activityId: insight.activityId,
-          confidence: insight.confidence,
-          fingerprint: fingerprints.get(insight.activityId) ?? "",
-          generatedAt,
-          model: extractionSettings.model,
-          status: insight.status,
-          text: insight.text,
-        } satisfies CachedActivityInsight));
-
-        await saveActivityInsights(generated);
-        if (cancelled) return;
-
-        setInsights((current) => {
-          const next = new Map(current);
-          for (const insight of generated) {
-            next.set(insight.activityId, { ...insight, isStale: false });
-          }
-          return next;
-        });
       } catch (caughtError) {
         if (!cancelled) {
           setError(
@@ -139,14 +99,123 @@ export function useActivityInsights({
     })();
 
     return () => {
-      // A dispatched provider request is deliberately allowed to finish and be
-      // cached. Cancelling it would still consume the daily attempt while
-      // discarding the useful result.
       cancelled = true;
     };
-  }, [activities, extractionSettings.model, extractionSettings.provider, isDemo, language]);
+  }, [activities, extractionSettings.model, isDemo, language, reviewActivities]);
 
-  return { error, insights, isLoading, isRefreshing };
+  const formulateReview = useCallback(async () => {
+    const eligibleActivities = reviewActivities
+      .filter(
+        (activity) =>
+          activity.insightInput.observationCount >= 2 &&
+          activity.insightInput.rhythm !== "insufficient",
+      )
+      .slice(0, MAX_BATCH_SIZE);
+
+    if (
+      isDemo ||
+      extractionSettings.provider !== "gemini" ||
+      eligibleActivities.length === 0
+    ) {
+      return;
+    }
+
+    if (!reserveActivityInsightGeneration()) {
+      setError(new Error("activity_insight_daily_limit"));
+      return;
+    }
+
+    setError(null);
+    setIsRefreshing(true);
+
+    try {
+      const fingerprints = await createFingerprints(
+        eligibleActivities,
+        language,
+        extractionSettings.model,
+      );
+      const response = await generateActivityInsights({
+        activities: eligibleActivities.map(createShownReviewInsightInput),
+        language,
+        model: extractionSettings.model,
+      });
+      const generatedAt = new Date().toISOString();
+      const generated = response.insights.map(
+        (insight) =>
+          ({
+            activityId: insight.activityId,
+            confidence: insight.confidence,
+            fingerprint: fingerprints.get(insight.activityId) ?? "",
+            generatedAt,
+            model: extractionSettings.model,
+            status: insight.status,
+            text: insight.text,
+            sources: insight.sources ?? [],
+          }) satisfies CachedActivityInsight,
+      );
+
+      await saveActivityInsights(generated);
+      setInsights((current) => {
+        const next = new Map(current);
+        for (const insight of generated) {
+          next.set(insight.activityId, { ...insight, isStale: false });
+        }
+        return next;
+      });
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError
+          : new Error("activity_insight_failed"),
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    extractionSettings.model,
+    extractionSettings.provider,
+    isDemo,
+    language,
+    reviewActivities,
+  ]);
+
+  const canFormulateReview =
+    !isDemo &&
+    extractionSettings.provider === "gemini" &&
+    reviewActivities.some(
+      (activity) =>
+        activity.insightInput.observationCount >= 2 &&
+        activity.insightInput.rhythm !== "insufficient",
+    );
+
+  const deleteInsight = useCallback(async (activityId: string) => {
+    setError(null);
+
+    try {
+      await deleteActivityInsight(activityId);
+      setInsights((current) => {
+        const next = new Map(current);
+        next.delete(activityId);
+        return next;
+      });
+    } catch (caughtError) {
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError
+          : new Error("activity_insight_delete_failed");
+      setError(nextError);
+    }
+  }, []);
+
+  return {
+    canFormulateReview,
+    deleteInsight,
+    error,
+    formulateReview,
+    insights,
+    isLoading,
+    isRefreshing,
+  };
 }
 
 async function createFingerprints(
@@ -158,7 +227,7 @@ async function createFingerprints(
     activities.map(async (activity) => {
       const fingerprint = await hashValue(
         JSON.stringify({
-          input: activity.insightInput,
+          input: createShownReviewInsightInput(activity),
           language,
           model,
           version: ACTIVITY_INSIGHT_FINGERPRINT_VERSION,
@@ -170,6 +239,20 @@ async function createFingerprints(
   );
 
   return new Map(values);
+}
+
+export function createShownReviewInsightInput(activity: ActivityGroup) {
+  return {
+    ...activity.insightInput,
+    burnoutRelation: "unclear" as const,
+    recentContexts: activity.insightInput.recentContexts.map((context) => ({
+      ...context,
+      agency: "unknown" as const,
+      blockers: [],
+      effect: "unclear" as const,
+      strategy: "unknown" as const,
+    })),
+  };
 }
 
 async function hashValue(value: string) {

@@ -38,7 +38,7 @@ export function EntriesUtilityPanel({
         <input
           aria-label={t("entries.searchAria")}
           className="
-            h-9 w-full rounded-full border border-white/70 bg-white px-3.5 pr-9
+            h-8 w-full rounded-full border border-white/70 bg-white px-3.5 pr-9
             text-sm text-zinc-800 shadow-sm shadow-zinc-900/5 outline-none
             transition
             placeholder:text-zinc-400
@@ -55,7 +55,7 @@ export function EntriesUtilityPanel({
           <button
             aria-label={t("entries.action.clearFilters")}
             className="
-              absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2
+              absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2
               place-items-center rounded-full text-zinc-400 transition
               hover:bg-white/60 hover:text-zinc-950
             "
@@ -76,12 +76,12 @@ export function EntriesUtilityPanel({
       />
 
       {isSearching && (
-        <div className="flex h-9 items-center text-xs text-zinc-400">
+        <div className="flex h-8 items-center text-xs text-zinc-400">
           {t("entries.searching")}
         </div>
       )}
 
-      <div aria-hidden className="-mr-1 ml-auto h-9 w-9 shrink-0" />
+      <div aria-hidden className="-mr-1 ml-auto h-8 w-8 shrink-0" />
     </aside>
   );
 }
@@ -102,12 +102,12 @@ function ActiveTagFilters({
   if (includedTags.length === 0 && excludedTags.length === 0) return null;
 
   return (
-    <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-2">
+    <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-2">
       {includedTags.map((tag) => (
         <button
           aria-label={`${t("entries.action.clearFilters")} #${tag}`}
           className="
-            inline-flex h-9 items-center gap-2 rounded-full border border-white/45
+            inline-flex h-8 items-center gap-2 rounded-full border border-white/45
             bg-sky-50/70 px-3 text-sm text-sky-700 shadow-sm shadow-zinc-900/5
             backdrop-blur-[2px] transition hover:bg-white/70 hover:text-sky-800
           "
@@ -125,7 +125,7 @@ function ActiveTagFilters({
         <button
           aria-label={`${t("entries.action.clearFilters")} -#${tag}`}
           className="
-            inline-flex h-9 items-center gap-2 rounded-full border border-white/45
+            inline-flex h-8 items-center gap-2 rounded-full border border-white/45
             bg-zinc-100/65 px-3 text-sm text-zinc-500 shadow-sm shadow-zinc-900/5
             backdrop-blur-[2px] transition hover:bg-white/70 hover:text-zinc-800
           "

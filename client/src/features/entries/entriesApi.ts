@@ -5,9 +5,7 @@ import type {
 } from "../../shared/contracts";
 import {
   createApiHttpError,
-  csrfHeaders,
-  csrfJsonHeaders,
-  handleUnauthorized,
+  jsonHeaders,
 } from "../../shared/http/httpClient";
 
 type EntryPayload = {
@@ -25,7 +23,6 @@ type EntriesResponse = { entries: ServerEntry[] };
 export async function loadServerEntries() {
   try {
     const response = await fetch("/entries", { credentials: "same-origin" });
-    handleUnauthorized(response);
     if (!response.ok) throw new Error("Не удалось загрузить записи");
     return ((await response.json()) as EntriesResponse).entries ?? [];
   } catch (error) {
@@ -39,7 +36,6 @@ export async function loadServerEntry(entryId: number | string) {
     const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
       credentials: "same-origin",
     });
-    handleUnauthorized(response);
     if (!response.ok) throw new Error("Не удалось загрузить запись");
     return ((await response.json()) as EntryResponse).entry ?? null;
   } catch (error) {
@@ -52,10 +48,9 @@ export async function createEntry(payload: CreateEntryPayload) {
   const response = await fetch("/entries", {
     method: "POST",
     credentials: "same-origin",
-    headers: csrfJsonHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  handleUnauthorized(response);
   if (!response.ok) {
     throw await createApiHttpError(response, "Не удалось сохранить запись");
   }
@@ -69,10 +64,9 @@ export async function updateServerEntry(
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
     method: "PATCH",
     credentials: "same-origin",
-    headers: csrfJsonHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  handleUnauthorized(response);
   if (!response.ok) {
     throw await createApiHttpError(response, "Не удалось обновить запись");
   }
@@ -83,9 +77,7 @@ export async function deleteServerEntry(entryId: number | string) {
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}`, {
     method: "DELETE",
     credentials: "same-origin",
-    headers: csrfHeaders(),
   });
-  handleUnauthorized(response);
   if (!response.ok && response.status !== 404) {
     throw new Error(`Не удалось удалить запись: ${await response.text()}`);
   }

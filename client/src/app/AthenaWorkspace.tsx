@@ -19,6 +19,12 @@ import { todayDateOnly } from "../shared/lib/dates";
 import logoImg from "../assets/logo-bg.jpg";
 import { buildActivityIndex } from "../features/results/resultsModel";
 import { useActivityInsights } from "../features/results/useActivityInsights";
+import {
+  buildCanonicalActivityIndex,
+  buildExtractionProposals,
+} from "../features/results/resultsCorrections";
+import { useResultsCustomization } from "../features/results/useResultsCustomization";
+import { getResultsCorrectionCopy } from "../features/results/resultsCorrectionCopy";
 
 const EntriesPage = lazy(() =>
   import("../features/entries/ui/EntriesPage").then((module) => ({
@@ -35,6 +41,11 @@ const Settings = lazy(() =>
     default: module.Settings,
   })),
 );
+const ResultsItemSettings = lazy(() =>
+  import("../features/results/ui/ResultsItemSettings").then((module) => ({
+    default: module.ResultsItemSettings,
+  })),
+);
 
 const SETTINGS_PANEL_DEFAULT_POSITION: FloatingPanelPosition = {
   x: 112,
@@ -46,6 +57,11 @@ const OBSERVATIONS_PANEL_DEFAULT_POSITION: FloatingPanelPosition = {
   y: 72,
 };
 
+const RESULT_SETTINGS_PANEL_DEFAULT_POSITION: FloatingPanelPosition = {
+  x: 208,
+  y: 56,
+};
+
 const settingsPanelStyle = {
   height: "min(42rem, calc(100vh - 2rem))",
   width: "min(46rem, calc(100vw - 2rem))",
@@ -54,6 +70,11 @@ const settingsPanelStyle = {
 const observationsPanelStyle = {
   height: "min(38rem, calc(100vh - 2rem))",
   width: "min(38rem, calc(100vw - 2rem))",
+};
+
+const resultSettingsPanelStyle = {
+  height: "min(44rem, calc(100vh - 2rem))",
+  width: "min(50rem, calc(100vw - 2rem))",
 };
 
 type AthenaWorkspaceProps = {
@@ -104,16 +125,47 @@ export function AthenaWorkspace({
 }: AthenaWorkspaceProps) {
   const app = useAthenaApp();
   const { language, t } = useI18n();
+  const resultsCorrectionCopy = getResultsCorrectionCopy(language);
   const { handlers } = app;
   const [isObservationsOpen, setIsObservationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [focusedActivity, setFocusedActivity] = useState<{
-    id: string;
-    key: number;
-  } | null>(null);
-  const resultsModel = useMemo(
+  const [managedActivityId, setManagedActivityId] = useState<string | null>(
+    null,
+  );
+  const machineResultsModel = useMemo(
     () => buildActivityIndex(app.entries, language),
     [app.entries, language],
+  );
+  const resultsCustomization = useResultsCustomization();
+  const extractionProposals = useMemo(
+    () =>
+      buildExtractionProposals(
+        machineResultsModel,
+        resultsCustomization.customization,
+      ),
+    [machineResultsModel, resultsCustomization.customization],
+  );
+  const resultsModel = useMemo(
+    () =>
+      buildCanonicalActivityIndex({
+        customization: resultsCustomization.customization,
+        entries: app.entries,
+        machineIndex: machineResultsModel,
+        proposals: extractionProposals,
+      }),
+    [
+      app.entries,
+      extractionProposals,
+      machineResultsModel,
+      resultsCustomization.customization,
+    ],
+  );
+  const pendingProposalIds = useMemo(
+    () =>
+      extractionProposals
+        .filter((proposal) => proposal.status === "pending")
+        .map((proposal) => proposal.id),
+    [extractionProposals],
   );
   const activityInsights = useActivityInsights({
     activities: resultsModel.activities,
@@ -125,8 +177,8 @@ export function AthenaWorkspace({
     hasUnread: hasUnreadObservations,
     markAllSeen: markAllObservationsSeen,
   } = useObservationNotifications({
-    activityInsights: activityInsights.insights,
     observations: app.observationHistory,
+    pendingProposalIds,
   });
 
   const handleLockAthena = useCallback(() => {
@@ -164,15 +216,6 @@ export function AthenaWorkspace({
   useEffect(() => {
     if (isObservationsOpen) markAllObservationsSeen();
   }, [isObservationsOpen, markAllObservationsSeen]);
-
-  function handleOpenActivity(activityId: string) {
-    setFocusedActivity((current) => ({
-      id: activityId,
-      key: (current?.key ?? 0) + 1,
-    }));
-    setIsObservationsOpen(false);
-    void handlers.navigate("results");
-  }
 
   return (
     <FloatingLayerProvider>
@@ -258,11 +301,10 @@ export function AthenaWorkspace({
                   debugMode={app.debugMode}
                   entries={app.entries}
                   extractionSettings={app.extractionSettings}
-                  focusedActivityId={focusedActivity?.id ?? null}
-                  focusedActivityKey={focusedActivity?.key ?? 0}
                   model={resultsModel}
                   onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
                   onEditEntry={(entry) => void handlers.editEntry(entry)}
+                  onManageActivity={setManagedActivityId}
                   onToggleEntryAnalysis={(entry) =>
                     void handlers.toggleEntryAnalysisEnabled(entry)
                   }
@@ -306,16 +348,41 @@ export function AthenaWorkspace({
               testId="observations-floating-panel"
             >
               <Observations
-                activities={resultsModel.activities}
-                activityInsights={activityInsights.insights}
                 insights={app.observationHistory}
+                proposals={extractionProposals}
                 personaTextEnabled={app.personaTextEnabled}
+                onAcceptProposal={resultsCustomization.acceptProposal}
                 onClose={() => setIsObservationsOpen(false)}
+                onCorrectProposal={resultsCustomization.correctProposal}
                 onDeleteInsight={(insight) =>
                   void handlers.deleteInsight(insight)
                 }
-                onOpenActivity={handleOpenActivity}
+                onRejectProposal={resultsCustomization.rejectProposal}
+                onRestoreProposal={resultsCustomization.restoreProposal}
                 onRefresh={handleRefreshObservations}
+              />
+            </FloatingPanel>
+
+            <FloatingPanel
+              aria-label={resultsCorrectionCopy.manageTitle}
+              className="
+                overflow-hidden rounded-lg border border-white/25 bg-white/60
+                text-zinc-800 shadow-2xl shadow-zinc-900/10
+                backdrop-blur-md
+              "
+              defaultPosition={RESULT_SETTINGS_PANEL_DEFAULT_POSITION}
+              id="result-settings"
+              isOpen={managedActivityId !== null}
+              onClose={() => setManagedActivityId(null)}
+              style={resultSettingsPanelStyle}
+              testId="result-settings-floating-panel"
+            >
+              <ResultsItemSettings
+                entries={app.entries}
+                entityId={managedActivityId}
+                proposals={extractionProposals}
+                state={resultsCustomization}
+                onClose={() => setManagedActivityId(null)}
               />
             </FloatingPanel>
 

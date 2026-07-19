@@ -6,11 +6,15 @@ import { formatLongDate, formatShortDate } from "../../../shared/lib/dates";
 import { generateAthenaPlaceholder } from "../../editor/content/athenaPlaceholder";
 import type { EntryView } from "../../entries/entryTypes";
 import { EntryTile } from "../../entries/ui/EntryTile";
+import { CloseIcon } from "../../entries/ui/entryUiHelpers";
+import { Icon as IconComponent } from "../../../components/icon";
+import { TooltipButton } from "../../../components/TooltipButton";
 import {
   createEntrySearchSnippet,
   type EntrySearchSnippet,
 } from "../../entries/entrySearch";
 import { getResultsCopy } from "../resultsCopy";
+import { getResultsCorrectionCopy } from "../resultsCorrectionCopy";
 import type {
   ActivityGroup,
   ActivityIndex,
@@ -18,22 +22,21 @@ import type {
 } from "../resultsTypes";
 import type {
   ActivityInsightState,
-  ActivityInsightView,
 } from "../activityInsightTypes";
 import { ActivityDebug } from "./ActivityDebug";
 import { ActivityGraph } from "./ActivityGraph";
 import { AnimatedActivityPanel } from "./AnimatedActivityPanel";
+import { ActivityReviewFacts } from "./ActivityReviewFacts";
 
 export function ResultsPage({
   activityInsights,
   debugMode,
   entries,
   extractionSettings,
-  focusedActivityId,
-  focusedActivityKey,
   model,
   onDeleteEntry,
   onEditEntry,
+  onManageActivity,
   onToggleEntryAnalysis,
   onToggleTag,
 }: {
@@ -41,38 +44,23 @@ export function ResultsPage({
   debugMode: boolean;
   entries: EntryView[];
   extractionSettings: ExtractionSettings;
-  focusedActivityId: string | null;
-  focusedActivityKey: number;
   model: ActivityIndex;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
+  onManageActivity: (activityId: string) => void;
   onToggleEntryAnalysis: (entry: EntryView) => void;
   onToggleTag: (tag: string) => void;
 }) {
   const { language } = useI18n();
   const copy = getResultsCopy(language);
+  const correctionCopy = getResultsCorrectionCopy(language);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
     null,
   );
-  const [insightFallback, setInsightFallback] = useState<{
+  const [athenaPhrase, setAthenaPhrase] = useState<{
     activityId: string;
     text: string;
   } | null>(null);
-
-  useEffect(() => {
-    if (!focusedActivityId) return;
-    const activity = model.activities.find(
-      (candidate) => candidate.id === focusedActivityId,
-    );
-    if (!activity) return;
-
-    setSelectedActivityId(activity.id);
-    globalThis.requestAnimationFrame?.(() => {
-      document
-        .querySelector(`[data-activity-id="${CSS.escape(activity.id)}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [focusedActivityId, focusedActivityKey, model.activities]);
 
   useEffect(() => {
     if (!selectedActivityId) return;
@@ -84,16 +72,15 @@ export function ResultsPage({
 
   useEffect(() => {
     if (!selectedActivityId) return;
-
-    setInsightFallback((current) => ({
+    setAthenaPhrase((current) => ({
       activityId: selectedActivityId,
       text: generateFreshAthenaPhrase(language, current?.text ?? ""),
     }));
   }, [language, selectedActivityId]);
 
   return (
-    <section className="relative w-full max-w-6xl px-1.5 py-1.5 sm:py-2">
-      <div className="w-full pb-12 pt-20">
+    <section className="relative w-full max-w-6xl px-1.5 pb-1.5 sm:pb-2">
+      <div className="w-full pb-12 pt-[var(--athena-workspace-surface-top)]">
         <div className="overflow-hidden rounded-xl border border-white/40 bg-[#f8f3e9]/38 backdrop-blur-sm">
           {model.activities.length > 0 ? (
             <div className="divide-y divide-zinc-900/8">
@@ -106,31 +93,53 @@ export function ResultsPage({
                     data-activity-id={activity.id}
                     key={activity.id}
                   >
-                    <button
-                      aria-expanded={isExpanded}
-                      aria-label={activity.label}
+                    <div
                       className={[
-                        "flex min-h-14 w-full items-center gap-2 px-3 py-2 text-left outline-none transition focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-zinc-400/70 sm:px-4",
+                        "flex min-h-14 w-full items-stretch",
                         isExpanded ? "bg-white/48" : "hover:bg-white/28",
                       ].join(" ")}
-                      onClick={() =>
-                        setSelectedActivityId(isExpanded ? null : activity.id)
-                      }
-                      type="button"
                     >
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-zinc-800 sm:text-base">
-                          {activity.label}
-                        </span>
-                      </div>
+                      <button
+                        aria-expanded={isExpanded}
+                        aria-label={activity.label}
+                        className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left outline-none transition focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-zinc-400/70 sm:px-4"
+                        onClick={() =>
+                          setSelectedActivityId(
+                            isExpanded ? null : activity.id,
+                          )
+                        }
+                        type="button"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-zinc-800 sm:text-base">
+                            {activity.label}
+                          </span>
+                        </div>
 
-                      <span className="hidden shrink-0 text-xs text-zinc-400 sm:block">
-                        {copy.stage[activity.insightInput.stage]} ·{" "}
-                        {copy.latest(
-                          formatShortDate(activity.latestEntryDate, language),
-                        )}
-                      </span>
-                    </button>
+                        <span className="hidden shrink-0 text-xs text-zinc-400 sm:block">
+                          {copy.latest(
+                            formatShortDate(
+                              activity.latestEntryDate,
+                              language,
+                            ),
+                          )}
+                        </span>
+                      </button>
+                      {!model.isDemo && (
+                        <button
+                          aria-label={`${correctionCopy.manageTitle}: ${activity.label}`}
+                          className="m-2 grid h-7 w-7 shrink-0 self-center place-items-center rounded-full text-zinc-300 outline-none transition hover:bg-white/55 hover:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-400/70"
+                          data-testid={`manage-result-${activity.id}`}
+                          onClick={() => onManageActivity(activity.id)}
+                          title={correctionCopy.manageTitle}
+                          type="button"
+                        >
+                          <span>
+                            <IconComponent name="settings" className="h-4 w-4" />
+                          </span>
+                        </button>
+                      )}
+                    </div>
 
                     <AnimatedActivityPanel isExpanded={isExpanded}>
                       <ActivityEntries
@@ -141,8 +150,8 @@ export function ResultsPage({
                         entries={entries}
                         extractionSettings={extractionSettings}
                         fallbackPhrase={
-                          insightFallback?.activityId === activity.id
-                            ? insightFallback.text
+                          athenaPhrase?.activityId === activity.id
+                            ? athenaPhrase.text
                             : ""
                         }
                         isDemo={model.isDemo}
@@ -213,6 +222,12 @@ function ActivityEntries({
 }) {
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
   const insight = activityInsights.insights.get(activity.id) ?? null;
+  const reviewCopy = getResultsCorrectionCopy(language);
+  const canFormulateCurrentReview =
+    activityInsights.canFormulateReview &&
+    extractionSettings.provider === "gemini" &&
+    activity.insightInput.observationCount >= 2 &&
+    activity.insightInput.rhythm !== "insufficient";
   const entryById = useMemo(
     () => new Map(entries.map((entry) => [entry.id, entry])),
     [entries],
@@ -225,34 +240,77 @@ function ActivityEntries({
 
   return (
     <div className="border-t border-zinc-900/8 bg-white/36 px-4 pb-5 pt-4 sm:px-5">
-      <div className="grid gap-5 border-b border-zinc-900/8 pb-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-zinc-900/[0.055] px-2.5 py-1 text-[11px] text-zinc-600">
-              {copy.stage[activity.insightInput.stage]}
-            </span>
-            <span className="rounded-full bg-white/55 px-2.5 py-1 text-[11px] text-zinc-500">
-              {copy.rhythm[activity.insightInput.rhythm]}
-            </span>
-          </div>
-          <p className="max-w-3xl font-serif text-[1.02rem] leading-7 text-zinc-800">
-            {resolveInsightText({
-              activity,
-              copy,
-              extractionSettings,
-              fallbackPhrase,
-              insight,
-              insightError: activityInsights.error,
-              isDemo,
-              isInsightLoading: activityInsights.isLoading,
-              isInsightRefreshing: activityInsights.isRefreshing,
-            })}
+      <div className="border-b border-zinc-900/8 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <p className="max-w-3xl flex-1 font-serif text-[1.02rem] leading-7 text-zinc-800">
+            {isDemo
+              ? copy.demoInsight[activity.kind]
+              : insight?.text || fallbackPhrase}
           </p>
-          {insight?.isStale && activityInsights.isRefreshing && (
-            <p className="mt-2 text-[11px] text-zinc-400">
-              {copy.insightUpdating}
-            </p>
+
+          {!isDemo && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                className="rounded-full border border-white/60 bg-white/45 px-3 py-1.5 text-xs text-zinc-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={
+                  !canFormulateCurrentReview || activityInsights.isRefreshing
+                }
+                onClick={() => void activityInsights.formulateReview()}
+                title={
+                  canFormulateCurrentReview ? undefined : reviewCopy.aiDisabled
+                }
+                type="button"
+              >
+                {activityInsights.isRefreshing
+                  ? `${reviewCopy.formulateReview}…`
+                  : reviewCopy.formulateReview}
+              </button>
+
+              {insight && (
+                <TooltipButton
+                  aria-label={reviewCopy.remove}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 opacity-70 transition hover:bg-red-50 hover:text-red-700 hover:opacity-100"
+                  onClick={() => void activityInsights.deleteInsight(activity.id)}
+                  tooltip={reviewCopy.remove}
+                  tooltipPlacement="left"
+                  type="button"
+                >
+                  <CloseIcon />
+                </TooltipButton>
+              )}
+            </div>
           )}
+        </div>
+
+        {insight?.sources && insight.sources.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-400">
+            <span>{reviewCopy.webSources}:</span>
+            {insight.sources.map((source) => (
+              <a
+                className="text-zinc-500 underline decoration-zinc-300 underline-offset-2 transition hover:text-zinc-900"
+                href={source.url}
+                key={source.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {source.title}
+              </a>
+            ))}
+          </div>
+        )}
+
+        {activityInsights.error && (
+          <p className="mt-2 text-xs text-red-600" role="status">
+            {activityInsights.error.message === "activity_insight_daily_limit"
+              ? "AI review is limited to one request per day."
+              : activityInsights.error.message}
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-5 border-b border-zinc-900/8 py-5 lg:grid-cols-2">
+        <div className="min-w-0">
+          <ActivityReviewFacts activity={activity} language={language} />
           {debugMode && (
             <ActivityDebug
               activity={activity}
@@ -313,43 +371,6 @@ function ActivityEntries({
       )}
     </div>
   );
-}
-
-function resolveInsightText({
-  activity,
-  copy,
-  extractionSettings,
-  fallbackPhrase,
-  insight,
-  insightError,
-  isDemo,
-  isInsightLoading,
-  isInsightRefreshing,
-}: {
-  activity: ActivityGroup;
-  copy: ReturnType<typeof getResultsCopy>;
-  extractionSettings: ExtractionSettings;
-  fallbackPhrase: string;
-  insight: ActivityInsightView | null;
-  insightError: Error | null;
-  isDemo: boolean;
-  isInsightLoading: boolean;
-  isInsightRefreshing: boolean;
-}) {
-  if (isDemo) return copy.demoInsight[activity.kind];
-  if (insight) return insight.text;
-  if (
-    activity.insightInput.observationCount < 2 ||
-    activity.insightInput.rhythm === "insufficient"
-  ) {
-    return fallbackPhrase || copy.insightInsufficient;
-  }
-  if (isInsightLoading) return copy.insightLoading;
-  if (isInsightRefreshing) return copy.insightUpdating;
-  if (insightError || extractionSettings.provider !== "gemini") {
-    return copy.insightUnavailable;
-  }
-  return fallbackPhrase || copy.insightInsufficient;
 }
 
 function DemoMentionRow({

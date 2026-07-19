@@ -43,7 +43,21 @@ export async function saveActivityInsights(values: CachedActivityInsight[]) {
   const merged = await loadActivityInsightCache();
   for (const value of values) merged.set(value.activityId, value);
 
-  const records = await Promise.all([...merged.values()].map(encryptInsight));
+  await replaceActivityInsights(merged);
+}
+
+export async function deleteActivityInsight(activityId: string) {
+  const remaining = await loadActivityInsightCache();
+  if (!remaining.delete(activityId)) return;
+
+  await replaceActivityInsights(remaining);
+}
+
+async function replaceActivityInsights(
+  values: Map<string, CachedActivityInsight>,
+) {
+  const records = await Promise.all([...values.values()].map(encryptInsight));
+
   const db = await openAthenaLocalDb();
   const transaction = db.transaction(ACTIVITY_INSIGHT_STORE, "readwrite");
   const store = transaction.objectStore(ACTIVITY_INSIGHT_STORE);

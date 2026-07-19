@@ -10,7 +10,11 @@ The self-hosted runtime uses:
 - optional Docker volume for persistent server data;
 - `ATHENA_AI_PROVIDER=off` by default in the example config.
 
-Raw diary text remains browser-local in IndexedDB. The server SQLite database stores textless metadata, hashes, sanitized signals, insight snapshots, self-report aggregates, auth/session data, and migration state.
+Raw diary text remains browser-local in IndexedDB. The server SQLite database stores textless metadata, hashes, sanitized signals, insight snapshots, self-report aggregates, and the canonical schema fingerprint.
+
+The backend currently has no authentication. Keep the default loopback binding
+or put an authenticated reverse proxy in front of Athena before exposing it to
+any untrusted network.
 
 ## Local Production Run
 
@@ -30,7 +34,16 @@ npm run build
 npm run start
 ```
 
-`npm run start` runs compiled database migrations first, then starts the compiled server with Node.
+`npm run start` accepts only the current canonical backend schema. It initializes
+a missing database from `schema.sql` and starts the compiled server with Node.
+It does not convert databases created by older source revisions.
+
+To intentionally discard textless backend state and recreate it from the
+current schema:
+
+```bash
+npm run db:reset
+```
 
 Open:
 
@@ -41,7 +54,7 @@ Open:
 
 ```bash
 docker build -t athena:latest .
-docker run --rm -p 3000:3000 -v athena-data:/app/data athena:latest
+docker run --rm -p 127.0.0.1:3000:3000 -v athena-data:/app/data athena:latest
 ```
 
 The container uses:
@@ -121,4 +134,6 @@ docker run --rm \
 docker compose up
 ```
 
-Backend SQLite backup is not a full diary export because raw diary text stays in browser-local storage.
+Restored databases must match the `schema.sql` fingerprint of the running source
+revision. Backend SQLite backup is not a full diary export because raw diary text
+stays in browser-local storage.

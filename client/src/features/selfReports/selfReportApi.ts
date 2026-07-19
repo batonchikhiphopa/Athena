@@ -1,6 +1,5 @@
 import {
-  csrfJsonHeaders,
-  handleUnauthorized,
+  jsonHeaders,
 } from "../../shared/http/httpClient";
 import type { SelfReportDailyAggregate } from "./selfReportTypes";
 
@@ -18,13 +17,12 @@ export async function syncSelfReportDailyAggregates(
     {
       method: "PUT",
       credentials: "same-origin",
-      headers: csrfJsonHeaders(),
+      headers: jsonHeaders(),
       body: JSON.stringify({
         aggregates: serializeSelfReportDailyAggregates(aggregates),
       }),
     },
   );
-  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error(
       `Не удалось синхронизировать self-report aggregates: ${await response.text()}`,

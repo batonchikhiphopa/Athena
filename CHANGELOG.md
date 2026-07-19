@@ -4,6 +4,41 @@ All notable changes to Athena are documented here.
 
 ## Unreleased
 
+## v0.9.1 - 2026-07-19
+
+### Changed
+
+- Replaced backend migration history with one fingerprinted canonical SQLite
+  schema that initializes only fresh databases.
+- Backend startup now performs a constant-size schema check instead of scanning
+  and validating every historical migration.
+- Backend API access is temporarily unauthenticated; the browser-local vault and
+  its optional passphrase remain unchanged.
+- Moved deterministic day/week activity facts from the global Observations feed
+  into their owning Results items. Every saved observation card has an
+  Entries-style delete action.
+- Kept the Results fact tile strictly informational. Missing narrative reviews
+  now use ordinary prose from Athena's shared phrase pool in the owning Results
+  item, while formulated reviews cover the situation, a desirable action, and
+  optional Google-Search-grounded advice with visible source links. Observations
+  no longer duplicates activity reviews or treats them as unread observations.
+- Results item settings now uses the global Settings icon in a round button, and
+  extraction UI calls automatic output “Automatically extracted” instead of
+  “Machine proposal”.
+- Results item settings now supports reversible automatic entry links from
+  user-selected tags. Tag matching is local and ignores entries with analysis
+  disabled; the round row settings control is also smaller.
+- Bumped root, client, lockfile, and exported app metadata versions to `0.9.1`.
+
+### Removed
+
+- Removed all incremental backend migration files and compatibility with older
+  development database schemas; `npm run db:reset` explicitly recreates the
+  current textless backend database.
+- Removed owner login, sessions, CSRF enforcement, Argon2, auth UI, and the
+  `auth_users` / `auth_sessions` tables. The exact preceding schema drops only
+  those two tables in place on first startup.
+
 ## v0.9.0 - 2026-07-17
 
 ### Added

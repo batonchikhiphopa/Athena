@@ -1,6 +1,10 @@
 import { createContext } from "react";
 
-export type FloatingPanelId = "observations" | "self-report" | "settings";
+export type FloatingPanelId =
+  | "observations"
+  | "result-settings"
+  | "self-report"
+  | "settings";
 
 export type FloatingPanelPosition = {
   x: number;

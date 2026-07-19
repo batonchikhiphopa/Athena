@@ -4,17 +4,16 @@ This document summarizes security behavior. It does not replace a full third-par
 
 For a category-by-category self-check, see [Security Checklist](SECURITY_CHECKLIST.md).
 
-## Authentication
+## Backend Access
 
-Athena supports optional backend auth:
+Athena currently has no backend authentication or session layer. The Express
+API is open to any client that can reach its bound interface. The default
+`127.0.0.1` binding is the intended local-development boundary; deployments on
+another interface need a trusted network boundary or authenticated reverse
+proxy.
 
-- one owner account;
-- Argon2id password hashes;
-- HttpOnly session cookies;
-- hashed session tokens in SQLite;
-- CSRF checks for mutating requests.
-
-Auth can be disabled for passwordless local use.
+The browser-local vault is separate and remains available for encrypting local
+records and locking the UI.
 
 ## Data Protection
 
@@ -52,9 +51,8 @@ This is a core limitation and must stay explicit in UI/docs.
 
 - SQL injection: parameterized queries and repository review.
 - XSS: React rendering and no unsafe HTML.
-- CSRF: protected mutating routes.
-- Session safety: expiration, logout, cookie flags.
+- Network exposure: keep the unauthenticated API off untrusted interfaces.
 - Sensitive data exposure: no backend raw text columns.
 - Dependency audit: root and client `npm audit`.
-- Rate limiting: auth endpoints and cloud provider paths.
+- Rate limiting: cloud provider paths.
 - Error handling: no secrets or raw text in logs.

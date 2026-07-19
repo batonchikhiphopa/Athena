@@ -2,6 +2,7 @@ import {
   ACTIVE_PROMPT_VERSION,
   ACTIVE_SCHEMA_VERSION,
 } from "../../config/versions.js";
+import { readCanonicalSchemaFingerprint } from "../../db/canonical-schema.js";
 import type { AthenaDb } from "../../db/sqlite.js";
 
 export async function buildBackendMetadataExport(db: AthenaDb) {
@@ -12,7 +13,7 @@ export async function buildBackendMetadataExport(db: AthenaDb) {
     signalOverrides,
     selfReportDailyAggregates,
     insightSnapshots,
-    latestMigration,
+    backendSchemaFingerprint,
   ] = await Promise.all([
     db.all("SELECT * FROM entries ORDER BY id"),
     db.all("SELECT * FROM signals ORDER BY id"),
@@ -20,9 +21,7 @@ export async function buildBackendMetadataExport(db: AthenaDb) {
     db.all("SELECT * FROM signal_overrides ORDER BY id"),
     db.all("SELECT * FROM self_report_daily_aggregates ORDER BY local_day, axis"),
     db.all("SELECT * FROM insight_snapshots ORDER BY generated_at, id"),
-    db.get<{ id: string }>(
-      "SELECT id FROM schema_migrations ORDER BY id DESC LIMIT 1",
-    ),
+    readCanonicalSchemaFingerprint(db),
   ]);
 
   return {
@@ -35,7 +34,9 @@ export async function buildBackendMetadataExport(db: AthenaDb) {
       prompt_version: ACTIVE_PROMPT_VERSION,
       self_report_schema_version: "self_report.v1",
       self_report_daily_aggregate_version: "self_report_daily_aggregate.v1",
-      backend_schema_version: latestMigration?.id ?? null,
+      backend_schema_version: backendSchemaFingerprint
+        ? `canonical:${backendSchemaFingerprint}`
+        : null,
     },
     entries,
     signals,

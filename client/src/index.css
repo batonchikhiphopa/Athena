@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --athena-workspace-surface-top: 2.625rem;
+}
+
 * {
   box-sizing: border-box;
 }

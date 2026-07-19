@@ -103,7 +103,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
     try {
       const extractionSettings = getExtractionSettings();
       const packageData = buildLocalExportPackage({
-        appVersion: "0.9.0",
+        appVersion: "0.9.1",
         entries: await getAllLocalEntries(),
         selfReportEvents: await getAllSelfReportEvents(),
         settings: {

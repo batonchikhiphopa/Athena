@@ -18,9 +18,10 @@ IndexedDB stores:
 - analysis toggles;
 - raw self-report events;
 - queue state;
+- encrypted Results entities, aliases, proposal decisions, and manual links;
 - encrypted activity-insight cache;
-- encrypted vault envelopes for entries, drafts, self-reports, aggregates, and
-  activity insights.
+- encrypted vault envelopes for entries, drafts, self-reports, aggregates,
+  Results corrections, and activity insights.
 
 The vault always stores those records as encrypted envelopes. Passwordless
 access changes the unlock experience, not the at-rest record format.
@@ -36,7 +37,6 @@ SQLite stores:
 - Signal v5 detail JSON, including enum-only activity context;
 - self-report daily aggregate rows;
 - insight snapshots;
-- auth/session data.
 
 SQLite must not store:
 
@@ -75,10 +75,17 @@ store excerpts, free-text summaries, people, organizations, or locations.
 
 ## Results Insight Boundary
 
-Results grouping is browser-local. The activity-insight endpoint receives a
-bounded textless batch containing local activity ids and labels so it can
+Results grouping and user correction are browser-local. Original extraction is
+kept separately from the canonical user version. The activity-insight endpoint
+receives a bounded textless batch containing local activity ids and labels so it can
 validate and correlate the response, but it does not persist that request or
 the generated prose in SQLite.
+
+Per-item tag rules are part of the encrypted browser-local Results
+customization. Matching happens locally, does not upload the rule, and ignores
+entries whose analysis consent is disabled or whose text is unavailable. A tag
+rule can be removed at any time; manual links and confirmed user corrections
+remain the higher-precedence canonical sources.
 
 Before calling Gemini, the provider adapter strips activity labels and replaces
 local ids with temporary tokens such as `activity_1`. Gemini receives only:
@@ -91,9 +98,22 @@ local ids with temporary tokens such as `activity_1`. Gemini receives only:
 It does not receive diary prose, entry ids, activity labels, local activity ids,
 tags, excerpts, semantic vectors, or RAG evidence. Provider output must match a
 strict schema, map one-to-one to the temporary tokens, and pass text
-sanitization before the client stores it in the encrypted local cache. The
+sanitization before the client stores it in the encrypted local cache. Gemini
+may use Google Search to ground a general recommendation; search queries are
+derived only from the same deidentified structured fields. Sanitized public
+source titles and HTTP(S) links are cached with the review so the user can check
+the external suggestion. The
 server keeps only an in-memory daily quota marker, which resets on process
 restart.
+
+The endpoint is called only when the user selects `Formulate review` in an
+expanded Results item. Deterministic day/week facts shown inside each Results item do not
+call a model. The client limits the request to the same seven-day fact window and
+replaces strategy, agency, effect, and blocker-category fields with neutral
+values because those details are not displayed in the review. When no narrative
+exists, the owning Results item renders an ordinary local phrase from Athena's
+shared phrase pool. Observations does not duplicate activity reviews; the
+deterministic Results fact tile remains service information only.
 
 ## Self-Report Boundary
 
@@ -126,10 +146,7 @@ When local app protection is enabled, the vault may protect IndexedDB records. A
 
 Export/import must not include or restore:
 
-- server auth session cookies;
-- CSRF tokens;
-- session token hashes;
-- password hashes;
+- legacy server-auth secrets from older exports;
 - vault passwords;
 - vault keys or key material;
 - provider API keys;

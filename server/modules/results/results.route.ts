@@ -3,7 +3,6 @@ import {
   asyncHandler,
   sendValidationError,
 } from "../../platform/http/http.js";
-import type { AuthenticatedSession } from "../auth/auth.service.js";
 import { activityInsightsRequestSchema } from "./activityInsights.schema.js";
 import {
   ActivityInsightsProviderError,
@@ -28,7 +27,7 @@ router.post(
     try {
       const result = await generateActivityInsights(
         parsed.data,
-        activityInsightQuotaKey(req, res),
+        activityInsightQuotaKey(req),
       );
       return res.json(result);
     } catch (error) {
@@ -41,13 +40,7 @@ router.post(
   }),
 );
 
-function activityInsightQuotaKey(
-  req: express.Request,
-  res: express.Response,
-): string {
-  const auth = res.locals.auth as AuthenticatedSession | undefined;
-  if (auth) return `user:${auth.user.id}`;
-
+function activityInsightQuotaKey(req: express.Request): string {
   return `ip:${req.ip || req.socket.remoteAddress || "local"}`;
 }
 

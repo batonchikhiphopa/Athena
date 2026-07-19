@@ -38,10 +38,6 @@ if not exist client\node_modules (
   echo [athena-dev] Frontend dependencies found.
 )
 
-echo [athena-dev] Applying migrations...
-call npm run migrate
-if errorlevel 1 goto fail
-
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:3000/config' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1"
 if errorlevel 1 (
   echo [athena-dev] Starting backend at %BACKEND_URL%

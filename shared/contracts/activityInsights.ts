@@ -59,11 +59,17 @@ export type ActivityInsightsRequest = {
 export type ActivityInsightStatus = (typeof ACTIVITY_INSIGHT_STATUSES)[number];
 export type ActivityInsightConfidence = ConfidenceLevel;
 
+export type ActivityInsightSource = {
+  title: string;
+  url: string;
+};
+
 export type ActivityInsight = {
   activityId: string;
   text: string;
   status: ActivityInsightStatus;
   confidence: ActivityInsightConfidence;
+  sources?: ActivityInsightSource[];
 };
 
 export type ActivityInsightsResponse = {

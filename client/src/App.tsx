@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AthenaWorkspace } from "./app/AthenaWorkspace";
 import { useAppAutoLockPreference } from "./app/useAppAutoLock";
-import { ServerAuthGate } from "./features/auth/ui/ServerAuthGate";
-import { useServerAuth } from "./features/auth/useServerAuth";
 import { VaultGate } from "./features/vault/ui/VaultGate";
 import { useLocalVault } from "./features/vault/useLocalVault";
 import { useI18n } from "./i18n/useI18n";
@@ -22,12 +20,9 @@ import {
 
 export default function App() {
   const { t } = useI18n();
-  const serverAuth = useServerAuth();
   const vault = useLocalVault();
-  const authPhase = serverAuth.phase;
   const vaultPhase = vault.phase;
   const vaultError = vault.error;
-  const lockVault = vault.lock;
   const setupVault = vault.setup;
   const unlockVaultWithoutSecret = vault.unlockWithoutSecret;
   const vaultCredentials = vault.credentials;
@@ -123,17 +118,6 @@ export default function App() {
 
   useEffect(() => {
     if (
-      authPhase !== "authenticated" &&
-      authPhase !== "checking" &&
-      vaultPhase === "unlocked"
-    ) {
-      lockVault();
-    }
-  }, [authPhase, lockVault, vaultPhase]);
-
-  useEffect(() => {
-    if (
-      authPhase !== "authenticated" ||
       vaultPhase === "unlocked" ||
       isVaultBusy ||
       appProtectionEnabled ||
@@ -145,25 +129,11 @@ export default function App() {
     initializePasswordlessVault();
   }, [
     appProtectionEnabled,
-    authPhase,
     initializePasswordlessVault,
     isVaultBusy,
     vaultError,
     vaultPhase,
   ]);
-
-  if (serverAuth.isRequired && serverAuth.phase !== "authenticated") {
-    return (
-      <ServerAuthGate
-        error={serverAuth.error}
-        isBusy={serverAuth.isBusy}
-        phase={serverAuth.phase}
-        onLogin={serverAuth.login}
-        onRetry={serverAuth.refresh}
-        onSetup={serverAuth.setup}
-      />
-    );
-  }
 
   if (vaultPhase !== "unlocked") {
     if (!appProtectionEnabled) {
@@ -187,7 +157,7 @@ export default function App() {
                   onClick={initializePasswordlessVault}
                   type="button"
                 >
-                  {t("auth.action.retry")}
+                  {t("common.refresh")}
                 </button>
               </>
             ) : (

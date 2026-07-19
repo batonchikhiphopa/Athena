@@ -137,7 +137,7 @@ It is not raw diary text, but it is a fingerprint of raw diary text. If the expo
 Rules:
 
 - Export only the existing stored hash.
-- Do not recompute hashes during export unless a future migration explicitly requires it.
+- Do not recompute hashes during export unless a future canonical contract explicitly requires it.
 - Do not use `source_text_hash` as a public id.
 - Treat the whole local export file as sensitive private data.
 
@@ -175,10 +175,7 @@ Reason: queue jobs are durable processing state. The export contract must not ex
 
 `local_export.v1` must not include:
 
-- server auth session cookies;
-- CSRF tokens;
-- session token hashes;
-- password hashes;
+- legacy server-auth secrets from older exports;
 - vault passwords;
 - vault keys or key material;
 - provider API keys;
@@ -304,7 +301,7 @@ Apply must:
 4. write imported raw self-report events through self-report storage APIs;
 5. recompute self-report daily aggregates from imported raw events;
 6. recreate only safe queue jobs where needed;
-7. avoid importing server auth state;
+7. reject legacy server-auth state;
 8. avoid backend calls with raw text.
 
 Imported self-report aggregate caches must not be trusted. Aggregates are derived data and must be recomputed locally.
@@ -319,7 +316,7 @@ Backend metadata export is not a full diary backup because SQLite does not conta
 GET /exports/backend-metadata
 ```
 
-Auth and CSRF behavior should match existing protected read routes.
+The endpoint follows the current open local API model.
 
 ### Type
 
@@ -366,10 +363,7 @@ Backend metadata export must not include:
 - raw diary text;
 - raw self-report answers;
 - raw self-report event timestamps;
-- server session cookies;
-- CSRF tokens;
-- session token hashes;
-- password hashes;
+- legacy server-auth secrets from older exports;
 - provider API keys;
 - raw extraction request text;
 - provider prompts containing raw text;
@@ -386,7 +380,7 @@ Version fields should come from existing runtime constants where possible, espec
 - `ACTIVE_SCHEMA_VERSION`;
 - `ACTIVE_PROMPT_VERSION`;
 - self-report schema constants;
-- migration or backend schema metadata when available.
+- canonical backend schema metadata when available.
 
 ## CSV Decision
 

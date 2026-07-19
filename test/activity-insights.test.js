@@ -61,6 +61,16 @@ test("activity insight provider removes local ids and labels before Gemini", asy
                 },
               ],
             },
+            groundingMetadata: {
+              groundingChunks: [
+                {
+                  web: {
+                    title: "Example research source",
+                    uri: "https://example.com/research",
+                  },
+                },
+              ],
+            },
           },
         ],
       }),
@@ -77,7 +87,14 @@ test("activity insight provider removes local ids and labels before Gemini", asy
     });
 
     assert.equal(insights[0].activityId, "local-athena-id");
+    assert.deepEqual(insights[0].sources, [
+      {
+        title: "Example research source",
+        url: "https://example.com/research",
+      },
+    ]);
     assert.match(providerBody, /activity_1/);
+    assert.match(providerBody, /googleSearch/);
     assert.doesNotMatch(providerBody, /local-athena-id/);
     assert.doesNotMatch(providerBody, /Project Borealis/);
   } finally {

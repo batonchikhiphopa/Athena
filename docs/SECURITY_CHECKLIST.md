@@ -8,38 +8,28 @@ Current controls:
 
 - API request bodies use strict Zod validation.
 - SQLite writes use parameterized queries.
-- Migrations are file-ordered and recorded in `schema_migrations`.
+- The backend starts only with the current fingerprinted `schema.sql`; schema
+  initialization is atomic and non-canonical databases are rejected.
 
 Residual risk:
 
 - Raw SQL still exists in repositories and export services; review is required when adding new queries.
 
-## Auth And Sessions
+## Backend Access
 
 Current controls:
 
-- Server auth can be enabled for self-hosted deployments.
-- First-run setup creates one owner.
-- Passwords are stored as Argon2id hashes.
-- Session tokens are stored as hashes.
-- Session cookie is HttpOnly.
-- Logout revokes the active session hash.
+- The backend binds to `127.0.0.1` by default.
+- The browser-local vault remains independent and can require a passphrase.
+- API payloads remain strict and textless even though access is unauthenticated.
 
 Residual risk:
 
-- Auth can be disabled for local passwordless use by design.
+- Any process or user that can reach the bound backend interface can read and
+  mutate backend metadata.
+- Deployments on `0.0.0.0` require an external trusted network boundary or
+  authenticated reverse proxy.
 - Athena is not a multi-user permission system.
-
-## CSRF
-
-Current controls:
-
-- Mutating protected routes require CSRF when server auth is enabled.
-- CSRF tokens are bound to authenticated sessions.
-
-Residual risk:
-
-- Read routes are protected by auth but do not require CSRF.
 
 ## XSS
 
@@ -97,7 +87,7 @@ Current controls:
 - Import validates package version and shape before writing.
 - Import preview performs no writes and no backend calls.
 - Import apply uses replace-local-data mode and recomputes self-report aggregates.
-- Backend metadata export excludes auth/session tables.
+- The canonical backend schema contains no auth/session tables.
 
 Residual risk:
 

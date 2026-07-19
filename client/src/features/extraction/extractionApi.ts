@@ -8,8 +8,7 @@ import type {
   SignalMetadata,
 } from "../../shared/contracts";
 import {
-  csrfJsonHeaders,
-  handleUnauthorized,
+  jsonHeaders,
 } from "../../shared/http/httpClient";
 
 type EntryResponse = { entry: ServerEntry };
@@ -18,7 +17,6 @@ export async function loadExtractionConfig() {
   const response = await fetch("/extractions/config", {
     credentials: "same-origin",
   });
-  handleUnauthorized(response);
   if (!response.ok) throw new Error("Не удалось загрузить настройки анализа");
   return (await response.json()) as ExtractionConfig;
 }
@@ -31,7 +29,6 @@ export async function loadExtractionStatus(settings: ExtractionSettings) {
   const response = await fetch(`/extractions/status?${params.toString()}`, {
     credentials: "same-origin",
   });
-  handleUnauthorized(response);
   if (!response.ok) throw new Error("Не удалось проверить доступность анализа");
   return (await response.json()) as ExtractionStatus;
 }
@@ -47,7 +44,7 @@ export async function extractSignal(payload: {
     method: "POST",
     signal: payload.signal,
     credentials: "same-origin",
-    headers: csrfJsonHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify({
       text: payload.text,
       provider: payload.settings.provider,
@@ -56,7 +53,6 @@ export async function extractSignal(payload: {
       captured_at: payload.capturedAt,
     }),
   });
-  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error(`Не удалось выполнить анализ текста: ${await response.text()}`);
   }
@@ -74,10 +70,9 @@ export async function appendEntrySignal(
   const response = await fetch(`/entries/${encodeURIComponent(entryId)}/signals`, {
     method: "POST",
     credentials: "same-origin",
-    headers: csrfJsonHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error(`Не удалось обновить результаты анализа: ${await response.text()}`);
   }

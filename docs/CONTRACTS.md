@@ -59,8 +59,10 @@ The server returns one strictly validated insight per activity id with:
 
 The client fingerprints the structured input, language, and model with
 `activity-insight.v2`. Matching cached insights are reused; changed eligible
-inputs may be refreshed in one daily Gemini batch and stored encrypted in the
-local vault.
+inputs may be sent in one daily Gemini batch only after the explicit
+`Formulate review` action and are stored encrypted in the local vault. The
+manual request uses the visible seven-day review window and neutralizes context
+fields that are not shown in that review.
 
 ## Self-Report Contract
 

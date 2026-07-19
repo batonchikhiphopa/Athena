@@ -46,7 +46,7 @@ COPY client/package.json ./client/package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/client/dist ./client/dist
-COPY migrations ./migrations
+COPY schema.sql ./schema.sql
 
 RUN mkdir -p /app/data
 

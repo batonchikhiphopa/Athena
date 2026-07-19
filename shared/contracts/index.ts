@@ -82,6 +82,7 @@ export type {
   ActivityInsightKind,
   ActivityInsightLanguage,
   ActivityInsightRhythm,
+  ActivityInsightSource,
   ActivityInsightsRequest,
   ActivityInsightsResponse,
   ActivityInsightStage,

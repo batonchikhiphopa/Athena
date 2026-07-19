@@ -51,17 +51,14 @@ Priorities:
    `/insights/current` evaluates day, week, and month sequentially, rebuilds
    overlapping Analytics V2 windows, and upserts snapshots again even when the
    evidence did not change.
-2. Stop writing `auth_sessions.last_seen_at` on every authenticated request.
-   Throttle the touch or update it once per coarse interval so protected reads
-   do not become SQLite writes.
-3. Replace full-history `GET /entries` refreshes with revision-based delta sync.
+2. Replace full-history `GET /entries` refreshes with revision-based delta sync.
    Cursor pagination alone is not a good fit because local search and Results
    deliberately operate over the complete browser-local archive.
-4. Benchmark runtime SQLite settings under the self-hosted workload. The app
+3. Benchmark runtime SQLite settings under the self-hosted workload. The app
    currently enables foreign keys but not a runtime busy timeout; WAL,
    `busy_timeout`, and `BEGIN IMMEDIATE` are candidates, not defaults to switch
    without measuring backup and contention behavior.
-5. Add immutable cache headers for hashed `/assets/*` files and keep the SPA
+4. Add immutable cache headers for hashed `/assets/*` files and keep the SPA
    document uncached or revalidated. Compression is better handled by the
    reverse proxy or precompressed assets than by spending Express CPU per
    request.

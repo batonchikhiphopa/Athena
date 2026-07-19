@@ -20,7 +20,7 @@ React client
   - searchable Entries card grid
   - unified expandable Results list built from local entries
   - floating Observations and Settings panels
-  - IndexedDB raw entries, drafts, and self-report events
+  - IndexedDB raw entries, drafts, self-report events, and Results corrections
   - optional local vault encryption
   - durable operation queue
   - browser-local hybrid search and semantic/RAG helpers
@@ -28,7 +28,7 @@ React client
 
 Express backend
   - Zod request validation
-  - optional owner auth and CSRF
+  - unauthenticated local API
   - SQLite metadata and signals
   - deterministic analytics and Analytics V2 summaries
   - Insight V3 snapshots
@@ -40,8 +40,9 @@ Extraction providers
   - Gemini API when explicitly configured
 
 Results insight provider
-  - one bounded Gemini batch per day
+  - one explicit, user-requested bounded Gemini batch per day
   - temporary activity tokens and textless structured input only
+  - Google Search grounding for optional general recommendations
 ```
 
 ## Data Boundary
@@ -55,7 +56,6 @@ Raw diary text stays in the browser. The backend stores:
 - effective signals;
 - self-report daily aggregates;
 - insight snapshots;
-- auth/session metadata.
 
 The backend does not store raw diary text, raw self-report events, search
 queries, semantic vectors, RAG excerpts, or hidden model memory.
@@ -70,11 +70,18 @@ surfaces are:
 - **Entries**: a card-grid archive with always-on local hybrid search across
   text, dates, tags, excluded tags, and semantic similarity.
 - **Results**: one unfiltered list of task/project and repeatable-activity
-  identities built in the browser. A row expands on click to show a verbal
-  insight, status/rhythm chips, the original activity graph, and source entry
-  tiles. Results currently has no rename, merge, or manual-linking state.
+  identities confirmed by the user in the browser. A row expands on click to
+  show either its formulated narrative or an ordinary Athena phrase from the
+  shared phrase pool. A standalone deterministic day/week fact tile then sits
+  beside the original activity graph, followed by source entry tiles. Stage and
+  rhythm live inside the fact tile, which contains service information only;
+  the collapsed row keeps only the latest source-entry date. Its
+  round settings button uses the same icon as global Settings and opens a separate correction panel for
+  rename, type correction, aliases, user-selected tag rules, merge, split,
+  manual links, and exclusions.
 - **Observations**: a floating history panel for saved day, week, and month
-  snapshots plus activity insights and navigation into Results.
+  snapshots, new extraction proposals, and per-card deletion. Results narratives
+  and phrase-pool fallbacks are not duplicated here.
 - **Settings**: a floating panel for interface, access, records, and data
   controls.
 
@@ -88,9 +95,14 @@ debug-only affordances.
 analyzed local entries
 -> extracted activities and activity_contexts
 -> exact identity catalog + bounded project-tag hints
--> local activity aggregation
--> expandable Results rows and source entry tiles
--> optional deidentified Gemini insight batch
+-> pending extraction proposals
+-> user acceptance, correction, or rejection
+-> encrypted canonical Results customization
+-> reversible automatic links from per-item user tag rules
+-> local activity aggregation from canonical links
+-> deterministic day/week facts inside expandable Results rows
+-> Gemini narrative or phrase-pool fallback inside the owning Results row
+-> source entry tiles
 -> encrypted browser-local insight cache
 ```
 
@@ -101,6 +113,12 @@ possible project tags, do not create project identities. Exact configured
 cross-language aliases may share an identity; general fuzzy merging is not
 used.
 
+Configured Results tag rules are different from extraction-time project-tag
+hints. They are explicit user corrections stored on the canonical entity. A
+matching analyzable entry is linked locally with an unknown event until a
+confirmed extraction decision or manual link supplies a more specific event.
+Removing the tag rule removes that automatic link on the next local rebuild.
+
 ## Current Project Shape
 
 ```text
@@ -110,14 +128,13 @@ client/
     features/            vertical product modules with API, state, storage, UI, content
     components/          genuinely shared UI primitives only
     platform/storage/    IndexedDB bootstrap and object-store ownership
-    shared/http/         CSRF, auth signalling, and HTTP error mechanics
+    shared/http/         JSON headers and HTTP error mechanics
     shared/lib/          small reusable browser/date/text utilities
     i18n/                interface messages and language selection
 
 server/
   modules/               vertical route/schema/service/repository modules
     analytics/
-    auth/
     entries/
     exports/
     extraction/
@@ -127,13 +144,13 @@ server/
   platform/http/         shared Express mechanics and error handling
   core/                  cross-module backend types only
   config/                runtime configuration
-  db/                    SQLite connection and migrations
+  db/                    SQLite connection and canonical schema lifecycle
 
 shared/
   contracts/             client/server protocol types
   signal/                pure deterministic rules used by client and server
 
-migrations/              SQL migration files
+schema.sql               current canonical backend database schema
 test/                    node:test coverage
 docs/                    public project docs
 ```

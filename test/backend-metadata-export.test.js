@@ -26,6 +26,10 @@ test("backend metadata export is versioned and textless", async () => {
     assert.equal(exported.export_version, "backend_metadata_export.v1");
     assert.equal(exported.source.schema_version, ACTIVE_SCHEMA_VERSION);
     assert.equal(exported.source.prompt_version, ACTIVE_PROMPT_VERSION);
+    assert.match(
+      exported.source.backend_schema_version,
+      /^canonical:[a-f0-9]{64}$/,
+    );
     assert.equal(exported.entries.length, 1);
     assert.equal(exported.signals.length, 1);
     assert.equal("text" in exported.entries[0], false);

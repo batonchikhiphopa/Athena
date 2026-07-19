@@ -7,7 +7,6 @@ const e2eClientPort = process.env.ATHENA_E2E_CLIENT_PORT ?? "5173";
 const e2eClientOrigin = `http://127.0.0.1:${e2eClientPort}`;
 const e2eEnv = {
   ATHENA_AI_PROVIDER: "off",
-  ATHENA_AUTH_REQUIRED: "false",
   ATHENA_DATABASE_PATH: path.join(e2eDataDir, "athena-e2e.db"),
   ATHENA_DATA_DIR: e2eDataDir,
   ATHENA_HOST: "127.0.0.1",
@@ -36,7 +35,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "node -e \"require('fs').rmSync('.tmp/e2e',{recursive:true,force:true})\" && npm run migrate && npm run dev",
+        "node -e \"require('fs').rmSync('.tmp/e2e',{recursive:true,force:true})\" && npm run dev",
       env: e2eEnv,
       reuseExistingServer: false,
       timeout: 120_000,

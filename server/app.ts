@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import analyticsRouter from "./modules/analytics/analytics.route.js";
-import authRouter from "./modules/auth/auth.route.js";
 import configRouter from "./platform/http/config.route.js";
 import entriesRouter from "./modules/entries/entries.route.js";
 import exportsRouter from "./modules/exports/exports.route.js";
@@ -10,10 +9,6 @@ import insightsRouter from "./modules/insights/insights.route.js";
 import resultsRouter from "./modules/results/results.route.js";
 import selfReportsRouter from "./modules/selfReports/selfReports.route.js";
 import { CLIENT_DIST_DIR } from "./config/env.js";
-import {
-  requireProtectedApiAuth,
-  requireProtectedApiCsrf,
-} from "./modules/auth/auth.middleware.js";
 import {
   apiErrorHandler,
   jsonErrorHandler,
@@ -27,12 +22,7 @@ export function createApp(): express.Express {
   app.disable("x-powered-by");
   app.use(express.json({ limit: "64kb" }));
   app.use(jsonErrorHandler);
-  // Config and login/setup must be reachable before the optional auth ring.
   app.use(configRouter);
-  app.use(authRouter);
-  // Everything registered below this point is owner-protected when auth is on.
-  app.use(requireProtectedApiAuth);
-  app.use(requireProtectedApiCsrf);
   app.use(extractionsRouter);
   app.use(entriesRouter);
   app.use(exportsRouter);

@@ -1,6 +1,6 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import { runMigrations } from "../../server/db/migration-runner.js";
+import { ensureCanonicalSchema } from "../../server/db/canonical-schema.js";
 
 export async function createTestDb() {
   const db = await open({
@@ -10,10 +10,10 @@ export async function createTestDb() {
 
   await db.exec("PRAGMA foreign_keys = ON;");
 
-  await runMigrations({
+  await ensureCanonicalSchema({
     db,
     logger: { log() {} },
-    migrationsDir: "./migrations",
+    schemaPath: "./schema.sql",
   });
 
   return db;

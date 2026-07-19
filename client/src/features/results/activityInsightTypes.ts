@@ -1,3 +1,5 @@
+import type { ActivityInsightSource } from "../../shared/contracts";
+
 export type CachedActivityInsight = {
   activityId: string;
   confidence: "low" | "medium" | "high";
@@ -6,6 +8,7 @@ export type CachedActivityInsight = {
   model: string;
   status: "ready" | "insufficient";
   text: string;
+  sources?: ActivityInsightSource[];
 };
 
 export type ActivityInsightView = CachedActivityInsight & {
@@ -13,7 +16,10 @@ export type ActivityInsightView = CachedActivityInsight & {
 };
 
 export type ActivityInsightState = {
+  canFormulateReview: boolean;
+  deleteInsight: (activityId: string) => Promise<void>;
   error: Error | null;
+  formulateReview: () => Promise<void>;
   insights: Map<string, ActivityInsightView>;
   isLoading: boolean;
   isRefreshing: boolean;

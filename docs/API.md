@@ -2,7 +2,7 @@
 
 Athena keeps API routes unversioned for now. Contract versions are documented in payload fields instead of a `/api/v1` route prefix.
 
-All backend payloads are JSON. Request bodies are validated with strict Zod schemas: unknown fields are rejected. Mutating requests require server auth and CSRF only when `ATHENA_AUTH_REQUIRED=true`.
+All backend payloads are JSON. Request bodies are validated with strict Zod schemas: unknown fields are rejected. The backend currently has no authentication; keep it on a trusted local interface.
 
 Raw diary text is not accepted by entry persistence endpoints. The only endpoint that accepts raw text is `POST /extractions`, where text is transient input for the selected extraction provider.
 
@@ -36,10 +36,8 @@ Validation errors return:
 Common statuses:
 
 - `400` invalid payload or local-day mismatch
-- `401` unauthenticated when server auth is required
-- `403` disabled auth endpoint or missing/invalid CSRF
 - `404` entry or insight not found
-- `409` owner already configured or source hash mismatch
+- `409` source hash mismatch
 - `413` JSON body too large
 - `429` activity-insight daily limit or provider quota
 - `502` provider rejected, unavailable, or returned an invalid response
@@ -68,97 +66,6 @@ Response:
   }
 }
 ```
-
-## Auth
-
-Auth routes are always available, but setup/login/logout are meaningful only when `ATHENA_AUTH_REQUIRED=true`.
-
-### `GET /auth/me`
-
-Returns auth mode and current session state.
-
-Response when auth is disabled:
-
-```json
-{
-  "auth_required": false,
-  "authenticated": true,
-  "setup_required": false,
-  "user": null
-}
-```
-
-Response when authenticated:
-
-```json
-{
-  "auth_required": true,
-  "authenticated": true,
-  "setup_required": false,
-  "user": {
-    "id": 1,
-    "username": "owner",
-    "role": "owner"
-  },
-  "csrf_token": "token"
-}
-```
-
-### `POST /auth/setup`
-
-Creates the first owner account.
-
-Request:
-
-```json
-{
-  "username": "owner",
-  "password": "minimum-8-chars"
-}
-```
-
-Response `201`:
-
-```json
-{
-  "user": {
-    "id": 1,
-    "username": "owner",
-    "role": "owner"
-  },
-  "csrf_token": "token"
-}
-```
-
-### `POST /auth/login`
-
-Request:
-
-```json
-{
-  "username": "owner",
-  "password": "minimum-8-chars"
-}
-```
-
-Response:
-
-```json
-{
-  "user": {
-    "id": 1,
-    "username": "owner",
-    "role": "owner"
-  },
-  "csrf_token": "token"
-}
-```
-
-### `POST /auth/logout`
-
-Requires auth and CSRF when server auth is enabled.
-
-Response: `204 No Content`
 
 ## Entries
 
@@ -387,9 +294,10 @@ Response is a sanitized signal payload plus metadata:
 
 ### `POST /results/activity-insights`
 
-Creates one textless, bounded Results insight batch. The request accepts one to
-eight unique activities. It is protected by auth and CSRF when server auth is
-enabled.
+Creates one textless, bounded Results insight batch after the user explicitly
+selects `Formulate review` in an expanded Results item. Deterministic day/week facts inside
+Results do not use this endpoint. The request accepts one to eight unique
+activities.
 
 Request:
 
@@ -436,7 +344,13 @@ Response:
       "activityId": "athena",
       "text": "Validated Athena prose without numeric claims.",
       "status": "ready",
-      "confidence": "medium"
+      "confidence": "medium",
+      "sources": [
+        {
+          "title": "Public source title",
+          "url": "https://example.org/source"
+        }
+      ]
     }
   ]
 }
@@ -446,9 +360,11 @@ Activities with fewer than two independent observations return a local
 `insufficient` response without a provider call. For eligible activities, the
 server removes `label`, replaces `id` with a temporary token, sends only the
 remaining structured aggregate to Gemini, validates a one-to-one response, and
-maps the token back. Requests and generated prose are not persisted by the
-backend. The server-side daily quota is held in process memory per authenticated
-user or source IP.
+maps the token back. Ready prose covers the situation, a desirable action, and
+an optional general recommendation grounded through Google Search. Grounding
+source titles and HTTP(S) URLs are sanitized and returned with the prose.
+Requests, generated prose, and links are not persisted by the backend. The
+server-side daily quota is held in process memory per source IP.
 
 ## Insights
 
@@ -599,7 +515,7 @@ Response:
 }
 ```
 
-The response must not include raw diary text, raw self-report events, auth session data, password hashes, CSRF tokens, or provider secrets.
+The response must not include raw diary text, raw self-report events, credentials, or provider secrets.
 
 ## Analytics
 

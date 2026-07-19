@@ -71,12 +71,11 @@ export function EntriesPage({
   }
 
   return (
-    <section className="relative w-full max-w-6xl px-1.5 py-1.5 sm:py-2">
+    <section className="relative w-full max-w-6xl px-1.5 pb-1.5 sm:pb-2">
   <div
     className="
-      fixed left-1/2 top-1.5 z-30 w-full max-w-6xl
+      fixed left-1/2 top-1 z-30 w-full max-w-6xl
       -translate-x-1/2 bg-transparent px-1.5
-      sm:top-2
     "
   >
         <EntriesUtilityPanel
@@ -94,7 +93,7 @@ export function EntriesPage({
 
       <div
         className="
-          athena-entries-grid w-full pb-8 pt-20
+          athena-entries-grid w-full pb-8 pt-[var(--athena-workspace-surface-top)]
           transform-gpu
         "
         ref={gridRef}

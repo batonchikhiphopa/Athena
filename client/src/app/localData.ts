@@ -8,6 +8,7 @@ import { GEMINI_QUOTA_STORAGE_KEYS } from "../features/extraction/geminiQuota";
 import {
   SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
   SEEN_EDITOR_INSIGHT_IDS_KEY,
+  SEEN_EXTRACTION_PROPOSAL_IDS_KEY,
   SEEN_OBSERVATION_IDS_KEY,
 } from "../features/insights/seenInsights";
 import { ACTIVITY_INSIGHT_STORAGE_KEYS } from "../features/results/activityInsightQuota";
@@ -27,6 +28,7 @@ const PROFILE_KEYS = [
   LANGUAGE_STORAGE_KEY,
   SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
   SEEN_EDITOR_INSIGHT_IDS_KEY,
+  SEEN_EXTRACTION_PROPOSAL_IDS_KEY,
   SEEN_OBSERVATION_IDS_KEY,
   VAULT_CONFIG_KEY,
 ] as const;

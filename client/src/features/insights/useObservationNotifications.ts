@@ -1,47 +1,41 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import type { InsightSnapshot } from "../../shared/contracts";
-import type { ActivityInsightView } from "../results/activityInsightTypes";
 import {
-  createActivityInsightSeenKey,
-  getSeenActivityInsightKeys,
+  getSeenExtractionProposalIds,
   getSeenObservationIds,
   markObservationFeedSeen,
 } from "./seenInsights";
 
 export function useObservationNotifications({
-  activityInsights,
   observations,
+  pendingProposalIds,
 }: {
-  activityInsights: Map<string, ActivityInsightView>;
   observations: InsightSnapshot[];
+  pendingProposalIds: string[];
 }) {
   const [seenObservationIds, setSeenObservationIds] = useState(
     getSeenObservationIds,
   );
-  const [seenActivityInsightKeys, setSeenActivityInsightKeys] = useState(
-    getSeenActivityInsightKeys,
-  );
-  const activityInsightKeys = useMemo(
-    () =>
-      [...activityInsights.values()].map((insight) =>
-        createActivityInsightSeenKey(insight.activityId, insight.generatedAt),
-      ),
-    [activityInsights],
+  const [seenProposalIds, setSeenProposalIds] = useState(
+    getSeenExtractionProposalIds,
   );
   const hasUnread =
     observations.some((insight) => !seenObservationIds.has(insight.id)) ||
-    activityInsightKeys.some((key) => !seenActivityInsightKeys.has(key));
+    pendingProposalIds.some((id) => !seenProposalIds.has(id));
 
   const markAllSeen = useCallback(() => {
     const observationIds = observations.map((insight) => insight.id);
-    markObservationFeedSeen({ activityInsightKeys, observationIds });
+    markObservationFeedSeen({
+      observationIds,
+      proposalIds: pendingProposalIds,
+    });
     setSeenObservationIds((current) =>
       new Set([...current, ...observationIds]),
     );
-    setSeenActivityInsightKeys((current) =>
-      new Set([...current, ...activityInsightKeys]),
+    setSeenProposalIds((current) =>
+      new Set([...current, ...pendingProposalIds]),
     );
-  }, [activityInsightKeys, observations]);
+  }, [observations, pendingProposalIds]);
 
   return { hasUnread, markAllSeen };
 }

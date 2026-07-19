@@ -3,6 +3,10 @@
 Athena is a local-first daily reflection app with a calm writing surface and a
 strict analytical engine underneath.
 
+Athena helps record completed work, notice persistent work patterns, and retain
+the context of decisions. It does not treat, prevent, diagnose, predict, or
+claim to understand a person better than they understand themselves.
+
 The product opens as an editor. The user writes, adds tags, and decides which
 entries may be analyzed. Athena is not a dashboard, chatbot, coach, productivity
 tracker, or medical tool. Its analytical layer stays quiet until there is enough
@@ -33,15 +37,24 @@ Athena currently has three primary pages:
   similarity; filtering; sorting; reading; editing; deletion; and per-entry
   analysis control.
 - **Results** - one unified local list of concrete tasks/projects and repeatable
-  activities reconstructed from analyzed entries. Clicking a row expands its
-  current status, rhythm, verbal insight, activity graph, and the same source
-  entry tiles used in Entries. There are currently no task/activity filters,
-  renaming, merging, or manual entry-linking controls.
+  activities confirmed by the user from machine extraction proposals. Clicking
+  a row first shows either its formulated Gemini narrative or an ordinary
+  Athena phrase from the shared phrase pool. Below it, a standalone
+  deterministic day/week fact tile sits beside the activity graph, followed by
+  the same source entry tiles used in Entries. The fact tile is service
+  information only and also owns stage and rhythm; the collapsed row shows only
+  the latest source-entry date. A round
+  row-level settings button opens a separate correction
+  panel for renaming, type correction, monitoring aliases, automatic entry
+  links from user-selected tags, merging, splitting, manual entry linking, and
+  reversible source exclusions.
 
 Two floating panels sit above all three pages:
 
-- **Observations** combines saved day, week, and month observations with current
-  activity insights and links back to Results. Snapshot sufficiency is one valid
+- **Observations** combines saved day, week, and month observations with new
+  extraction proposals. Results narratives do not appear here and do not create
+  unread Observation notifications. Every saved observation can be deleted from
+  its card. Snapshot sufficiency is one valid
   day for yesterday, three distinct valid days in the current 7-day window, or
   fourteen valid days in the current 30-day window.
 - **Settings** controls interface language, app protection, extraction,
@@ -60,9 +73,9 @@ backend is temporarily unavailable.
 ## What Athena Does
 
 - stores raw diary text in the browser;
-- encrypts browser-local entries, drafts, self-reports, and activity-insight
-  cache records through the local vault; the vault may use passwordless access
-  or passphrase credentials;
+- encrypts browser-local entries, drafts, self-reports, Results corrections, and
+  activity-insight cache records through the local vault; the vault may use
+  passwordless access or passphrase credentials;
 - stores only textless structure on the backend: ids, dates, tags, hashes,
   signals, metadata, self-report aggregates, and insight snapshots;
 - extracts signals from the current entry only, without history, RAG, hidden
@@ -70,15 +83,18 @@ backend is temporarily unavailable.
 - supports `ollama`, `gemini`, and `off` extraction providers;
 - validates and sanitizes Signal v5 payloads before persistence;
 - extracts bounded activity-specific context for tasks and repeatable practices without storing diary prose;
-- builds Results locally from extracted activities and exact, deliberately
-  narrow identity rules; a single specific project tag may supply the project
-  identity only when the entry also contains task/project evidence, while broad
-  or ambiguous tags do not become projects;
+- treats extracted activities as proposals and builds Results locally only from
+  user-confirmed canonical entities and reversible source links; original
+  extraction stays separate from user corrections;
+- lets the user add reversible per-item tag rules: an analyzable local entry
+  with a matching tag is automatically linked to that canonical Results item;
 - groups only explicit high-confidence aliases such as multilingual job-search
   or German-learning labels; it does not fuzzy-merge similar names;
-- generates a deidentified activity-insight batch through Gemini at most once
-  per day when enough evidence has changed, and keeps the cache encrypted in the
-  local vault;
+- groups deterministic daily and weekly facts inside each confirmed Results item; Gemini is
+  called only through the explicit `Formulate review` action, at most once per
+  day, receives only the weekly-window fact projection shown in Results, may
+  ground a generic recommendation with Google Search, and
+  the encrypted cache stays browser-local;
 - recomputes `load`, `fatigue`, `focus`, confidence, and quality through a
   deterministic mapper;
 - keeps a durable browser-local queue for signal reprocessing;
@@ -108,19 +124,17 @@ There are two provider boundaries:
 - Results insight generation never resends diary prose, activity labels, local
   entry ids, or local activity ids. It sends Gemini a bounded batch of enum-only
   activity context and aggregate counts under temporary correlation ids. The
-  returned text is validated before it enters the encrypted browser-local
-  cache.
+  returned text and grounded source links are validated before they enter the
+  encrypted browser-local cache.
 
 ## Access Model
 
-Athena has two independent access rings:
+Athena currently has no backend authentication. The API is open on its bound
+interface, which defaults to `127.0.0.1`; do not expose it to an untrusted
+network.
 
-- **Server auth** - optional protection for the backend API. By default, the
-  local API is open for passwordless local use. Set
-  `ATHENA_AUTH_REQUIRED=true` to enable owner login with Argon2id password
-  hashes, HttpOnly session cookies, hashed session tokens in SQLite, and CSRF
-  checks for mutating requests.
-- **Local vault** - browser-local diary data is encrypted in IndexedDB. The
+The **local vault** remains independent: browser-local diary data is encrypted
+in IndexedDB. The
   default credential may be passwordless; Settings can add passphrases and
   Athena can auto-lock or be locked manually.
 
@@ -130,7 +144,7 @@ Athena has two independent access rings:
 - IndexedDB for encrypted local entries, drafts, self-reports, activity
   insights, queue state, and vault envelopes;
 - Express 4 backend;
-- SQLite migrations and repositories;
+- one canonical SQLite schema and repositories;
 - Zod schemas for strict API contracts;
 - service worker for app shell caching.
 
@@ -141,7 +155,7 @@ Athena has two independent access rings:
 - [Privacy model](docs/PRIVACY.md)
 - [API reference](docs/API.md)
 - [Contracts and versioning](docs/CONTRACTS.md)
-- [Database migrations](docs/MIGRATIONS.md)
+- [Database schema](docs/DATABASE_SCHEMA.md)
 - [Testing strategy](docs/TESTING.md)
 - [Deployment notes](docs/DEPLOYMENT.md)
 - [Self-hosting](docs/SELF_HOSTING.md)
@@ -167,12 +181,16 @@ On macOS/Linux:
 cp .env.example .env
 ```
 
-Run migrations and start the backend:
+Start the backend:
 
 ```powershell
-npm run migrate
 npm run dev
 ```
+
+The first start creates the backend database from the single canonical
+`schema.sql`. Athena does not upgrade older backend schemas during active
+development. If the schema fingerprint changes, intentionally recreate the
+textless backend database with `npm run db:reset`.
 
 In a second terminal, start the client:
 
@@ -190,7 +208,8 @@ npm run build
 npm run start
 ```
 
-`npm run start` runs compiled SQLite migrations, then starts the compiled Node server. Express serves the built client from `client/dist`.
+`npm run start` verifies or initializes the canonical SQLite schema, then starts
+the compiled Node server. Express serves the built client from `client/dist`.
 
 ## Release Checks
 

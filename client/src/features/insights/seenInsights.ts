@@ -4,6 +4,8 @@ export const SEEN_EDITOR_INSIGHT_IDS_KEY = "athena_seen_editor_insight_ids";
 export const SEEN_OBSERVATION_IDS_KEY = "athena_seen_observation_ids";
 export const SEEN_ACTIVITY_INSIGHT_KEYS_KEY =
   "athena_seen_activity_insight_keys";
+export const SEEN_EXTRACTION_PROPOSAL_IDS_KEY =
+  "athena_seen_extraction_proposal_ids";
 
 export function getSeenEditorInsightIds() {
   const raw = localStorage.getItem(
@@ -46,6 +48,12 @@ export function getSeenActivityInsightKeys() {
   );
 }
 
+export function getSeenExtractionProposalIds() {
+  return getStoredValues<string>(SEEN_EXTRACTION_PROPOSAL_IDS_KEY, (value) =>
+    typeof value === "string" ? value : null,
+  );
+}
+
 export function createActivityInsightSeenKey(
   activityId: string,
   generatedAt: string,
@@ -54,19 +62,19 @@ export function createActivityInsightSeenKey(
 }
 
 export function markObservationFeedSeen({
-  activityInsightKeys,
   observationIds,
+  proposalIds,
 }: {
-  activityInsightKeys: string[];
   observationIds: number[];
+  proposalIds: string[];
 }) {
   storeValues(
     SEEN_OBSERVATION_IDS_KEY,
     [...getSeenObservationIds(), ...observationIds],
   );
   storeValues(
-    SEEN_ACTIVITY_INSIGHT_KEYS_KEY,
-    [...getSeenActivityInsightKeys(), ...activityInsightKeys],
+    SEEN_EXTRACTION_PROPOSAL_IDS_KEY,
+    [...getSeenExtractionProposalIds(), ...proposalIds],
   );
 }
 

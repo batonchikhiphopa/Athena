@@ -13,10 +13,13 @@ The current implementation is:
   control, and voluntary self-report scales;
 - a searchable Entries card grid with always-on local hybrid keyword/date/tag
   and semantic search;
-- a unified expandable Results list built locally from analyzed entries, with
-  bounded project-tag identity hints and no rename/merge/manual-link controls;
+- a unified expandable Results list built from user-confirmed extraction
+  proposals, with a separate correction panel for aliases, rename, merge,
+  split, type correction, manual links, and reversible exclusions; each item
+  owns its compact deterministic day/week facts;
 - floating Observations and Settings panels that stay in the current workspace,
-  with activity insights included in Observations;
+  with pending proposals and optional narrative activity reviews included in
+  Observations; observation cards are individually deletable;
 - raw diary text and raw self-report events stay browser-local, while the
   backend stores textless metadata, signals, aggregates, and snapshots.
 
@@ -35,7 +38,7 @@ The current implementation is:
 - [Self-Hosting](./SELF_HOSTING.md) - Docker, SQLite volume, backup, and restore.
 - [API](./API.md) - endpoint reference and request/response shapes.
 - [Contracts](./CONTRACTS.md) - documented payload versions and route-prefix decision.
-- [Migrations](./MIGRATIONS.md) - migration lifecycle, integrity checks, and rollback stance.
+- [Database schema](./DATABASE_SCHEMA.md) - canonical schema lifecycle, reset policy, and integrity checks.
 - [Security](./SECURITY.md) - security summary and audit checklist.
 - [Security Checklist](./SECURITY_CHECKLIST.md) - OWASP-style self-check notes.
 
