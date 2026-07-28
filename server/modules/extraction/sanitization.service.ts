@@ -3,6 +3,7 @@ import {
   extractedSignalCandidateSchema,
   fallbackSignalSchema,
 } from "./signal.schema.js";
+import type { ZodIssue } from "zod";
 import {
   createEmptyMetricConfidence,
   mapSignalCandidate,
@@ -18,6 +19,7 @@ type SanitizedSignalResult =
   | {
       ok: false;
       error: Error;
+      reason: string;
     };
 
 export function sanitizeSignalCandidate(
@@ -29,6 +31,7 @@ export function sanitizeSignalCandidate(
     return {
       ok: false,
       error: result.error,
+      reason: formatSignalSchemaError(result.error.issues),
     };
   }
 
@@ -44,6 +47,7 @@ export function sanitizeSignalCandidate(
     return {
       ok: false,
       error: new Error("Structurally empty signal"),
+      reason: "structurally_empty_signal",
     };
   }
 
@@ -51,6 +55,23 @@ export function sanitizeSignalCandidate(
     ok: true,
     data: classified,
   };
+}
+
+export function sanitizeProviderSignalCandidate(
+  candidate: unknown,
+  context: Pick<
+    Signal,
+    "entry_intent" | "structure_signal" | "temporal_context"
+  >,
+): SanitizedSignalResult {
+  if (!isRecord(candidate)) {
+    return sanitizeSignalCandidate(candidate);
+  }
+
+  return sanitizeSignalCandidate({
+    ...candidate,
+    ...context,
+  });
 }
 
 export function createFallbackSignal(): Signal {
@@ -118,4 +139,19 @@ function normalizeActivityKey(value: string): string {
     .toLocaleLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+function formatSignalSchemaError(issues: ZodIssue[]): string {
+  const details = issues.slice(0, 8).map((issue) => {
+    const path = issue.path.length > 0 ? issue.path.join(".") : "$";
+    return `${issue.code}@${path}`;
+  });
+  const omitted = issues.length - details.length;
+  const suffix = omitted > 0 ? `,+${omitted}_more` : "";
+
+  return `signal_schema_error:${details.join(",")}${suffix}`.slice(0, 256);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

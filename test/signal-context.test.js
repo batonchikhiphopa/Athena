@@ -8,6 +8,7 @@ import {
 import { extractSignal } from "../server/modules/extraction/extraction.service.ts";
 import { createEntry } from "../server/modules/entries/entry.service.ts";
 import { createTestDb } from "./helpers/createTestDb.js";
+import { validSignal } from "./signal-fixtures.js";
 
 test("signal context is deterministic, bounded, and textless", () => {
   const rawText =
@@ -68,6 +69,35 @@ test("provider-off extraction still attaches deterministic signal context", asyn
   assert.equal(result.metadata.prompt_version, "extraction.v7");
 });
 
+test("Gemini fallback metadata distinguishes schema and JSON failures", async () => {
+  const candidate = validSignal();
+  delete candidate.entry_intent;
+  delete candidate.structure_signal;
+  delete candidate.temporal_context;
+  delete candidate.focus;
+
+  const schemaFailure = await withMockGeminiResponse(
+    geminiTextResponse(JSON.stringify(candidate)),
+  );
+  assert.equal(
+    schemaFailure.metadata.error_code,
+    "signal_schema_error:invalid_type@focus",
+  );
+
+  const invalidJson = await withMockGeminiResponse(
+    geminiTextResponse('{"topics":]}'),
+  );
+  assert.equal(invalidJson.metadata.error_code, "invalid_json");
+
+  const missingObject = await withMockGeminiResponse(
+    geminiTextResponse("not a JSON object"),
+  );
+  assert.equal(missingObject.metadata.error_code, "json_object_missing");
+
+  const emptyResponse = await withMockGeminiResponse({ candidates: [] });
+  assert.equal(emptyResponse.metadata.error_code, "empty_response");
+});
+
 test("contextual fallback extraction can be persisted as an entry", async () => {
   const db = await createTestDb();
 
@@ -94,3 +124,46 @@ test("contextual fallback extraction can be persisted as an entry", async () => 
     await db.close();
   }
 });
+
+function geminiTextResponse(text) {
+  return {
+    candidates: [
+      {
+        content: {
+          parts: [{ text }],
+        },
+      },
+    ],
+  };
+}
+
+async function withMockGeminiResponse(responseBody) {
+  const previousApiKey = process.env.GEMINI_API_KEY;
+  const previousFetch = globalThis.fetch;
+  const previousWarn = console.warn;
+
+  process.env.GEMINI_API_KEY = "synthetic-test-key";
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => responseBody,
+  });
+  console.warn = () => {};
+
+  try {
+    return await extractSignal({
+      text: "Synthetic test entry with a concrete task and plan.",
+      provider: "gemini",
+      model: "gemini-3.1-flash-lite",
+      entry_date: "2026-07-28",
+      captured_at: "2026-07-28T16:00:00.000Z",
+    });
+  } finally {
+    if (previousApiKey === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = previousApiKey;
+    }
+    globalThis.fetch = previousFetch;
+    console.warn = previousWarn;
+  }
+}

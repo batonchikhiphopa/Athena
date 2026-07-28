@@ -6,7 +6,7 @@ import type { EntryView } from "../../entries/entryTypes";
 import { getAvailableTags, normalizeTag } from "../../entries/entryFilters";
 import { normalizeActivityLabel } from "../activityCatalog";
 import { getResultsCorrectionCopy } from "../resultsCorrectionCopy";
-import type { ExtractionProposal } from "../resultsCorrections";
+import type { ExtractionProposal, ResultsEntity } from "../resultsCorrections";
 import type { ActivityKind } from "../resultsTypes";
 import type { ResultsCustomizationState } from "../useResultsCustomization";
 
@@ -30,6 +30,9 @@ export function ResultsItemSettings({
   );
   const [label, setLabel] = useState("");
   const [kind, setKind] = useState<ActivityKind>("task");
+  const [direction, setDirection] = useState("");
+  const [trackingMode, setTrackingMode] =
+    useState<ResultsEntity["trackingMode"]>("standard");
   const [alias, setAlias] = useState("");
   const [monitoringTag, setMonitoringTag] = useState("");
   const [mergeTargetId, setMergeTargetId] = useState("");
@@ -48,6 +51,8 @@ export function ResultsItemSettings({
     if (!entity) return;
     setLabel(entity.label);
     setKind(entity.kind);
+    setDirection(entity.direction ?? "");
+    setTrackingMode(entity.trackingMode);
     setAlias("");
     setMonitoringTag("");
     setMergeTargetId("");
@@ -117,7 +122,7 @@ export function ResultsItemSettings({
   }
 
   function saveEntity() {
-    state.updateEntity(entity!.id, { kind, label });
+    state.updateEntity(entity!.id, { direction, kind, label, trackingMode });
   }
 
   function addAlias() {
@@ -171,6 +176,43 @@ export function ResultsItemSettings({
               </select>
               <ActionButton onClick={saveEntity}>{copy.save}</ActionButton>
             </div>
+          </SettingsSection>
+
+          <SettingsSection
+            description={copy.directionDescription}
+            title={copy.organization}
+          >
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto]">
+              <input
+                className={inputClassName}
+                list="results-directions"
+                onChange={(event) => setDirection(event.target.value)}
+                placeholder={copy.direction}
+                value={direction}
+              />
+              <select
+                className={inputClassName}
+                onChange={(event) =>
+                  setTrackingMode(
+                    event.target.value as ResultsEntity["trackingMode"],
+                  )
+                }
+                value={trackingMode}
+              >
+                <option value="standard">{copy.trackingModeLabel.standard}</option>
+                <option value="reduce">{copy.trackingModeLabel.reduce}</option>
+              </select>
+              <ActionButton onClick={saveEntity}>{copy.save}</ActionButton>
+            </div>
+            <datalist id="results-directions">
+              {[...new Set(
+                state.customization.entities.flatMap((candidate) =>
+                  candidate.direction ? [candidate.direction] : [],
+                ),
+              )].map((value) => (
+                <option key={value} value={value} />
+              ))}
+            </datalist>
           </SettingsSection>
 
           <SettingsSection

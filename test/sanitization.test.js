@@ -2,8 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { mapSignalCandidate } from "../shared/signal/signalMapper.js";
-import { sanitizeSignalCandidate } from "../server/modules/extraction/sanitization.service.js";
-import { metricConfidence, sparseSignal, state, validSignal } from "./signal-fixtures.js";
+import {
+  sanitizeProviderSignalCandidate,
+  sanitizeSignalCandidate,
+} from "../server/modules/extraction/sanitization.service.js";
+import {
+  metricConfidence,
+  signalContext,
+  sparseSignal,
+  state,
+  validSignal,
+} from "./signal-fixtures.js";
 
 test("accepts valid Signal v5 candidate", () => {
   const result = sanitizeSignalCandidate(validSignal());
@@ -12,6 +21,21 @@ test("accepts valid Signal v5 candidate", () => {
   assert.equal(result.data.signal_quality, "valid");
   assert.equal(result.data.load, 5);
   assert.equal(result.data.metric_confidence.load, "medium");
+});
+
+test("accepts provider Signal v5 candidate after attaching local context", () => {
+  const candidate = validSignal();
+  delete candidate.entry_intent;
+  delete candidate.structure_signal;
+  delete candidate.temporal_context;
+
+  const context = signalContext();
+  const result = sanitizeProviderSignalCandidate(candidate, context);
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.data.entry_intent, context.entry_intent);
+  assert.deepEqual(result.data.structure_signal, context.structure_signal);
+  assert.deepEqual(result.data.temporal_context, context.temporal_context);
 });
 
 test("keeps only activity-specific contexts that match extracted activities", () => {
@@ -77,12 +101,14 @@ test("rejects missing required field", () => {
   const result = sanitizeSignalCandidate(candidate);
 
   assert.equal(result.ok, false);
+  assert.equal(result.reason, "signal_schema_error:invalid_type@focus");
 });
 
 test("rejects empty object", () => {
   const result = sanitizeSignalCandidate({});
 
   assert.equal(result.ok, false);
+  assert.match(result.reason, /^signal_schema_error:/);
 });
 
 test("rejects structurally empty signal", () => {
@@ -96,6 +122,7 @@ test("rejects structurally empty signal", () => {
   );
 
   assert.equal(result.ok, false);
+  assert.equal(result.reason, "structurally_empty_signal");
 });
 
 test("rejects empty-string topic and activity values", () => {

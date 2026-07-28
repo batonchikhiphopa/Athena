@@ -17,6 +17,9 @@ export type ResultsCorrectionCopy = {
   coachReviewTitle: string;
   confidence: string;
   correct: string;
+  direction: string;
+  directionDescription: string;
+  organization: string;
   emptySources: string;
   event: string;
   eventLabel: Record<ActivityContextEvent, string>;
@@ -45,6 +48,8 @@ export type ResultsCorrectionCopy = {
   split: string;
   status: Record<ExtractionProposalStatus, string>;
   tagRule: string;
+  trackingMode: string;
+  trackingModeLabel: Record<"standard" | "reduce", string>;
   userVersion: string;
   webSources: string;
 };
@@ -62,6 +67,9 @@ const en: ResultsCorrectionCopy = {
   coachReviewTitle: "Work review",
   confidence: "Confidence",
   correct: "Correct",
+  direction: "Direction",
+  directionDescription: "Optional user-owned group, for example “Learn German”.",
+  organization: "Organisation",
   emptySources: "No linked source entries.",
   event: "Event type",
   eventLabel: {
@@ -112,6 +120,8 @@ const en: ResultsCorrectionCopy = {
     rejected: "rejected",
   },
   tagRule: "linked by tag rule",
+  trackingMode: "Tracking",
+  trackingModeLabel: { reduce: "Reduce", standard: "Standard" },
   userVersion: "Canonical user version",
   webSources: "Web sources",
 };
@@ -130,6 +140,9 @@ const ru: ResultsCorrectionCopy = {
   coachReviewTitle: "Обзор по делам",
   confidence: "Уверенность",
   correct: "Исправить",
+  direction: "Направление",
+  directionDescription: "Необязательная пользовательская группа, например «Учить немецкий».",
+  organization: "Организация",
   emptySources: "Связанных исходных записей нет.",
   event: "Тип события",
   eventLabel: {
@@ -180,6 +193,8 @@ const ru: ResultsCorrectionCopy = {
     rejected: "rejected",
   },
   tagRule: "привязано по тегу",
+  trackingMode: "Режим отслеживания",
+  trackingModeLabel: { reduce: "Сократить", standard: "Обычный" },
   userVersion: "Каноническая версия пользователя",
   webSources: "Веб-источники",
 };

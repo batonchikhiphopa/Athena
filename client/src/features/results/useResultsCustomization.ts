@@ -54,7 +54,10 @@ export type ResultsCustomizationState = {
   ) => void;
   updateEntity: (
     entityId: string,
-    patch: Pick<ResultsEntity, "kind" | "label">,
+    patch: Pick<
+      ResultsEntity,
+      "direction" | "kind" | "label" | "trackingMode"
+    >,
   ) => void;
 };
 
@@ -160,6 +163,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
               kind: input.kind,
               label,
               monitoringTags: [],
+              direction: null,
+              trackingMode: "standard",
               updatedAt: now,
             };
         const entities = existingEntity
@@ -240,7 +245,10 @@ export function useResultsCustomization(): ResultsCustomizationState {
   const updateEntity = useCallback(
     (
       entityId: string,
-      patch: Pick<ResultsEntity, "kind" | "label">,
+      patch: Pick<
+        ResultsEntity,
+        "direction" | "kind" | "label" | "trackingMode"
+      >,
     ) => {
       commit((current) => ({
         ...current,
@@ -250,6 +258,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
                 ...entity,
                 kind: patch.kind,
                 label: cleanActivityLabel(patch.label) || entity.label,
+                direction: cleanDirection(patch.direction),
+                trackingMode: patch.trackingMode,
                 updatedAt: new Date().toISOString(),
               }
             : entity,
@@ -451,6 +461,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
           kind: input.kind,
           label,
           monitoringTags: [],
+          direction: null,
+          trackingMode: "standard",
           updatedAt: now,
         };
 
@@ -516,6 +528,8 @@ function ensureProposalEntity(
     kind: proposal.proposedKind,
     label: proposal.proposedLabel,
     monitoringTags: [],
+    direction: null,
+    trackingMode: "standard",
     updatedAt: now,
   };
   return { entities: [...entities, entity], entity };
@@ -559,6 +573,11 @@ function uniqueMonitoringTags(values: string[]) {
 
 function cleanMonitoringTag(value: string) {
   return value.trim().replace(/^#+/u, "").replace(/\s+/gu, " ");
+}
+
+function cleanDirection(value: string | null) {
+  const cleaned = cleanActivityLabel(value ?? "");
+  return cleaned || null;
 }
 
 function createManualLinkId(entryId: string, entityId: string) {

@@ -31,7 +31,7 @@ import type {
 import { analyzeSignalContext } from "../../../shared/contracts/signalAnalysis.js";
 import {
   createFallbackSignal,
-  sanitizeSignalCandidate,
+  sanitizeProviderSignalCandidate,
 } from "./sanitization.service.js";
 
 type ExtractionOptionsRequest = {
@@ -293,10 +293,18 @@ export async function extractSignal({
       selectedProvider === EXTRACTION_PROVIDERS.GEMINI
         ? await requestGeminiExtraction(text, selectedModel)
         : await requestOllamaExtraction(text, selectedModel);
-    const sanitized = sanitizeSignalCandidate(candidate);
+    const sanitized = sanitizeProviderSignalCandidate(candidate, context);
 
     if (!sanitized.ok) {
-      return createFallbackResult(selectedProvider, selectedModel, "parse_error");
+      console.warn(
+        `[extraction:${selectedProvider}] rejected candidate: ${sanitized.reason}`,
+      );
+      return createFallbackResult(
+        selectedProvider,
+        selectedModel,
+        sanitized.reason,
+        context,
+      );
     }
 
     return {
@@ -642,10 +650,12 @@ function classifyProviderError(error: unknown, provider: ExtractionProvider): st
     error instanceof Error ? error.message : error ?? "",
   );
 
+  if (error instanceof SyntaxError) return "invalid_json";
+  if (error instanceof Error && error.name === "AbortError") return "timeout";
   if (message.includes("gemini_key_missing")) return "gemini_key_missing";
   if (message.includes("ollama_non_local_url")) return "ollama_non_local_url";
-  if (message.includes("AbortError")) return "timeout";
-  if (message.includes("SyntaxError")) return "parse_error";
+  if (message.includes("empty_response")) return "empty_response";
+  if (message.includes("json_object_missing")) return "json_object_missing";
   if (message.includes("http_401") || message.includes("http_403")) {
     return provider === EXTRACTION_PROVIDERS.GEMINI
       ? "gemini_auth_error"
@@ -690,7 +700,7 @@ function extractJson(text: string): string {
   const end = text.lastIndexOf("}");
 
   if (start === -1 || end === -1 || end < start) {
-    throw new Error("parse_error");
+    throw new Error("json_object_missing");
   }
 
   return text.slice(start, end + 1);

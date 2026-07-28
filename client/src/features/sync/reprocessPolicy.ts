@@ -19,8 +19,6 @@ const RETRYABLE_PROVIDER_ERROR_CODES = new Set([
   "timeout",
 ]);
 
-const TERMINAL_CURRENT_FALLBACK_ERROR_CODES = new Set(["parse_error"]);
-
 export type EntryReprocessPlan =
   | {
       action: "process";
@@ -90,9 +88,7 @@ export function isFallbackReprocessCandidate(
 ) {
   if (signal.signal_quality !== "fallback") return false;
   if (!hasCurrentSignalContract(metadata)) return false;
-  if (isRetryableProviderErrorCode(metadata.error_code)) return true;
-
-  return !isTerminalCurrentFallbackErrorCode(metadata.error_code);
+  return true;
 }
 
 export function isSparseNoMetricsReprocessCandidate(
@@ -103,10 +99,6 @@ export function isSparseNoMetricsReprocessCandidate(
   if (!hasCurrentSignalContract(metadata)) return false;
 
   return isRetryableProviderErrorCode(metadata.error_code);
-}
-
-function isTerminalCurrentFallbackErrorCode(errorCode: string | null | undefined) {
-  return errorCode ? TERMINAL_CURRENT_FALLBACK_ERROR_CODES.has(errorCode) : false;
 }
 
 export function createEntryReprocessPayload({

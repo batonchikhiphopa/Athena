@@ -27,6 +27,11 @@ export function formatInsightText(
     personaTextEnabled,
   }: InsightTextOptions,
 ) {
+  // Insight V3 already contains a deterministic, evidence-based summary.  Do
+  // not replace it with a topic/persona phrase just because it also has a
+  // topic label: the latter is only presentation metadata.
+  if (insight.text.trim()) return insight.text.trim();
+
   const topic = getInsightTopic(insight);
 
   if (!topic) return insight.text;

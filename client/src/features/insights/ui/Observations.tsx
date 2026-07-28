@@ -9,9 +9,14 @@ import { CloseIcon } from "../../entries/ui/entryUiHelpers";
 import type { ExtractionProposal } from "../../results/resultsCorrections";
 import type { CorrectProposalInput } from "../../results/useResultsCustomization";
 import { ExtractionProposalCards } from "../../results/ui/ExtractionProposalCards";
+import { buildActivityOptimizationObservations } from "../content/activityOptimizationObservations";
+import type { ResultsEntity } from "../../results/resultsCorrections";
+import type { ActivityGroup } from "../../results/resultsTypes";
 
 type ObservationsProps = {
   insights: InsightSnapshot[];
+  activities: ActivityGroup[];
+  entities: ResultsEntity[];
   proposals: ExtractionProposal[];
   personaTextEnabled: boolean;
   onAcceptProposal: (proposal: ExtractionProposal) => void;
@@ -28,6 +33,8 @@ type ObservationsProps = {
 
 export function Observations({
   insights,
+  activities,
+  entities,
   proposals,
   personaTextEnabled,
   onAcceptProposal,
@@ -44,6 +51,15 @@ export function Observations({
     (proposal) =>
       proposal.status === "pending" || proposal.status === "rejected",
   );
+  const optimizationObservations = buildActivityOptimizationObservations(
+    activities,
+    entities,
+    language,
+  );
+  const optimizationEyebrow =
+    language === "ru"
+      ? "Совет по подтверждённому делу"
+      : "Advice for a confirmed item";
 
   return (
     <section className="flex h-full min-h-0 flex-col text-zinc-800">
@@ -95,6 +111,20 @@ export function Observations({
             onReject={onRejectProposal}
             onRestore={onRestoreProposal}
           />
+
+          {optimizationObservations.map((observation) => (
+            <article
+              className="rounded-lg border border-amber-900/10 bg-amber-50/35 p-4 shadow-sm shadow-zinc-900/5"
+              key={observation.id}
+            >
+              <div className="text-xs uppercase tracking-wide text-zinc-400">
+                {optimizationEyebrow}
+              </div>
+              <h3 className="mt-1 text-sm font-medium text-zinc-800">{observation.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-700">{observation.facts}</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-800">{observation.recommendation}</p>
+            </article>
+          ))}
 
             {groups.map((group) => (
               <section key={group.date}>
@@ -148,7 +178,7 @@ export function Observations({
                 </div>
               </section>
             ))}
-          {visibleProposals.length === 0 && groups.length === 0 && (
+          {visibleProposals.length === 0 && groups.length === 0 && optimizationObservations.length === 0 && (
             <p className="rounded-lg border border-white/25 bg-white/25 px-4 py-3 text-sm text-zinc-400">
               {t("observations.empty")}
             </p>

@@ -20,6 +20,7 @@ import type {
   ActivityIndex,
   ActivityMention,
 } from "../resultsTypes";
+import type { ResultsEntity } from "../resultsCorrections";
 import type {
   ActivityInsightState,
 } from "../activityInsightTypes";
@@ -33,6 +34,7 @@ export function ResultsPage({
   debugMode,
   entries,
   extractionSettings,
+  entities,
   model,
   onDeleteEntry,
   onEditEntry,
@@ -44,6 +46,7 @@ export function ResultsPage({
   debugMode: boolean;
   entries: EntryView[];
   extractionSettings: ExtractionSettings;
+  entities: ResultsEntity[];
   model: ActivityIndex;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
@@ -61,6 +64,10 @@ export function ResultsPage({
     activityId: string;
     text: string;
   } | null>(null);
+  const sections = useMemo(
+    () => groupActivities(model.activities, entities, language),
+    [entities, language, model.activities],
+  );
 
   useEffect(() => {
     if (!selectedActivityId) return;
@@ -84,87 +91,96 @@ export function ResultsPage({
         <div className="overflow-hidden rounded-xl border border-white/40 bg-[#f8f3e9]/38 backdrop-blur-sm">
           {model.activities.length > 0 ? (
             <div className="divide-y divide-zinc-900/8">
-              {model.activities.map((activity) => {
-                const isExpanded = selectedActivityId === activity.id;
+              {sections.map((section) => (
+                <Fragment key={section.id}>
+                  {section.label && (
+                    <div className="bg-[#f8f3e9]/55 px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                      {section.label}
+                    </div>
+                  )}
+                  {section.activities.map((activity) => {
+                    const isExpanded = selectedActivityId === activity.id;
 
-                return (
-                  <section
-                    className="scroll-mt-16"
-                    data-activity-id={activity.id}
-                    key={activity.id}
-                  >
-                    <div
-                      className={[
-                        "flex min-h-14 w-full items-stretch",
-                        isExpanded ? "bg-white/48" : "hover:bg-white/28",
-                      ].join(" ")}
-                    >
-                      <button
-                        aria-expanded={isExpanded}
-                        aria-label={activity.label}
-                        className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left outline-none transition focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-zinc-400/70 sm:px-4"
-                        onClick={() =>
-                          setSelectedActivityId(
-                            isExpanded ? null : activity.id,
-                          )
-                        }
-                        type="button"
+                    return (
+                      <section
+                        className="scroll-mt-16"
+                        data-activity-id={activity.id}
+                        key={activity.id}
                       >
-                        <div className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-zinc-800 sm:text-base">
-                            {activity.label}
-                          </span>
+                        <div
+                          className={[
+                            "flex min-h-14 w-full items-stretch",
+                            isExpanded ? "bg-white/48" : "hover:bg-white/28",
+                          ].join(" ")}
+                        >
+                          <button
+                            aria-expanded={isExpanded}
+                            aria-label={activity.label}
+                            className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left outline-none transition focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-zinc-400/70 sm:px-4"
+                            onClick={() =>
+                              setSelectedActivityId(
+                                isExpanded ? null : activity.id,
+                              )
+                            }
+                            type="button"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium text-zinc-800 sm:text-base">
+                                {activity.label}
+                              </span>
+                            </div>
+
+                            <span className="hidden shrink-0 text-xs text-zinc-400 sm:block">
+                              {copy.latest(
+                                formatShortDate(
+                                  activity.latestEntryDate,
+                                  language,
+                                ),
+                              )}
+                            </span>
+                          </button>
+                          {!model.isDemo && (
+                            <button
+                              aria-label={`${correctionCopy.manageTitle}: ${activity.label}`}
+                              className="m-2 grid h-7 w-7 shrink-0 self-center place-items-center rounded-full text-zinc-300 outline-none transition hover:bg-white/55 hover:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-400/70"
+                              data-testid={`manage-result-${activity.id}`}
+                              onClick={() => onManageActivity(activity.id)}
+                              title={correctionCopy.manageTitle}
+                              type="button"
+                            >
+                              <span>
+                                <IconComponent name="settings" className="h-4 w-4" />
+                              </span>
+                            </button>
+                          )}
                         </div>
 
-                        <span className="hidden shrink-0 text-xs text-zinc-400 sm:block">
-                          {copy.latest(
-                            formatShortDate(
-                              activity.latestEntryDate,
-                              language,
-                            ),
-                          )}
-                        </span>
-                      </button>
-                      {!model.isDemo && (
-                        <button
-                          aria-label={`${correctionCopy.manageTitle}: ${activity.label}`}
-                          className="m-2 grid h-7 w-7 shrink-0 self-center place-items-center rounded-full text-zinc-300 outline-none transition hover:bg-white/55 hover:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-400/70"
-                          data-testid={`manage-result-${activity.id}`}
-                          onClick={() => onManageActivity(activity.id)}
-                          title={correctionCopy.manageTitle}
-                          type="button"
-                        >
-                          <span>
-                            <IconComponent name="settings" className="h-4 w-4" />
-                          </span>
-                        </button>
-                      )}
-                    </div>
-
-                    <AnimatedActivityPanel isExpanded={isExpanded}>
-                      <ActivityEntries
-                        activity={activity}
-                        activityInsights={activityInsights}
-                        copy={copy}
-                        debugMode={debugMode}
-                        entries={entries}
-                        extractionSettings={extractionSettings}
-                        fallbackPhrase={
-                          athenaPhrase?.activityId === activity.id
-                            ? athenaPhrase.text
-                            : ""
-                        }
-                        isDemo={model.isDemo}
-                        language={language}
-                        onDeleteEntry={onDeleteEntry}
-                        onEditEntry={onEditEntry}
-                        onToggleEntryAnalysis={onToggleEntryAnalysis}
-                        onToggleTag={onToggleTag}
-                      />
-                    </AnimatedActivityPanel>
-                  </section>
-                );
-              })}
+                        <AnimatedActivityPanel isExpanded={isExpanded}>
+                          <ActivityEntries
+                            activity={activity}
+                            activityInsights={activityInsights}
+                            copy={copy}
+                            debugMode={debugMode}
+                            entries={entries}
+                            extractionSettings={extractionSettings}
+                            fallbackPhrase={
+                              athenaPhrase?.activityId === activity.id
+                                ? athenaPhrase.text
+                                : ""
+                            }
+                            isDemo={model.isDemo}
+                            language={language}
+                            onDeleteEntry={onDeleteEntry}
+                            onEditEntry={onEditEntry}
+                            onToggleEntryAnalysis={onToggleEntryAnalysis}
+                            onToggleTag={onToggleTag}
+                          />
+                        </AnimatedActivityPanel>
+                      </section>
+                    );
+                  })}
+                </Fragment>
+              ))}
             </div>
           ) : (
             <p className="px-5 py-10 text-sm text-zinc-400">{copy.empty}</p>
@@ -179,6 +195,48 @@ export function ResultsPage({
       </div>
     </section>
   );
+}
+
+type ActivitySection = {
+  activities: ActivityGroup[];
+  id: string;
+  label: string | null;
+};
+
+function groupActivities(
+  activities: ActivityGroup[],
+  entities: ResultsEntity[],
+  language: Language,
+): ActivitySection[] {
+  const entityById = new Map(entities.map((entity) => [entity.id, entity]));
+  const grouped = new Map<string, ActivitySection>();
+
+  for (const activity of activities) {
+    const entity = entityById.get(activity.id);
+    const label =
+      entity?.trackingMode === "reduce"
+        ? getReduceLabel(language)
+        : entity?.direction ?? null;
+    const id = entity?.trackingMode === "reduce" ? "reduce" : label ?? "other";
+    const section = grouped.get(id) ?? { activities: [], id, label };
+    section.activities.push(activity);
+    grouped.set(id, section);
+  }
+
+  return [...grouped.values()].sort((left, right) => {
+    if (left.id === "reduce") return 1;
+    if (right.id === "reduce") return -1;
+    if (left.label === null) return 1;
+    if (right.label === null) return -1;
+    return left.label.localeCompare(right.label);
+  });
+}
+
+function getReduceLabel(language: Language) {
+  if (language === "ru") return "Хочу сократить";
+  if (language === "uk") return "Хочу скоротити";
+  if (language === "de") return "Möchte ich reduzieren";
+  return "Want to reduce";
 }
 
 function generateFreshAthenaPhrase(language: Language, previousText: string) {

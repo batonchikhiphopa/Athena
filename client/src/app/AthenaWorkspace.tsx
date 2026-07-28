@@ -301,6 +301,7 @@ export function AthenaWorkspace({
                   debugMode={app.debugMode}
                   entries={app.entries}
                   extractionSettings={app.extractionSettings}
+                  entities={resultsCustomization.customization.entities}
                   model={resultsModel}
                   onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
                   onEditEntry={(entry) => void handlers.editEntry(entry)}
@@ -348,6 +349,8 @@ export function AthenaWorkspace({
               testId="observations-floating-panel"
             >
               <Observations
+                activities={resultsModel.activities}
+                entities={resultsCustomization.customization.entities}
                 insights={app.observationHistory}
                 proposals={extractionProposals}
                 personaTextEnabled={app.personaTextEnabled}

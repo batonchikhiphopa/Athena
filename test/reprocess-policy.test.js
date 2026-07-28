@@ -104,14 +104,37 @@ test("reprocess covers retryable provider failures and metric-empty sparse signa
   );
 });
 
-test("current parse-error fallbacks do not loop through repeated reprocess", () => {
+test("current parse-error fallbacks remain available for explicit reprocess", () => {
+  const parseErrorMetadata = metadata({
+    provider: "gemini",
+    error_code: "parse_error",
+  });
+
   assert.equal(
-    isSignalReprocessCandidate(
-      fallbackSignal(),
-      metadata({ provider: "gemini", error_code: "parse_error" }),
-    ),
-    false,
+    isSignalReprocessCandidate(fallbackSignal(), parseErrorMetadata),
+    true,
   );
+
+  const plan = planEntryReprocessJob(
+    queueJob({
+      entry_id: "entry-1",
+      source_text_hash: "b".repeat(64),
+      reason: "fallback",
+      requested_schema_version: CLIENT_ACTIVE_SCHEMA_VERSION,
+      requested_prompt_version: CLIENT_ACTIVE_PROMPT_VERSION,
+      queued_at: "2026-05-30T10:00:00.000Z",
+    }),
+    localEntry({
+      signals: fallbackSignal(),
+      metadata: parseErrorMetadata,
+      sync_status: "synced",
+    }),
+  );
+
+  assert.deepEqual(plan, {
+    action: "skip",
+    reason: "not_pending_reextract",
+  });
 });
 
 test("current sparse no-metrics signals do not loop after successful reprocess", () => {
