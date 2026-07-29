@@ -138,7 +138,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
     } catch (error) {
       setExportStatus({
         state: "error",
-        message: formatImportError(error),
+        message: formatImportError(error, t),
       });
     }
   }
@@ -170,7 +170,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
       setPreviewState({
         status: "error",
         fileName: file.name,
-        error: formatImportError(error),
+        error: formatImportError(error, t),
         preview: null,
         packageData: null,
         result: null,
@@ -211,7 +211,7 @@ export function DataSettings({ entries, onImportApplied }: DataSettingsProps) {
       setPreviewState({
         status: "error",
         fileName: previousState.fileName,
-        error: formatImportError(error),
+        error: formatImportError(error, t),
         preview: null,
         packageData: null,
         result: null,
@@ -355,7 +355,7 @@ function ImportPreviewCard({
   onApply: () => void;
   onClear: () => void;
 }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
 
   return (
     <div
@@ -369,7 +369,7 @@ function ImportPreviewCard({
             {t("settings.data.previewTitle")}
           </div>
           <div className="mt-1 text-xs text-zinc-400">
-            {preview.export_version} · {formatDateTime(preview.exported_at)}
+            {preview.export_version} · {formatDateTime(preview.exported_at, language)}
           </div>
         </div>
 
@@ -425,13 +425,13 @@ function ImportPreviewCard({
         <div>
           {t("settings.data.backendCalls")}:{" "}
           <span className="font-mono text-zinc-700">
-            {preview.backend_calls_required ? "true" : "false"}
+            {preview.backend_calls_required ? t("common.yes") : t("common.no")}
           </span>
         </div>
         <div className="mt-1">
           {t("settings.data.writesDuringPreview")}:{" "}
           <span className="font-mono text-zinc-700">
-            {preview.writes_during_preview ? "true" : "false"}
+            {preview.writes_during_preview ? t("common.yes") : t("common.no")}
           </span>
         </div>
         <div className="mt-1">
@@ -496,7 +496,7 @@ function ImportResultCard({ result }: { result: LocalImportApplyResult }) {
         />
         <ResultRow
           label={t("settings.data.backendCallsPerformed")}
-          value={result.backend_calls_performed ? "true" : "false"}
+          value={result.backend_calls_performed ? t("common.yes") : t("common.no")}
         />
       </dl>
     </div>
@@ -572,18 +572,21 @@ function formatPreviewWarning(
   return messages[warning] ?? warning;
 }
 
-function formatDateTime(value: string) {
+function formatDateTime(value: string, language: string) {
   const timestamp = Date.parse(value);
 
   if (Number.isNaN(timestamp)) return value;
 
-  return new Date(timestamp).toLocaleString();
+  return new Date(timestamp).toLocaleString(language);
 }
 
-function formatImportError(error: unknown) {
+function formatImportError(
+  error: unknown,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
+) {
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Unknown import error.";
+  return t("settings.data.importErrorUnknown");
 }

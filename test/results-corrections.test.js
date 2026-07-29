@@ -213,8 +213,8 @@ test("stored Results entities without tag rules remain compatible", () => {
   });
 
   assert.deepEqual(normalized.entities[0].monitoringTags, []);
-  assert.equal(normalized.entities[0].direction, null);
-  assert.equal(normalized.entities[0].trackingMode, "standard");
+  assert.equal(normalized.entities[0].parentId, null);
+  assert.equal(normalized.entities[0].priority, 0);
 });
 
 test("activity optimisation observations remain tied to confirmed Results facts", () => {
@@ -236,16 +236,16 @@ test("activity optimisation observations remain tied to confirmed Results facts"
     },
   ];
   const entities = [
-    { id: "read-aloud", direction: "Учить немецкий", trackingMode: "standard" },
-    { id: "write-texts", direction: "Учить немецкий", trackingMode: "standard" },
-    { id: "dota", direction: null, trackingMode: "reduce" },
+    { id: "read-aloud", parentId: "write-texts", priority: 1 },
+    { id: "write-texts", parentId: null, priority: 2 },
+    { id: "dota", parentId: null, priority: 0 },
   ];
 
   const observations = buildActivityOptimizationObservations(activities, entities, "ru");
 
-  assert.equal(observations.length, 2);
-  assert.match(observations[0].facts, /Читать вслух, Писать тексты/);
-  assert.match(observations[1].recommendation, /измеримое правило/);
+  assert.equal(observations.length, 1);
+  assert.match(observations[0].facts, /Читать вслух/);
+  assert.match(observations[0].recommendation, /дочерний шаг/);
 });
 
 test("daily and weekly reviews answer deterministic movement questions", () => {

@@ -7,6 +7,7 @@ import {
 } from "./FloatingLayerContext";
 
 const FLOATING_PANEL_IDS: FloatingPanelId[] = [
+  "activity-event",
   "observations",
   "self-report",
   "settings",

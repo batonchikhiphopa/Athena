@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360">
+  <rect width="1200" height="360" fill="#f8f3e9"/>
+  <style>
+    .box{fill:#fffdf8;stroke:#e4ded3;stroke-width:2}.line{fill:none;stroke:#4b4b52;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}.soft{fill:none;stroke:#777780;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}.label{font:600 18px system-ui,sans-serif;fill:#36363b}.note{font:14px system-ui,sans-serif;fill:#85858d}
+  </style>
+  <g transform="translate(28 30)">
+    <rect class="box" width="204" height="300" rx="22"/>
+    <text class="label" x="102" y="250" text-anchor="middle">1 · классика</text><text class="note" x="102" y="274" text-anchor="middle">дуга + рукоять</text>
+    <g transform="translate(45 45)"><path class="line" d="M46 148 122 48"/><path class="line" d="M20 57c25-25 57-28 88-7 23 15 47 16 70 4"/><path class="soft" d="m96 42 18 24"/></g>
+  </g>
+  <g transform="translate(260 30)">
+    <rect class="box" width="204" height="300" rx="22"/>
+    <text class="label" x="102" y="250" text-anchor="middle">2 · клюв</text><text class="note" x="102" y="274" text-anchor="middle">выраженный нос</text>
+    <g transform="translate(42 44)"><path class="line" d="M46 150 121 49"/><path class="line" d="M24 62c28-24 59-23 86-5 20 13 46 14 75-4"/><path class="line" d="m174 53-42 16"/></g>
+  </g>
+  <g transform="translate(492 30)">
+    <rect class="box" width="204" height="300" rx="22"/>
+    <text class="label" x="102" y="250" text-anchor="middle">3 · двойное кайло</text><text class="note" x="102" y="274" text-anchor="middle">два острых конца</text>
+    <g transform="translate(43 45)"><path class="line" d="M47 149 122 49"/><path class="line" d="m16 77 92-23 70 20"/><path class="line" d="m16 77 28-25M178 74l-20-24"/></g>
+  </g>
+  <g transform="translate(724 30)">
+    <rect class="box" width="204" height="300" rx="22"/>
+    <text class="label" x="102" y="250" text-anchor="middle">4 · минимал</text><text class="note" x="102" y="274" text-anchor="middle">чистый силуэт</text>
+    <g transform="translate(48 49)"><path class="line" d="M43 145 116 48"/><path class="line" d="M23 64c32-22 65-19 96 1 19 12 39 13 59 6"/></g>
+  </g>
+  <g transform="translate(956 30)">
+    <rect class="box" width="204" height="300" rx="22"/>
+    <text class="label" x="102" y="250" text-anchor="middle">5 · геометрия</text><text class="note" x="102" y="274" text-anchor="middle">угловатая кирка</text>
+    <g transform="translate(42 48)"><path class="line" d="M49 147 122 50"/><path class="line" d="m17 69 55-25 39 12 63-4"/><path class="line" d="m17 69 25-27M174 52l-29 23"/></g>
+  </g>
+</svg>

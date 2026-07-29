@@ -1,6 +1,7 @@
 import { createContext } from "react";
 
 export type FloatingPanelId =
+  | "activity-event"
   | "observations"
   | "result-settings"
   | "self-report"

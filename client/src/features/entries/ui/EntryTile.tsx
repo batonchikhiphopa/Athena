@@ -1,16 +1,23 @@
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import type { Language } from "../../../i18n/languages";
 import { useI18n } from "../../../i18n/useI18n";
 import { formatLongDate } from "../../../shared/lib/dates";
-import { EyeClosedIcon, EyeOpenIcon } from "../../../components/icon";
+import { EyeClosedIcon, EyeOpenIcon, HeartIcon } from "../../../components/icon";
 import { TooltipButton } from "../../../components/TooltipButton";
 import { parseEntrySearchQuery } from "../entrySearch";
 import type { EntryView } from "../entryTypes";
 import { EntryDebugTooltip, EntryDebugWaitCue } from "./EntryDebugTooltip";
 import { useEntryDebugTooltip } from "./useEntryDebugTooltip";
-import { CloseIcon, EditIcon } from "./entryUiHelpers";
+import { CloseIcon, EditIcon, PickaxeIcon } from "./entryUiHelpers";
 import { tagTestIdValue } from "./entryTagId";
+import { ActivityEventMenu } from "./ActivityEventMenu";
+import { updateLocalEntry } from "../localEntryRepository";
+import type { ActivityContextEvent } from "../../../shared/contracts";
+import { SelfReportMenu } from "../../editor/ui/SelfReportMenu";
+import { DEFAULT_SELF_REPORT_VALUES, type SelfReportValues } from "../../selfReports/selfReportTypes";
+import { saveEntrySelfReportAndSync } from "../../selfReports/selfReportActions";
+import { getResultsCorrectionCopy } from "../../results/resultsCorrectionCopy";
 
 export function EntryTile({
   compact = false,
@@ -39,7 +46,16 @@ export function EntryTile({
   onToggleEntryAnalysis: (entry: EntryView) => void;
   onToggleTag: (tag: string) => void;
 }) {
-  const { t } = useI18n();
+  const { language: activeLanguage, t } = useI18n();
+  const activityEventCopy = getResultsCorrectionCopy(activeLanguage);
+  const [isEventMenuOpen, setIsEventMenuOpen] = useState(false);
+  const [isSelfReportMenuOpen, setIsSelfReportMenuOpen] = useState(false);
+  const [isPickaxeSwinging, setIsPickaxeSwinging] = useState(false);
+  const pickaxeTimerRef = useRef<number | null>(null);
+  const [manualEvent, setManualEvent] = useState(entry.manualEvent ?? "unknown");
+  const [selfReportValues, setSelfReportValues] = useState<SelfReportValues>(
+    entry.selfReport?.values ?? DEFAULT_SELF_REPORT_VALUES,
+  );
   const {
     anchorRef: debugAnchorRef,
     isWaiting: isDebugTooltipWaiting,
@@ -80,6 +96,27 @@ export function EntryTile({
           document.body,
         )
       : null;
+
+  useEffect(() => {
+    return () => {
+      if (pickaxeTimerRef.current !== null) {
+        window.clearTimeout(pickaxeTimerRef.current);
+      }
+    };
+  }, []);
+
+  function handlePickaxeClick() {
+    if (pickaxeTimerRef.current !== null) {
+      window.clearTimeout(pickaxeTimerRef.current);
+    }
+
+    setIsEventMenuOpen(false);
+    setIsPickaxeSwinging(true);
+    pickaxeTimerRef.current = window.setTimeout(() => {
+      setIsEventMenuOpen(true);
+      pickaxeTimerRef.current = null;
+    }, 360);
+  }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -122,7 +159,7 @@ export function EntryTile({
       >
         <div
           className="
-            pointer-events-none absolute right-[4.5rem] top-1 z-20 opacity-0
+            pointer-events-none absolute right-[8rem] top-1 z-20 opacity-0
             transition
             group-hover:pointer-events-auto group-hover:opacity-100
             group-focus-within:pointer-events-auto group-focus-within:opacity-100
@@ -158,7 +195,7 @@ export function EntryTile({
 
         <div
           className="
-            pointer-events-none absolute right-10 top-1 z-20 opacity-0
+            pointer-events-none absolute right-[6rem] top-1 z-20 opacity-0
             transition
             group-hover:pointer-events-auto group-hover:opacity-100
             group-focus-within:pointer-events-auto group-focus-within:opacity-100
@@ -182,6 +219,97 @@ export function EntryTile({
             <EditIcon />
           </TooltipButton>
         </div>
+
+        <div
+          className="
+            pointer-events-none absolute right-[4rem] top-1 z-20 opacity-0
+            transition
+            group-hover:pointer-events-auto group-hover:opacity-100
+            group-focus-within:pointer-events-auto group-focus-within:opacity-100
+          "
+        >
+          <TooltipButton
+            aria-label={t("editor.action.selfReport")}
+            aria-expanded={isSelfReportMenuOpen}
+            className="
+              flex h-6 w-6 items-center justify-center rounded-full
+              text-zinc-400 opacity-70 transition
+              hover:bg-rose-50 hover:text-rose-500 hover:opacity-100
+            "
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsSelfReportMenuOpen((current) => !current);
+            }}
+            tooltip={t("editor.action.selfReport")}
+            tooltipPlacement="left"
+            type="button"
+          >
+            <HeartIcon />
+          </TooltipButton>
+        </div>
+
+        <div
+          className="
+            pointer-events-none absolute right-10 top-1 z-20 opacity-0
+            transition
+            group-hover:pointer-events-auto group-hover:opacity-100
+            group-focus-within:pointer-events-auto group-focus-within:opacity-100
+          "
+        >
+          <TooltipButton
+            aria-label={activityEventCopy.chooseEpisodeEvent}
+            aria-expanded={isEventMenuOpen}
+            className="
+              flex h-6 w-6 items-center justify-center rounded-full
+              text-zinc-400 opacity-70 transition
+              hover:bg-zinc-200/40 hover:text-zinc-700 hover:opacity-100
+            "
+            onClick={(event) => {
+              event.stopPropagation();
+              handlePickaxeClick();
+            }}
+            tooltip={activityEventCopy.event}
+            tooltipPlacement="left"
+            type="button"
+          >
+            <span
+              className={isPickaxeSwinging ? "pickaxe-swing" : ""}
+              onAnimationEnd={() => setIsPickaxeSwinging(false)}
+            >
+              <PickaxeIcon />
+            </span>
+          </TooltipButton>
+          {isEventMenuOpen && (
+            <ActivityEventMenu
+              isOpen={isEventMenuOpen}
+              value={manualEvent}
+              onClose={() => setIsEventMenuOpen(false)}
+              onCommit={(nextEvent) => {
+                setManualEvent(nextEvent);
+                void updateLocalEntry(entry.id, {
+                  manual_event: nextEvent as ActivityContextEvent,
+                });
+              }}
+            />
+          )}
+        </div>
+
+        {isSelfReportMenuOpen && (
+          <SelfReportMenu
+            externalCloseSignal={0}
+            isOpen={isSelfReportMenuOpen}
+            values={selfReportValues}
+            onClose={() => setIsSelfReportMenuOpen(false)}
+            onCommit={(values) => {
+              setSelfReportValues(values);
+              void saveEntrySelfReportAndSync({
+                entryId: entry.id,
+                localDay: entry.entryDate,
+                values,
+              });
+            }}
+          />
+        )}
 
         <div
           className="

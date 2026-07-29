@@ -56,10 +56,7 @@ export function Observations({
     entities,
     language,
   );
-  const optimizationEyebrow =
-    language === "ru"
-      ? "Совет по подтверждённому делу"
-      : "Advice for a confirmed item";
+  const optimizationEyebrow = t("observations.optimizationEyebrow");
 
   return (
     <section className="flex h-full min-h-0 flex-col text-zinc-800">

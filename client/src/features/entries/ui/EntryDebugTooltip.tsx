@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from "react";
 import type { EntryView } from "../entryTypes";
+import { useI18n } from "../../../i18n/useI18n";
 import {
   formatDebugValue,
   formatEntryDebugText,
@@ -49,6 +50,7 @@ export function EntryDebugTooltip({
   style: CSSProperties;
   tooltipRef: RefObject<HTMLDivElement | null>;
 }) {
+  const { t } = useI18n();
   const blocks = useMemo(() => getEntryDebugBlocks(entry), [entry]);
   const copyText = useMemo(() => formatEntryDebugText(blocks), [blocks]);
   const copyResetTimerRef = useRef<number | null>(null);
@@ -100,15 +102,15 @@ export function EntryDebugTooltip({
     >
       <div className="flex items-center justify-between gap-3 border-b border-black/5 px-3 py-2">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-          debug mode
+          {t("debug.mode")}
         </div>
         <button
           aria-label={
             copyStatus === "copied"
-              ? "Debug info copied"
+              ? t("debug.copyInfoCopied")
               : copyStatus === "failed"
-                ? "Debug info copy failed"
-                : "Copy debug info"
+                ? t("debug.copyInfoFailed")
+                : t("debug.copy")
           }
           className={[
             "grid h-7 w-7 shrink-0 place-items-center rounded-full transition",
@@ -125,19 +127,19 @@ export function EntryDebugTooltip({
           }}
           title={
             copyStatus === "copied"
-              ? "Copied"
+              ? t("debug.copied")
               : copyStatus === "failed"
-                ? "Copy failed"
-                : "Copy debug info"
+                ? t("debug.copyFailed")
+                : t("debug.copy")
           }
           type="button"
         >
           {copyStatus === "copied" ? <CheckIcon /> : <CopyIcon />}
           <span className="sr-only" aria-live="polite">
             {copyStatus === "copied"
-              ? "Copied"
+              ? t("debug.copied")
               : copyStatus === "failed"
-                ? "Copy failed"
+                ? t("debug.copyFailed")
                 : ""}
           </span>
         </button>

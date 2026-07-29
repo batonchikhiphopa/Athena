@@ -8,6 +8,7 @@ import {
 import { useI18n } from "../../../i18n/useI18n";
 import { formatLongDate, todayDateOnly } from "../../../shared/lib/dates";
 import type { InsightSnapshot } from "../../../shared/contracts";
+import type { ActivityContextEvent } from "../../../shared/contracts";
 import { buildAthenaPlaceholder } from "../editorPlaceholder";
 import {
   useEditorTagControls,
@@ -23,11 +24,13 @@ import { EditorActionButtons } from "./EditorActionButtons";
 import { EditorTagChips } from "./EditorTagChips";
 import { EditorTagMenu } from "./EditorTagMenu";
 import { useFloatingTextOcclusion } from "../../../components/floating";
+import { updateLocalEntry } from "../../entries/localEntryRepository";
 
 type EditorProps = {
   analysisEnabled: boolean;
   availableTags: AvailableTag[];
   editingEntryId: string | null;
+  entryEvent: ActivityContextEvent;
   entryDate: string;
   editorInsight: InsightSnapshot | null;
   personaTextEnabled: boolean;
@@ -43,6 +46,7 @@ export function Editor({
   analysisEnabled,
   availableTags,
   editingEntryId,
+  entryEvent,
   entryDate,
   editorInsight,
   personaTextEnabled,
@@ -55,6 +59,7 @@ export function Editor({
 }: EditorProps) {
   const { language } = useI18n();
   const [selfReportCloseSignal, setSelfReportCloseSignal] = useState(0);
+  const [manualEvent, setManualEvent] = useState<ActivityContextEvent>(entryEvent);
   const [selfReportValues, setSelfReportValues] = useState<SelfReportValues>(
     DEFAULT_SELF_REPORT_VALUES,
   );
@@ -106,6 +111,10 @@ export function Editor({
     },
     [entryDate],
   );
+
+  useEffect(() => {
+    setManualEvent(entryEvent);
+  }, [entryEvent, editingEntryId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,9 +199,16 @@ export function Editor({
       >
         <EditorActionButtons
           analysisEnabled={analysisEnabled}
+          entryEvent={manualEvent}
           selfReportCloseSignal={selfReportCloseSignal}
           selfReportValues={selfReportValues}
           onInsertTag={insertHashAtCursor}
+          onEntryEventCommit={(event) => {
+            setManualEvent(event);
+            if (editingEntryId) {
+              void updateLocalEntry(editingEntryId, { manual_event: event });
+            }
+          }}
           onNewBlankPage={onNewBlankPage}
           onSelfReportCommit={commitSelfReport}
           onToggleAnalysisEnabled={onToggleAnalysisEnabled}

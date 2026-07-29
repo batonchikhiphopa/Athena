@@ -70,9 +70,12 @@ export default function App() {
   }
 
   function createAndActivateVaultProfile() {
+    const nextProfileNumber = vaultProfiles.length + 1;
     const nextProfiles = addVaultProfile({
-      name: `Профиль ${vaultProfiles.length + 1}`,
-      mark: String(vaultProfiles.length + 1),
+      name: t("settings.access.profileDefaultName", {
+        number: nextProfileNumber,
+      }),
+      mark: String(nextProfileNumber),
     });
     const nextProfile = nextProfiles[nextProfiles.length - 1];
 

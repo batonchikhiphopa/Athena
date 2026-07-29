@@ -47,6 +47,7 @@ export type MetricName = (typeof METRIC_NAMES)[number];
 export const ACTIVITY_CONTEXT_KINDS = [
   "task",
   "activity",
+  "habit",
   "unknown",
 ] as const;
 export const ACTIVITY_CONTEXT_EVENTS = [

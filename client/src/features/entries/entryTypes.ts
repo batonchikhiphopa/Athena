@@ -1,4 +1,4 @@
-import type { Signal, SignalMetadata } from "../../shared/contracts";
+import type { ActivityContextEvent, Signal, SignalMetadata } from "../../shared/contracts";
 import type { SelfReportEvent } from "../selfReports/selfReportTypes";
 
 export type EntrySortDirection = "desc" | "asc";
@@ -10,6 +10,7 @@ export type LocalEntry = {
   entry_date: string;
   tags: string[];
   analysis_enabled: boolean;
+  manual_event?: ActivityContextEvent;
   source_text_hash: string;
   signals: Signal;
   metadata: SignalMetadata;
@@ -33,5 +34,6 @@ export type EntryView = {
   createdAt: string;
   updatedAt: string;
   isDraft?: boolean;
+  manualEvent?: ActivityContextEvent;
   selfReport?: SelfReportEvent | null;
 };

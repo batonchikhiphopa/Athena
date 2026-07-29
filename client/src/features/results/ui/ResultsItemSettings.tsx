@@ -3,10 +3,10 @@ import { ACTIVITY_CONTEXT_EVENTS } from "../../../shared/contracts";
 import { useI18n } from "../../../i18n/useI18n";
 import { formatLongDate } from "../../../shared/lib/dates";
 import type { EntryView } from "../../entries/entryTypes";
-import { getAvailableTags, normalizeTag } from "../../entries/entryFilters";
+import { normalizeTag } from "../../entries/entryFilters";
 import { normalizeActivityLabel } from "../activityCatalog";
 import { getResultsCorrectionCopy } from "../resultsCorrectionCopy";
-import type { ExtractionProposal, ResultsEntity } from "../resultsCorrections";
+import type { ExtractionProposal } from "../resultsCorrections";
 import type { ActivityKind } from "../resultsTypes";
 import type { ResultsCustomizationState } from "../useResultsCustomization";
 
@@ -30,11 +30,8 @@ export function ResultsItemSettings({
   );
   const [label, setLabel] = useState("");
   const [kind, setKind] = useState<ActivityKind>("task");
-  const [direction, setDirection] = useState("");
-  const [trackingMode, setTrackingMode] =
-    useState<ResultsEntity["trackingMode"]>("standard");
-  const [alias, setAlias] = useState("");
-  const [monitoringTag, setMonitoringTag] = useState("");
+  const [isSourceLinksOpen, setIsSourceLinksOpen] = useState(false);
+  const [isTagLinksOpen, setIsTagLinksOpen] = useState(false);
   const [mergeTargetId, setMergeTargetId] = useState("");
   const [manualEntryId, setManualEntryId] = useState("");
   const [manualEvent, setManualEvent] = useState(
@@ -51,10 +48,8 @@ export function ResultsItemSettings({
     if (!entity) return;
     setLabel(entity.label);
     setKind(entity.kind);
-    setDirection(entity.direction ?? "");
-    setTrackingMode(entity.trackingMode);
-    setAlias("");
-    setMonitoringTag("");
+    setIsSourceLinksOpen(false);
+    setIsTagLinksOpen(false);
     setMergeTargetId("");
     setManualEntryId("");
     setSplitProposalId(null);
@@ -91,7 +86,6 @@ export function ResultsItemSettings({
     (link) => link.entityId === entity?.id,
   );
   const entryById = new Map(entries.map((entry) => [entry.id, entry]));
-  const availableTags = useMemo(() => getAvailableTags(entries), [entries]);
   const tagLinkedEntries = useMemo(() => {
     if (!entity) return [];
     const monitoredTags = new Set(
@@ -113,26 +107,27 @@ export function ResultsItemSettings({
       <section className="flex h-full flex-col text-zinc-800">
         <PanelHeader
           closeLabel={t("common.close")}
-          title={copy.manageTitle}
+          kind="task"
+          kindAriaLabel={copy.activityKind}
+          kindLabel={copy.kind}
+          label={copy.manageTitle}
+          labelAriaLabel={copy.itemName}
           onClose={onClose}
+          onKindChange={() => undefined}
+          onLabelChange={() => undefined}
         />
         <p className="p-5 text-sm text-zinc-400">{copy.emptySources}</p>
       </section>
     );
   }
 
-  function saveEntity() {
-    state.updateEntity(entity!.id, { direction, kind, label, trackingMode });
-  }
-
-  function addAlias() {
-    state.addAlias(entity!.id, alias);
-    setAlias("");
-  }
-
-  function addMonitoringTag() {
-    state.addMonitoringTag(entity!.id, monitoringTag);
-    setMonitoringTag("");
+  function updateEntity(next: Partial<{ kind: ActivityKind; label: string; priority: number }>) {
+    if (!entity) return;
+    state.updateEntity(entity.id, {
+      kind: next.kind ?? kind,
+      label: next.label ?? label,
+      priority: next.priority ?? entity.priority,
+    });
   }
 
   function linkEntry() {
@@ -148,156 +143,33 @@ export function ResultsItemSettings({
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-col text-zinc-800">
+      <section className="flex h-full min-h-0 flex-col text-zinc-800">
       <PanelHeader
         closeLabel={t("common.close")}
-        title={copy.manageTitle}
+        kind={kind}
+        kindAriaLabel={copy.activityKind}
+        kindLabel={copy.kind}
+        label={label}
+        labelAriaLabel={copy.itemName}
         onClose={onClose}
+        onKindChange={(nextKind) => {
+          setKind(nextKind);
+          updateEntity({ kind: nextKind });
+        }}
+        onLabelChange={(nextLabel) => {
+          setLabel(nextLabel);
+          updateEntity({ label: nextLabel });
+        }}
       />
 
-      <div className="entries-feed-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5" data-no-drag>
-        <div className="space-y-6">
-          <SettingsSection title={copy.userVersion}>
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto]">
-              <input
-                className={inputClassName}
-                onChange={(event) => setLabel(event.target.value)}
-                value={label}
-              />
-              <select
-                className={inputClassName}
-                onChange={(event) =>
-                  setKind(event.target.value as ActivityKind)
-                }
-                value={kind}
-              >
-                <option value="task">{copy.kind.task}</option>
-                <option value="activity">{copy.kind.activity}</option>
-              </select>
-              <ActionButton onClick={saveEntity}>{copy.save}</ActionButton>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection
-            description={copy.directionDescription}
-            title={copy.organization}
+      <div className="entries-feed-scroll min-h-0 flex-1 overflow-y-auto px-4 py-4" data-no-drag>
+        <div className="space-y-3">
+          <ResultsDisclosure
+            label={copy.sources}
+            open={isSourceLinksOpen}
+            onToggle={() => setIsSourceLinksOpen((current) => !current)}
           >
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto]">
-              <input
-                className={inputClassName}
-                list="results-directions"
-                onChange={(event) => setDirection(event.target.value)}
-                placeholder={copy.direction}
-                value={direction}
-              />
-              <select
-                className={inputClassName}
-                onChange={(event) =>
-                  setTrackingMode(
-                    event.target.value as ResultsEntity["trackingMode"],
-                  )
-                }
-                value={trackingMode}
-              >
-                <option value="standard">{copy.trackingModeLabel.standard}</option>
-                <option value="reduce">{copy.trackingModeLabel.reduce}</option>
-              </select>
-              <ActionButton onClick={saveEntity}>{copy.save}</ActionButton>
-            </div>
-            <datalist id="results-directions">
-              {[...new Set(
-                state.customization.entities.flatMap((candidate) =>
-                  candidate.direction ? [candidate.direction] : [],
-                ),
-              )].map((value) => (
-                <option key={value} value={value} />
-              ))}
-            </datalist>
-          </SettingsSection>
-
-          <SettingsSection
-            description={copy.monitoringTagsDescription}
-            title={copy.monitoringTags}
-          >
-            <div className="flex flex-wrap gap-2">
-              {(entity.monitoringTags ?? []).map((value) => (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-white/55 px-2.5 py-1 text-xs text-zinc-600"
-                  key={value}
-                >
-                  #{value}
-                  <button
-                    aria-label={`${copy.remove}: ${value}`}
-                    className="text-zinc-300 hover:text-red-600"
-                    onClick={() => state.removeMonitoringTag(entity.id, value)}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                className={inputClassName}
-                list="results-monitoring-tags"
-                onChange={(event) => setMonitoringTag(event.target.value)}
-                placeholder={copy.addMonitoringTag}
-                value={monitoringTag}
-              />
-              <datalist id="results-monitoring-tags">
-                {availableTags.map(({ tag }) => (
-                  <option key={tag} value={tag} />
-                ))}
-              </datalist>
-              <ActionButton
-                disabled={!normalizeTag(monitoringTag)}
-                onClick={addMonitoringTag}
-              >
-                {copy.add}
-              </ActionButton>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection
-            description={copy.monitoringAliases}
-            title={copy.aliases}
-          >
-            <div className="flex flex-wrap gap-2">
-              {entity.aliases.map((value) => (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-white/55 px-2.5 py-1 text-xs text-zinc-600"
-                  key={value}
-                >
-                  {value}
-                  <button
-                    aria-label={`${copy.remove}: ${value}`}
-                    className="text-zinc-300 hover:text-red-600"
-                    onClick={() => state.removeAlias(entity.id, value)}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                className={inputClassName}
-                onChange={(event) => setAlias(event.target.value)}
-                placeholder={copy.addAlias}
-                value={alias}
-              />
-              <ActionButton disabled={!alias.trim()} onClick={addAlias}>
-                {copy.add}
-              </ActionButton>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection
-            description={copy.manualLinkDescription}
-            title={copy.manualLink}
-          >
+            <p className="mb-2 text-xs text-zinc-400">{copy.manualLinkDescription}</p>
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto]">
               <select
                 className={inputClassName}
@@ -334,9 +206,7 @@ export function ResultsItemSettings({
                 {copy.add}
               </ActionButton>
             </div>
-          </SettingsSection>
 
-          <SettingsSection title={copy.sources}>
             {relevantProposals.length === 0 &&
             manualLinks.length === 0 &&
             tagLinkedEntries.length === 0 ? (
@@ -384,6 +254,7 @@ export function ResultsItemSettings({
                         >
                           <option value="task">{copy.kind.task}</option>
                           <option value="activity">{copy.kind.activity}</option>
+                          <option value="habit">{copy.kind.habit}</option>
                         </select>
                         <ActionButton
                           disabled={!splitLabel.trim()}
@@ -498,22 +369,33 @@ export function ResultsItemSettings({
                   );
                 })}
 
+              </div>
+            )}
+          </ResultsDisclosure>
+
+          <ResultsDisclosure
+            label={copy.tagRule}
+            open={isTagLinksOpen}
+            onToggle={() => setIsTagLinksOpen((current) => !current)}
+          >
+            {tagLinkedEntries.length === 0 ? (
+              <p className="text-sm text-zinc-400">{copy.emptySources}</p>
+            ) : (
+              <div className="space-y-2">
                 {tagLinkedEntries.map(({ entry, matchedTag }) => (
                   <article
                     className="rounded-lg border border-sky-900/10 bg-sky-50/30 p-3"
                     key={`tag:${entity.id}:${entry.id}`}
                   >
                     <div className="text-xs text-zinc-400">
-                      {formatLongDate(entry.entryDate, language)} · {copy.tagRule}
+                      {formatLongDate(entry.entryDate, language)} · #{matchedTag}
                     </div>
-                    <p className="mt-1 text-sm text-zinc-700">
-                      {createEntryLabel(entry.text)} · #{matchedTag}
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-700">{createEntryLabel(entry.text)}</p>
                   </article>
                 ))}
               </div>
             )}
-          </SettingsSection>
+          </ResultsDisclosure>
 
           <SettingsSection
             description={copy.mergeDescription}
@@ -550,19 +432,46 @@ const inputClassName =
 
 function PanelHeader({
   closeLabel,
-  title,
+  kind,
+  kindAriaLabel,
+  kindLabel,
+  label,
+  labelAriaLabel,
   onClose,
+  onKindChange,
+  onLabelChange,
 }: {
   closeLabel: string;
-  title: string;
+  kind: ActivityKind;
+  kindAriaLabel: string;
+  kindLabel: ReturnType<typeof getResultsCorrectionCopy>["kind"];
+  label: string;
+  labelAriaLabel: string;
   onClose: () => void;
+  onKindChange: (kind: ActivityKind) => void;
+  onLabelChange: (label: string) => void;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-black/5 px-5 py-3">
-      <h2 className="truncate text-base font-medium text-zinc-900">{title}</h2>
+    <header className="flex shrink-0 items-center gap-2 border-b border-black/5 px-4 py-2.5">
+      <input
+        aria-label={labelAriaLabel}
+        className="min-w-0 flex-1 bg-transparent text-base font-medium text-zinc-900 outline-none placeholder:text-zinc-300"
+        onChange={(event) => onLabelChange(event.target.value)}
+        value={label}
+      />
+      <select
+        aria-label={kindAriaLabel}
+        className="max-w-44 rounded-md border border-white/60 bg-white/45 px-2 py-1.5 text-xs text-zinc-600 outline-none focus:border-zinc-300"
+        onChange={(event) => onKindChange(event.target.value as ActivityKind)}
+        value={kind}
+      >
+        <option value="task">{kindLabel.task}</option>
+        <option value="activity">{kindLabel.activity}</option>
+        <option value="habit">{kindLabel.habit}</option>
+      </select>
       <button
         aria-label={closeLabel}
-        className="grid h-8 w-8 place-items-center rounded-full text-zinc-300 transition hover:bg-white/45 hover:text-zinc-700"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-zinc-300 transition hover:bg-white/45 hover:text-zinc-700"
         onClick={onClose}
         type="button"
       >
@@ -583,14 +492,42 @@ function SettingsSection({
 }) {
   return (
     <section>
-      <h3 className="text-sm font-medium text-zinc-700">{title}</h3>
+      <h3 className="text-xs font-medium text-zinc-700">{title}</h3>
       {description && (
         <p className="mt-1 text-xs leading-5 text-zinc-400">{description}</p>
       )}
-      <div className="mt-3">{children}</div>
+      <div className="mt-2">{children}</div>
     </section>
   );
 }
+
+function ResultsDisclosure({
+  children,
+  label,
+  open,
+  onToggle,
+}: {
+  children: ReactNode;
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/40 bg-white/22">
+      <button
+        aria-expanded={open}
+        className="flex min-h-11 w-full items-center justify-between px-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-white/35"
+        onClick={onToggle}
+        type="button"
+      >
+        <span>{label}</span>
+        <span className="text-zinc-400">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="border-t border-black/5 px-3 py-3">{children}</div>}
+    </section>
+  );
+}
+
 
 function ActionButton({
   children,

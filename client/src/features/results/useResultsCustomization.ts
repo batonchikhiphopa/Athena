@@ -48,6 +48,7 @@ export type ResultsCustomizationState = {
   removeMonitoringTag: (entityId: string, tag: string) => void;
   removeManualLink: (linkId: string) => void;
   restoreProposal: (proposal: ExtractionProposal) => void;
+  setParent: (entityId: string, parentId: string | null) => void;
   splitProposal: (
     proposal: ExtractionProposal,
     input: Pick<CorrectProposalInput, "kind" | "label">,
@@ -56,7 +57,7 @@ export type ResultsCustomizationState = {
     entityId: string,
     patch: Pick<
       ResultsEntity,
-      "direction" | "kind" | "label" | "trackingMode"
+      "kind" | "label" | "priority"
     >,
   ) => void;
 };
@@ -163,8 +164,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
               kind: input.kind,
               label,
               monitoringTags: [],
-              direction: null,
-              trackingMode: "standard",
+              parentId: null,
+              priority: 0,
               updatedAt: now,
             };
         const entities = existingEntity
@@ -247,7 +248,7 @@ export function useResultsCustomization(): ResultsCustomizationState {
       entityId: string,
       patch: Pick<
         ResultsEntity,
-        "direction" | "kind" | "label" | "trackingMode"
+        "kind" | "label" | "priority"
       >,
     ) => {
       commit((current) => ({
@@ -258,13 +259,36 @@ export function useResultsCustomization(): ResultsCustomizationState {
                 ...entity,
                 kind: patch.kind,
                 label: cleanActivityLabel(patch.label) || entity.label,
-                direction: cleanDirection(patch.direction),
-                trackingMode: patch.trackingMode,
+                priority: normalizePriority(patch.priority),
                 updatedAt: new Date().toISOString(),
               }
             : entity,
         ),
       }));
+    },
+    [commit],
+  );
+
+  const setParent = useCallback(
+    (entityId: string, parentId: string | null) => {
+      commit((current) => {
+        const entity = current.entities.find((candidate) => candidate.id === entityId);
+        const parent = parentId
+          ? current.entities.find((candidate) => candidate.id === parentId)
+          : null;
+        if (!entity || (parentId && !parent)) return current;
+        if (parent && (parent.priority <= entity.priority || createsHierarchyCycle(current.entities, entityId, parent.id))) {
+          return current;
+        }
+        return {
+          ...current,
+          entities: current.entities.map((candidate) =>
+            candidate.id === entityId
+              ? { ...candidate, parentId, updatedAt: new Date().toISOString() }
+              : candidate,
+          ),
+        };
+      });
     },
     [commit],
   );
@@ -388,6 +412,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
                     ]),
                     updatedAt: now,
                   }
+                : entity.parentId === sourceEntityId
+                  ? { ...entity, parentId: targetEntityId, updatedAt: now }
                 : entity,
             ),
           decisions: current.decisions.map((decision) =>
@@ -461,8 +487,8 @@ export function useResultsCustomization(): ResultsCustomizationState {
           kind: input.kind,
           label,
           monitoringTags: [],
-          direction: null,
-          trackingMode: "standard",
+          parentId: null,
+          priority: 0,
           updatedAt: now,
         };
 
@@ -497,6 +523,7 @@ export function useResultsCustomization(): ResultsCustomizationState {
     removeMonitoringTag,
     removeManualLink,
     restoreProposal,
+    setParent,
     splitProposal,
     updateEntity,
   };
@@ -528,8 +555,8 @@ function ensureProposalEntity(
     kind: proposal.proposedKind,
     label: proposal.proposedLabel,
     monitoringTags: [],
-    direction: null,
-    trackingMode: "standard",
+    parentId: null,
+    priority: 0,
     updatedAt: now,
   };
   return { entities: [...entities, entity], entity };
@@ -575,9 +602,22 @@ function cleanMonitoringTag(value: string) {
   return value.trim().replace(/^#+/u, "").replace(/\s+/gu, " ");
 }
 
-function cleanDirection(value: string | null) {
-  const cleaned = cleanActivityLabel(value ?? "");
-  return cleaned || null;
+function normalizePriority(value: number) {
+  return Math.min(5, Math.max(0, Math.round(value)));
+}
+
+function createsHierarchyCycle(
+  entities: ResultsEntity[],
+  entityId: string,
+  parentId: string,
+) {
+  const byId = new Map(entities.map((entity) => [entity.id, entity]));
+  let currentId: string | null = parentId;
+  while (currentId) {
+    if (currentId === entityId) return true;
+    currentId = byId.get(currentId)?.parentId ?? null;
+  }
+  return false;
 }
 
 function createManualLinkId(entryId: string, entityId: string) {

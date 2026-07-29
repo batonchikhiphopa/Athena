@@ -33,6 +33,7 @@ export function mergeEntryState(
       : serverEntry?.entry_date ?? localEntry.entry_date,
     tags: preferLocal ? localEntry.tags : serverEntry?.tags ?? localEntry.tags,
     analysisEnabled: localEntry.analysis_enabled ?? true,
+    manualEvent: localEntry.manual_event ?? "unknown",
     sourceTextHash: preferLocal
       ? localEntry.source_text_hash
       : serverEntry?.source_text_hash ?? localEntry.source_text_hash,

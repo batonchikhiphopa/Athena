@@ -58,7 +58,7 @@ export function createDemoActivities(language: Language): ActivityGroup[] {
 }
 
 function getDemoData(language: Language): DemoActivity[] {
-  if (language === "ru" || language === "uk") {
+  if (language === "ru") {
     return [
       {
         kind: "task",
@@ -114,6 +114,128 @@ function getDemoData(language: Language): DemoActivity[] {
           "Утром снова писал свободный текст без структуры.",
           "Писал заметки перед началом работы.",
           "Регулярно возвращаюсь к письму, когда нужно разобрать мысли.",
+        ],
+      },
+    ];
+  }
+
+  if (language === "uk") {
+    return [
+      {
+        kind: "task",
+        label: "Athena",
+        signals: [
+          { fatigue: 6, focus: 6, load: 7 },
+          { fatigue: 5, focus: 7, load: 6 },
+          { fatigue: 7, focus: 5, load: 8 },
+          { fatigue: 4, focus: 7, load: 5 },
+        ],
+        texts: [
+          "Розібрав навігацію Athena й прибрав зайвий рівень екрана.",
+          "В Athena виправив збереження запису перед переходом між вкладками.",
+          "Перевірив новий екран Athena у вузькому вікні.",
+          "Повернувся до Athena й спростив Results.",
+        ],
+      },
+      {
+        kind: "task",
+        label: "Results",
+        signals: [
+          { fatigue: 6, focus: 5, load: 7 },
+          { fatigue: 8, focus: 3, load: 8 },
+          { fatigue: 5, focus: 7, load: 5 },
+        ],
+        texts: [
+          "Зібрав першу форму Results і перевірив її на реальних сценаріях.",
+          "Переробив Results: картки створювали забагато обліку.",
+          "Залишив у Results тільки повторювані справи й вихідні записи.",
+        ],
+      },
+      {
+        kind: "task",
+        label: "Імпорт",
+        signals: [
+          { fatigue: 8, focus: 3, load: 8 },
+          { fatigue: 6, focus: 5, load: 7 },
+        ],
+        texts: [
+          "Застряг на невідповідності старого формату імпорту новій схемі.",
+          "Повернувся до імпорту й перевірив перетворення дат.",
+        ],
+      },
+      {
+        kind: "activity",
+        label: "Письмо",
+        signals: [
+          { fatigue: 3, focus: 7, load: 3 },
+          { fatigue: 4, focus: 6, load: 4 },
+          { fatigue: 3, focus: 8, load: 3 },
+        ],
+        texts: [
+          "Вранці знову писав вільний текст без жорсткої структури.",
+          "Писав нотатки перед початком роботи.",
+          "Регулярно повертаюся до письма, коли потрібно впорядкувати думки.",
+        ],
+      },
+    ];
+  }
+
+  if (language === "de") {
+    return [
+      {
+        kind: "task",
+        label: "Athena",
+        signals: [
+          { fatigue: 6, focus: 6, load: 7 },
+          { fatigue: 5, focus: 7, load: 6 },
+          { fatigue: 7, focus: 5, load: 8 },
+          { fatigue: 4, focus: 7, load: 5 },
+        ],
+        texts: [
+          "Athena-Navigation geprüft und eine unnötige Bildschirmebene entfernt.",
+          "In Athena das Speichern des Eintrags vor dem Wechsel zwischen Tabs korrigiert.",
+          "Den neuen Athena-Bildschirm in einem schmalen Fenster geprüft.",
+          "Zu Athena zurückgekehrt und Results vereinfacht.",
+        ],
+      },
+      {
+        kind: "task",
+        label: "Results",
+        signals: [
+          { fatigue: 6, focus: 5, load: 7 },
+          { fatigue: 8, focus: 3, load: 8 },
+          { fatigue: 5, focus: 7, load: 5 },
+        ],
+        texts: [
+          "Die erste Results-Form gebaut und mit realen Abläufen geprüft.",
+          "Results überarbeitet, weil die Karten zu viel Buchhaltung erzeugten.",
+          "In Results nur wiederkehrende Vorhaben und Quelleneinträge behalten.",
+        ],
+      },
+      {
+        kind: "task",
+        label: "Import",
+        signals: [
+          { fatigue: 8, focus: 3, load: 8 },
+          { fatigue: 6, focus: 5, load: 7 },
+        ],
+        texts: [
+          "An der Abweichung zwischen altem Importformat und neuer Schemaform hängengeblieben.",
+          "Zum Import zurückgekehrt und die Datumsumwandlung geprüft.",
+        ],
+      },
+      {
+        kind: "activity",
+        label: "Schreiben",
+        signals: [
+          { fatigue: 3, focus: 7, load: 3 },
+          { fatigue: 4, focus: 6, load: 4 },
+          { fatigue: 3, focus: 8, load: 3 },
+        ],
+        texts: [
+          "Morgens wieder frei geschrieben, ohne sofort Struktur aufzuzwingen.",
+          "Vor dem Arbeitsbeginn Notizen geschrieben.",
+          "Ich kehre regelmäßig zum Schreiben zurück, wenn ich Gedanken sortieren muss.",
         ],
       },
     ];

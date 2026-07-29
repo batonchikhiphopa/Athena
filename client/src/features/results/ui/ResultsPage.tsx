@@ -1,13 +1,13 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ExtractionSettings } from "../../../shared/contracts";
 import { useI18n } from "../../../i18n/useI18n";
 import type { Language } from "../../../i18n/languages";
+import { Icon as IconComponent } from "../../../components/icon";
 import { formatLongDate, formatShortDate } from "../../../shared/lib/dates";
 import { generateAthenaPlaceholder } from "../../editor/content/athenaPlaceholder";
 import type { EntryView } from "../../entries/entryTypes";
 import { EntryTile } from "../../entries/ui/EntryTile";
 import { CloseIcon } from "../../entries/ui/entryUiHelpers";
-import { Icon as IconComponent } from "../../../components/icon";
 import { TooltipButton } from "../../../components/TooltipButton";
 import {
   createEntrySearchSnippet,
@@ -21,13 +21,14 @@ import type {
   ActivityMention,
 } from "../resultsTypes";
 import type { ResultsEntity } from "../resultsCorrections";
+import type { ResultsCustomizationState } from "../useResultsCustomization";
+import { ResultsInlineControls, ResultsInlineHeader } from "./ResultsInlineControls";
 import type {
   ActivityInsightState,
 } from "../activityInsightTypes";
 import { ActivityDebug } from "./ActivityDebug";
 import { ActivityGraph } from "./ActivityGraph";
 import { AnimatedActivityPanel } from "./AnimatedActivityPanel";
-import { ActivityReviewFacts } from "./ActivityReviewFacts";
 
 export function ResultsPage({
   activityInsights,
@@ -39,8 +40,10 @@ export function ResultsPage({
   onDeleteEntry,
   onEditEntry,
   onManageActivity,
+  onSetParent,
   onToggleEntryAnalysis,
   onToggleTag,
+  resultsState,
 }: {
   activityInsights: ActivityInsightState;
   debugMode: boolean;
@@ -51,39 +54,39 @@ export function ResultsPage({
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
   onManageActivity: (activityId: string) => void;
+  onSetParent: (entityId: string, parentId: string | null) => void;
   onToggleEntryAnalysis: (entry: EntryView) => void;
   onToggleTag: (tag: string) => void;
+  resultsState: ResultsCustomizationState;
 }) {
   const { language } = useI18n();
   const copy = getResultsCopy(language);
   const correctionCopy = getResultsCorrectionCopy(language);
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    null,
+  const [openActivityIds, setOpenActivityIds] = useState<Set<string>>(
+    () => new Set(),
   );
-  const [athenaPhrase, setAthenaPhrase] = useState<{
-    activityId: string;
-    text: string;
-  } | null>(null);
-  const sections = useMemo(
-    () => groupActivities(model.activities, entities, language),
-    [entities, language, model.activities],
+  const [expandedBranchIds, setExpandedBranchIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [athenaPhrases, setAthenaPhrases] = useState<Map<string, string>>(
+    () => new Map(),
+  );
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [activityLabelDraft, setActivityLabelDraft] = useState("");
+  const tree = useMemo(
+    () => buildVisibleResultsTree(model.activities, entities, expandedBranchIds),
+    [entities, expandedBranchIds, model.activities],
   );
 
   useEffect(() => {
-    if (!selectedActivityId) return;
-    if (model.activities.some((activity) => activity.id === selectedActivityId)) {
-      return;
-    }
-    setSelectedActivityId(null);
-  }, [model.activities, selectedActivityId]);
-
-  useEffect(() => {
-    if (!selectedActivityId) return;
-    setAthenaPhrase((current) => ({
-      activityId: selectedActivityId,
-      text: generateFreshAthenaPhrase(language, current?.text ?? ""),
-    }));
-  }, [language, selectedActivityId]);
+    const currentIds = new Set(model.activities.map((activity) => activity.id));
+    setOpenActivityIds((current) =>
+      new Set([...current].filter((id) => currentIds.has(id))),
+    );
+    setAthenaPhrases((current) =>
+      new Map([...current].filter(([id]) => currentIds.has(id))),
+    );
+  }, [model.activities]);
 
   return (
     <section className="relative w-full max-w-6xl px-1.5 pb-1.5 sm:pb-2">
@@ -91,15 +94,10 @@ export function ResultsPage({
         <div className="overflow-hidden rounded-xl border border-white/40 bg-[#f8f3e9]/38 backdrop-blur-sm">
           {model.activities.length > 0 ? (
             <div className="divide-y divide-zinc-900/8">
-              {sections.map((section) => (
-                <Fragment key={section.id}>
-                  {section.label && (
-                    <div className="bg-[#f8f3e9]/55 px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      {section.label}
-                    </div>
-                  )}
-                  {section.activities.map((activity) => {
-                    const isExpanded = selectedActivityId === activity.id;
+              {tree.map(({ activity, depth, hasChildren }) => {
+                    const isExpanded = openActivityIds.has(activity.id);
+                    const entity = entities.find((candidate) => candidate.id === activity.id) ?? null;
+                    const isRenaming = editingActivityId === activity.id;
 
                     return (
                       <section
@@ -113,21 +111,109 @@ export function ResultsPage({
                             isExpanded ? "bg-white/48" : "hover:bg-white/28",
                           ].join(" ")}
                         >
-                          <button
+                          <div
+                            className="relative flex w-11 shrink-0 items-stretch"
+                            style={{ paddingLeft: "10px" }}
+                          >
+                            {depth > 0 && (
+                              <span
+                                className="absolute bottom-0 top-0 border-l border-zinc-400/30"
+                                style={{ left: `${depth * 16 + 10}px` }}
+                              />
+                            )}
+                            <button
+                              aria-label={correctionCopy.dragActivity(activity.label)}
+                              className="my-auto h-3 w-3 shrink-0 cursor-grab rounded-full border-2 border-[#f8f3e9] bg-zinc-500 shadow-sm transition hover:scale-125 hover:bg-zinc-800 active:cursor-grabbing"
+                              draggable={!model.isDemo}
+                              onDragOver={(event) => event.preventDefault()}
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData("application/x-athena-result", activity.id);
+                              }}
+                              onDrop={(event) => {
+                                const sourceId = event.dataTransfer.getData("application/x-athena-result");
+                                if (sourceId) onSetParent(sourceId, activity.id);
+                              }}
+                              style={{ marginLeft: `${depth * 16}px` } as CSSProperties}
+                              title={correctionCopy.dropAsParent}
+                              type="button"
+                            />
+                          </div>
+                          <div
                             aria-expanded={isExpanded}
                             aria-label={activity.label}
                             className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left outline-none transition focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-zinc-400/70 sm:px-4"
-                            onClick={() =>
-                              setSelectedActivityId(
-                                isExpanded ? null : activity.id,
-                              )
-                            }
-                            type="button"
+                            onClick={() => {
+                              setOpenActivityIds((current) => {
+                                const next = new Set(current);
+                                if (next.has(activity.id)) next.delete(activity.id);
+                                else next.add(activity.id);
+                                return next;
+                              });
+                              if (!isExpanded) {
+                                setAthenaPhrases((current) => {
+                                  const next = new Map(current);
+                                  next.set(
+                                    activity.id,
+                                    generateFreshAthenaPhrase(
+                                      language,
+                                      current.get(activity.id) ?? "",
+                                    ),
+                                  );
+                                  return next;
+                                });
+                              }
+                              if (hasChildren) {
+                                setExpandedBranchIds((current) => {
+                                  const next = new Set(current);
+                                  if (next.has(activity.id)) next.delete(activity.id);
+                                  else next.add(activity.id);
+                                  return next;
+                                });
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                           >
                             <div className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-medium text-zinc-800 sm:text-base">
-                                {activity.label}
-                              </span>
+                              {isRenaming ? (
+                                <input
+                                  autoFocus
+                                  aria-label={correctionCopy.itemName}
+                                  className="w-full bg-transparent text-sm font-medium text-zinc-800 outline-none sm:text-base"
+                                  onBlur={() => {
+                                    const label = activityLabelDraft.trim();
+                                    if (label && entity) {
+                                      resultsState.updateEntity(entity.id, {
+                                        kind: entity.kind,
+                                        label,
+                                        priority: entity.priority,
+                                      });
+                                    }
+                                    setEditingActivityId(null);
+                                  }}
+                                  onChange={(event) => setActivityLabelDraft(event.target.value)}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") event.currentTarget.blur();
+                                    if (event.key === "Escape") setEditingActivityId(null);
+                                  }}
+                                  value={activityLabelDraft}
+                                />
+                              ) : (
+                                <span
+                                  className="block truncate text-sm font-medium text-zinc-800 sm:text-base"
+                                  onDoubleClick={(event) => {
+                                    event.stopPropagation();
+                                    if (!entity) return;
+                                    setActivityLabelDraft(entity.label);
+                                    setEditingActivityId(activity.id);
+                                  }}
+                                  title={entity ? correctionCopy.renameHint : undefined}
+                                >
+                                  {activity.label}
+                                </span>
+                              )}
                             </div>
 
                             <span className="hidden shrink-0 text-xs text-zinc-400 sm:block">
@@ -138,49 +224,36 @@ export function ResultsPage({
                                 ),
                               )}
                             </span>
-                          </button>
-                          {!model.isDemo && (
-                            <button
-                              aria-label={`${correctionCopy.manageTitle}: ${activity.label}`}
-                              className="m-2 grid h-7 w-7 shrink-0 self-center place-items-center rounded-full text-zinc-300 outline-none transition hover:bg-white/55 hover:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-400/70"
-                              data-testid={`manage-result-${activity.id}`}
-                              onClick={() => onManageActivity(activity.id)}
-                              title={correctionCopy.manageTitle}
-                              type="button"
-                            >
-                              <span>
-                                <IconComponent name="settings" className="h-4 w-4" />
-                              </span>
-                            </button>
-                          )}
+                          </div>
                         </div>
 
-                        <AnimatedActivityPanel isExpanded={isExpanded}>
-                          <ActivityEntries
-                            activity={activity}
-                            activityInsights={activityInsights}
-                            copy={copy}
-                            debugMode={debugMode}
-                            entries={entries}
-                            extractionSettings={extractionSettings}
-                            fallbackPhrase={
-                              athenaPhrase?.activityId === activity.id
-                                ? athenaPhrase.text
-                                : ""
-                            }
-                            isDemo={model.isDemo}
-                            language={language}
-                            onDeleteEntry={onDeleteEntry}
-                            onEditEntry={onEditEntry}
-                            onToggleEntryAnalysis={onToggleEntryAnalysis}
-                            onToggleTag={onToggleTag}
-                          />
-                        </AnimatedActivityPanel>
+                        {isExpanded && (
+                          <AnimatedActivityPanel isExpanded>
+                            <ActivityEntries
+                              activity={activity}
+                              activityInsights={activityInsights}
+                              copy={copy}
+                              debugMode={debugMode}
+                              entries={entries}
+                              extractionSettings={extractionSettings}
+                              fallbackPhrase={
+                                athenaPhrases.get(activity.id) ?? ""
+                              }
+                              isDemo={model.isDemo}
+                              language={language}
+                              onDeleteEntry={onDeleteEntry}
+                              onEditEntry={onEditEntry}
+                              onToggleEntryAnalysis={onToggleEntryAnalysis}
+                              onToggleTag={onToggleTag}
+                              entity={entity}
+                              resultsState={resultsState}
+                              onManageActivity={onManageActivity}
+                            />
+                          </AnimatedActivityPanel>
+                        )}
                       </section>
                     );
-                  })}
-                </Fragment>
-              ))}
+              })}
             </div>
           ) : (
             <p className="px-5 py-10 text-sm text-zinc-400">{copy.empty}</p>
@@ -197,46 +270,42 @@ export function ResultsPage({
   );
 }
 
-type ActivitySection = {
-  activities: ActivityGroup[];
-  id: string;
-  label: string | null;
+type ResultTreeNode = {
+  activity: ActivityGroup;
+  depth: number;
+  hasChildren: boolean;
 };
 
-function groupActivities(
+function buildVisibleResultsTree(
   activities: ActivityGroup[],
   entities: ResultsEntity[],
-  language: Language,
-): ActivitySection[] {
+  expandedBranchIds: Set<string>,
+): ResultTreeNode[] {
   const entityById = new Map(entities.map((entity) => [entity.id, entity]));
-  const grouped = new Map<string, ActivitySection>();
+  const activityById = new Map(activities.map((activity) => [activity.id, activity]));
+  const childrenByParentId = new Map<string, ActivityGroup[]>();
+  const roots: ActivityGroup[] = [];
 
   for (const activity of activities) {
     const entity = entityById.get(activity.id);
-    const label =
-      entity?.trackingMode === "reduce"
-        ? getReduceLabel(language)
-        : entity?.direction ?? null;
-    const id = entity?.trackingMode === "reduce" ? "reduce" : label ?? "other";
-    const section = grouped.get(id) ?? { activities: [], id, label };
-    section.activities.push(activity);
-    grouped.set(id, section);
+    const parent = entity?.parentId ? entityById.get(entity.parentId) : null;
+    if (!entity || !parent || !activityById.has(parent.id) || parent.priority <= entity.priority) {
+      roots.push(activity);
+      continue;
+    }
+    childrenByParentId.set(parent.id, [...(childrenByParentId.get(parent.id) ?? []), activity]);
   }
 
-  return [...grouped.values()].sort((left, right) => {
-    if (left.id === "reduce") return 1;
-    if (right.id === "reduce") return -1;
-    if (left.label === null) return 1;
-    if (right.label === null) return -1;
-    return left.label.localeCompare(right.label);
-  });
-}
-
-function getReduceLabel(language: Language) {
-  if (language === "ru") return "Хочу сократить";
-  if (language === "uk") return "Хочу скоротити";
-  if (language === "de") return "Möchte ich reduzieren";
-  return "Want to reduce";
+  const compare = (left: ActivityGroup, right: ActivityGroup) =>
+    (entityById.get(right.id)?.priority ?? 0) - (entityById.get(left.id)?.priority ?? 0) || left.label.localeCompare(right.label);
+  const visible: ResultTreeNode[] = [];
+  const append = (activity: ActivityGroup, depth: number) => {
+    const children = [...(childrenByParentId.get(activity.id) ?? [])].sort(compare);
+    visible.push({ activity, depth, hasChildren: children.length > 0 });
+    if (expandedBranchIds.has(activity.id)) children.forEach((child) => append(child, depth + 1));
+  };
+  roots.sort(compare).forEach((activity) => append(activity, 0));
+  return visible;
 }
 
 function generateFreshAthenaPhrase(language: Language, previousText: string) {
@@ -254,6 +323,7 @@ function ActivityEntries({
   activityInsights,
   copy,
   debugMode,
+  entity,
   entries,
   extractionSettings,
   fallbackPhrase,
@@ -261,13 +331,16 @@ function ActivityEntries({
   language,
   onDeleteEntry,
   onEditEntry,
+  onManageActivity,
   onToggleEntryAnalysis,
   onToggleTag,
+  resultsState,
 }: {
   activity: ActivityGroup;
   activityInsights: ActivityInsightState;
   copy: ReturnType<typeof getResultsCopy>;
   debugMode: boolean;
+  entity: ResultsEntity | null;
   entries: EntryView[];
   extractionSettings: ExtractionSettings;
   fallbackPhrase: string;
@@ -275,8 +348,10 @@ function ActivityEntries({
   language: Language;
   onDeleteEntry: (entry: EntryView) => void;
   onEditEntry: (entry: EntryView) => void;
+  onManageActivity: (activityId: string) => void;
   onToggleEntryAnalysis: (entry: EntryView) => void;
   onToggleTag: (tag: string) => void;
+  resultsState: ResultsCustomizationState;
 }) {
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
   const insight = activityInsights.insights.get(activity.id) ?? null;
@@ -297,8 +372,95 @@ function ActivityEntries({
   });
 
   return (
-    <div className="border-t border-zinc-900/8 bg-white/36 px-4 pb-5 pt-4 sm:px-5">
-      <div className="border-b border-zinc-900/8 pb-5">
+    <div className="flex flex-col border-t border-zinc-900/8 bg-white/36 pb-5">
+      {!isDemo && entity && (
+        <ResultsInlineHeader entries={entries} entity={entity} state={resultsState} />
+      )}
+
+      <div className="grid items-stretch gap-3 border-b border-zinc-900/8 px-4 py-4 sm:px-5 md:grid-cols-12">
+        <div className="md:col-span-6 lg:col-span-5">
+          <ActivityGraph activity={activity} copy={copy} language={language} />
+        </div>
+        <div className="md:col-span-6 lg:col-span-4">
+          <ActivitySnapshot activity={activity} copy={copy} />
+        </div>
+        {!isDemo && entity && (
+          <div className="md:col-span-12 lg:col-span-3">
+            <ResultsInlineControls entity={entity} state={resultsState} />
+          </div>
+        )}
+        {debugMode && (
+          <div className="min-w-0 md:col-span-12">
+            <ActivityDebug
+              activity={activity}
+              copy={copy}
+              insight={insight}
+              language={language}
+              model={extractionSettings.model}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="order-2 flex items-center justify-between px-4 py-4 sm:px-5">
+        <p className="text-xs text-zinc-400">
+          {copy.sourceEntries}
+          {debugMode && ` · ${activity.mentions.length}`}
+        </p>
+        {!isDemo && (
+          <button
+            aria-label={`${reviewCopy.manageTitle}: ${activity.label}`}
+            className="grid h-7 w-7 place-items-center rounded-full text-zinc-300 transition hover:bg-white/55 hover:text-zinc-700"
+            onClick={() => onManageActivity(activity.id)}
+            title={reviewCopy.manageTitle}
+            type="button"
+          >
+            <IconComponent className="h-4 w-4" name="settings" />
+          </button>
+        )}
+      </div>
+
+      <div className="order-3 px-4 sm:px-5">
+        {activityEntries.length > 0 ? (
+          <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {activityEntries.map((entry) => (
+              <EntryTile
+                compact
+                debugMode={debugMode}
+                entry={entry}
+                isExpanded={expandedEntryId === entry.id}
+                isSelected={expandedEntryId === entry.id}
+                key={entry.id}
+                language={language}
+                searchQuery={activity.label}
+                onDeleteEntry={onDeleteEntry}
+                onEditEntry={onEditEntry}
+                onSelectEntry={(entryId) =>
+                  setExpandedEntryId((current) =>
+                    current === entryId ? null : entryId,
+                  )
+                }
+                onToggleEntryAnalysis={onToggleEntryAnalysis}
+                onToggleTag={onToggleTag}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-900/8">
+            {activity.mentions.map((mention, index) => (
+              <DemoMentionRow
+                activityLabel={activity.label}
+                index={index}
+                key={`${mention.entryDate}-${index}`}
+                language={language}
+                mention={mention}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="order-1 mx-4 border-b border-zinc-900/8 py-4 sm:mx-5">
         <div className="flex items-start justify-between gap-4">
           <p className="max-w-3xl flex-1 font-serif text-[1.02rem] leading-7 text-zinc-800">
             {isDemo
@@ -360,74 +522,59 @@ function ActivityEntries({
         {activityInsights.error && (
           <p className="mt-2 text-xs text-red-600" role="status">
             {activityInsights.error.message === "activity_insight_daily_limit"
-              ? "AI review is limited to one request per day."
+              ? copy.insightDailyLimit
               : activityInsights.error.message}
           </p>
         )}
       </div>
+    </div>
+  );
+}
 
-      <div className="grid gap-5 border-b border-zinc-900/8 py-5 lg:grid-cols-2">
-        <div className="min-w-0">
-          <ActivityReviewFacts activity={activity} language={language} />
-          {debugMode && (
-            <ActivityDebug
-              activity={activity}
-              copy={copy}
-              insight={insight}
-              language={language}
-              model={extractionSettings.model}
-            />
-          )}
+function ActivitySnapshot({
+  activity,
+  copy,
+}: {
+  activity: ActivityGroup;
+  copy: ReturnType<typeof getResultsCopy>;
+}) {
+  const mentions = activity.mentions;
+  const resultCount = mentions.filter(
+    (mention) => mention.marker === "result" || mention.context?.event === "result",
+  ).length;
+  const blockerCount = mentions.filter(
+    (mention) => mention.marker === "blocker" || mention.context?.event === "blocked",
+  ).length;
+  return (
+    <section className="flex h-full flex-col justify-between rounded-xl border border-amber-900/10 bg-white/70 p-3.5 text-sm text-zinc-700 shadow-sm backdrop-blur-md">
+      <div>
+        <div className="inline-block rounded-full bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700">
+          {copy.rhythm[activity.insightInput.rhythm]}
         </div>
-
-        <ActivityGraph activity={activity} copy={copy} language={language} />
-      </div>
-
-      <div className="py-4">
-        <p className="text-xs text-zinc-400">
-          {copy.sourceEntries}
-          {debugMode && ` · ${activity.mentions.length}`}
+        <p className="mt-2 text-xs font-medium text-zinc-600">
+          {copy.stage[activity.insightInput.stage]}
         </p>
       </div>
-
-      {activityEntries.length > 0 ? (
-        <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {activityEntries.map((entry) => (
-            <EntryTile
-              compact
-              debugMode={debugMode}
-              entry={entry}
-              isExpanded={expandedEntryId === entry.id}
-              isSelected={expandedEntryId === entry.id}
-              key={entry.id}
-              language={language}
-              searchQuery={activity.label}
-              onDeleteEntry={onDeleteEntry}
-              onEditEntry={onEditEntry}
-              onSelectEntry={(entryId) =>
-                setExpandedEntryId((current) =>
-                  current === entryId ? null : entryId,
-                )
-              }
-              onToggleEntryAnalysis={onToggleEntryAnalysis}
-              onToggleTag={onToggleTag}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="divide-y divide-zinc-900/8">
-          {activity.mentions.map((mention, index) => (
-            <DemoMentionRow
-              activityLabel={activity.label}
-              index={index}
-              key={`${mention.entryDate}-${index}`}
-              language={language}
-              mention={mention}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="mt-3 border-t border-zinc-100 pt-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+          {copy.reviewPeriod}
+        </p>
+        <dl className="mt-1.5 space-y-1 text-xs text-zinc-700">
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">{copy.snapshotMentions}</dt>
+            <dd className="font-semibold">{mentions.length}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">{copy.snapshotResults}</dt>
+            <dd className="font-semibold text-emerald-700">{resultCount}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">{copy.snapshotBlockers}</dt>
+            <dd className="font-semibold text-amber-700">{blockerCount}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
   );
 }
 

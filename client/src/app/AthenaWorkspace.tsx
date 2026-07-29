@@ -257,6 +257,7 @@ export function AthenaWorkspace({
                 analysisEnabled={app.draftAnalysisEnabled}
                 availableTags={app.availableEntryTags}
                 editingEntryId={app.editingEntryId}
+                entryEvent={app.activeEntry?.manualEvent ?? "unknown"}
                 entryDate={app.activeEntry?.entryDate ?? todayDateOnly()}
                 editorInsight={app.editorInsight}
                 personaTextEnabled={app.personaTextEnabled}
@@ -306,6 +307,8 @@ export function AthenaWorkspace({
                   onDeleteEntry={(entry) => void handlers.deleteEntry(entry)}
                   onEditEntry={(entry) => void handlers.editEntry(entry)}
                   onManageActivity={setManagedActivityId}
+                  onSetParent={resultsCustomization.setParent}
+                  resultsState={resultsCustomization}
                   onToggleEntryAnalysis={(entry) =>
                     void handlers.toggleEntryAnalysisEnabled(entry)
                   }

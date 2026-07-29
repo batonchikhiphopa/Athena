@@ -24,12 +24,12 @@ export type ExtractionProposalStatus =
 export type ResultsEntity = {
   aliases: string[];
   createdAt: string;
-  direction: string | null;
   id: string;
   kind: ActivityKind;
   label: string;
   monitoringTags: string[];
-  trackingMode: "standard" | "reduce";
+  parentId: string | null;
+  priority: number;
   updatedAt: string;
 };
 
@@ -435,7 +435,6 @@ function normalizeResultsEntity(value: unknown): ResultsEntity[] {
       id: value.id,
       kind: value.kind,
       label: value.label,
-      direction: cleanDirection(value.direction),
       monitoringTags: Array.isArray(value.monitoringTags)
         ? [...new Map(
             value.monitoringTags
@@ -445,16 +444,17 @@ function normalizeResultsEntity(value: unknown): ResultsEntity[] {
               .map((tag) => [normalizeTag(tag), tag] as const),
           ).values()]
         : [],
-      trackingMode: value.trackingMode === "reduce" ? "reduce" : "standard",
+      parentId: typeof value.parentId === "string" ? value.parentId : null,
+      priority: normalizePriority(value.priority),
       updatedAt: value.updatedAt,
     },
   ];
 }
 
-function cleanDirection(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const cleaned = cleanActivityLabel(value);
-  return cleaned || null;
+function normalizePriority(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value)
+    ? Math.min(5, Math.max(0, value))
+    : 0;
 }
 
 function isProposalDecision(value: unknown): value is ProposalDecision {

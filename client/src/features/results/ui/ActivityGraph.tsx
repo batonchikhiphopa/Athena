@@ -14,60 +14,47 @@ export function ActivityGraph({
 }) {
   const values = createActivityGraphValues(activity.mentions, 12);
   const maxValue = Math.max(1, ...values);
+  const baseline = 70;
+  const usableHeight = 44;
   const points = values.map((value, index) => {
-    const x = 8 + (index / Math.max(1, values.length - 1)) * 224;
-    const y = 74 - (value / maxValue) * 54;
+    const x = 12 + (index / Math.max(1, values.length - 1)) * 216;
+    const y = baseline - (value / maxValue) * usableHeight;
     return { value, x, y };
   });
-  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `8,78 ${line} 232,78`;
+  const line = points
+    .map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+  const area = `12,${baseline} ${line} 228,${baseline}`;
   const dates = activity.mentions
     .map((mention) => mention.entryDate)
     .sort((left, right) => left.localeCompare(right));
 
   return (
-    <figure className="self-start rounded-lg border border-white/55 bg-white/35 p-3">
-      <figcaption className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.12em] text-zinc-400">
+    <figure className="flex h-full flex-col justify-between rounded-xl border border-[#d7c6a6]/45 bg-[#fffdf8]/60 p-3.5 shadow-sm shadow-[#7c6540]/5 backdrop-blur-md">
+      <figcaption className="flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
         <span>{copy.activityGraph}</span>
-        <span className="normal-case tracking-normal">
+        <span className="rounded-full bg-[#efe4cf] px-2 py-0.5 text-xs font-bold normal-case tracking-normal text-[#87611f]">
           {activity.mentions.length}
         </span>
       </figcaption>
-      <svg
-        aria-label={copy.activityGraph}
-        className="mt-2 h-20 w-full overflow-visible"
-        role="img"
-        viewBox="0 0 240 82"
-      >
-        <line
-          stroke="rgb(161 161 170 / 0.24)"
-          x1="8"
-          x2="232"
-          y1="78"
-          y2="78"
-        />
-        <polygon fill="rgb(217 119 6 / 0.08)" points={area} />
-        <polyline
-          fill="none"
-          points={line}
-          stroke="rgb(161 98 7 / 0.62)"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-        />
-        {points.map((point, index) =>
-          point.value > 0 ? (
-            <circle
-              cx={point.x}
-              cy={point.y}
-              fill="rgb(161 98 7 / 0.72)"
-              key={index}
-              r="2"
-            />
-          ) : null,
-        )}
-      </svg>
-      <div className="mt-1 flex justify-between text-[10px] text-zinc-400">
+      <div className="relative my-2">
+        <svg
+          aria-label={copy.activityGraph}
+          className="h-20 w-full overflow-visible"
+          role="img"
+          viewBox="0 0 240 82"
+        >
+          <line stroke="rgb(162 145 117 / 0.28)" x1="12" x2="228" y1={baseline} y2={baseline} />
+          <polygon fill="rgb(184 140 68 / 0.10)" points={area} />
+          <polyline fill="none" points={line} stroke="rgb(174 125 43 / 0.70)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" />
+          {points.map((point, index) =>
+            point.value > 0 ? (
+              <circle cx={point.x} cy={point.y} fill="rgb(174 125 43 / 0.82)" key={index} r="2.5" stroke="#fffdf8" strokeWidth="1.25" />
+            ) : null,
+          )}
+        </svg>
+      </div>
+      <div className="flex justify-between border-t border-[#eadfc9] pt-1.5 text-[10px] font-medium text-stone-400">
         <span>{dates[0] ? formatShortDate(dates[0], language) : "—"}</span>
         <span>
           {dates.at(-1) ? formatShortDate(dates.at(-1)!, language) : "—"}

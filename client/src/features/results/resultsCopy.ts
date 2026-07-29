@@ -23,6 +23,7 @@ export type ResultsCopy = {
   };
   demoInsight: {
     activity: string;
+    habit: string;
     task: string;
   };
   demoNotice: string;
@@ -31,8 +32,13 @@ export type ResultsCopy = {
   insightLoading: string;
   insightUnavailable: string;
   insightUpdating: string;
+  insightDailyLimit: string;
   latest: (date: string) => string;
   openInResults: string;
+  reviewPeriod: string;
+  snapshotMentions: string;
+  snapshotResults: string;
+  snapshotBlockers: string;
   rhythm: Record<"insufficient" | "irregular" | "paused" | "returning" | "steady", string>;
   sourceEntries: string;
   stage: Record<"active" | "completed" | "stalled" | "starting" | "unknown", string>;
@@ -63,6 +69,8 @@ const en: ResultsCopy = {
   demoInsight: {
     activity:
       "You return to this activity when you need to untangle your thoughts. In these entries it appears alongside a calmer load and preserved focus, so it may be worth keeping readily available as a recovery practice.",
+    habit:
+      "This habit keeps recurring in the entries. Making its triggers and costs visible is more useful than turning it into a judgement of yourself.",
     task: "This work is moving through short cycles of progress and revision. Friction appears around the blocked parts, so keeping one clear next step is likely more useful than widening the scope.",
   },
   demoNotice: "Demo data — activities will be rebuilt from your entries",
@@ -73,8 +81,13 @@ const en: ResultsCopy = {
   insightUnavailable:
     "There is no current summary yet. Athena will keep the source entries here and update the picture when analysis is available.",
   insightUpdating: "Athena is updating the current picture…",
+  insightDailyLimit: "AI review is limited to one request per day.",
   latest: (date) => `latest · ${date}`,
   openInResults: "Open in Results",
+  reviewPeriod: "Last 7 days",
+  snapshotMentions: "Mentions",
+  snapshotResults: "Results",
+  snapshotBlockers: "Blockers",
   rhythm: {
     insufficient: "not enough history",
     irregular: "irregular",
@@ -117,6 +130,8 @@ const de: ResultsCopy = {
   demoInsight: {
     activity:
       "Du kehrst zu dieser Aktivität zurück, wenn du deine Gedanken ordnen möchtest. In diesen Einträgen steht sie neben ruhigerer Belastung und erhaltenem Fokus; als leicht erreichbare Erholungspraxis könnte sie nützlich bleiben.",
+    habit:
+      "Diese Gewohnheit taucht in den Einträgen wieder auf. Auslöser und Kosten sichtbar zu machen, ist nützlicher als sie als persönliches Versagen zu behandeln.",
     task: "Diese Arbeit bewegt sich in kurzen Schleifen aus Fortschritt und Überarbeitung. Reibung zeigt sich an den blockierten Stellen; ein klarer nächster Schritt ist deshalb hilfreicher als ein breiterer Umfang.",
   },
   demoNotice: "Demo-Daten — Aktivitäten werden aus eigenen Einträgen aufgebaut",
@@ -127,8 +142,13 @@ const de: ResultsCopy = {
   insightUnavailable:
     "Noch gibt es keine aktuelle Zusammenfassung. Athena behält die Quelleneinträge hier und aktualisiert das Bild, sobald die Analyse verfügbar ist.",
   insightUpdating: "Athena aktualisiert das aktuelle Bild…",
+  insightDailyLimit: "Das KI-Review ist auf eine Anfrage pro Tag begrenzt.",
   latest: (date) => `zuletzt · ${date}`,
   openInResults: "In Results öffnen",
+  reviewPeriod: "Letzte 7 Tage",
+  snapshotMentions: "Erwähnungen",
+  snapshotResults: "Ergebnisse",
+  snapshotBlockers: "Hindernisse",
   rhythm: {
     insufficient: "noch zu wenig Verlauf",
     irregular: "unregelmäßig",
@@ -171,6 +191,8 @@ const ru: ResultsCopy = {
   demoInsight: {
     activity:
       "Ты возвращаешься к этому занятию, когда нужно разобрать мысли. В этих записях оно соседствует с более спокойной нагрузкой и сохранённым фокусом, поэтому его можно держать под рукой как практику восстановления.",
+    habit:
+      "Эта привычка снова появляется в записях. Полезнее сделать видимыми триггеры и цену эпизодов, чем превращать это в оценку себя.",
     task: "Дело движется короткими циклами продвижения и доработки. Напряжение заметнее рядом с застрявшими частями, поэтому сейчас полезнее удерживать один ясный следующий шаг, а не расширять фронт.",
   },
   demoNotice: "Демо-данные — занятия будут собраны из ваших записей",
@@ -181,8 +203,13 @@ const ru: ResultsCopy = {
   insightUnavailable:
     "Свежего вывода пока нет. Athena сохранит здесь исходные записи и обновит картину, когда анализ будет доступен.",
   insightUpdating: "Athena обновляет текущую картину…",
+  insightDailyLimit: "AI-обзор доступен не чаще одного раза в день.",
   latest: (date) => `последнее · ${date}`,
   openInResults: "Открыть в Results",
+  reviewPeriod: "Последние 7 дней",
+  snapshotMentions: "Упоминаний",
+  snapshotResults: "Результатов",
+  snapshotBlockers: "Препятствий",
   rhythm: {
     insufficient: "истории пока мало",
     irregular: "нерегулярно",
@@ -225,6 +252,8 @@ const uk: ResultsCopy = {
   demoInsight: {
     activity:
       "Ти повертаєшся до цього заняття, коли потрібно впорядкувати думки. У цих записах воно сусідить зі спокійнішим навантаженням і збереженим фокусом, тому його можна тримати поруч як практику відновлення.",
+    habit:
+      "Ця звичка знову з'являється в записах. Корисніше зробити видимими тригери й ціну епізодів, ніж перетворювати це на оцінку себе.",
     task: "Справа рухається короткими циклами просування й доопрацювання. Напруження помітніше біля частин, що застрягли, тому зараз корисніше втримувати один ясний наступний крок, а не розширювати фронт.",
   },
   demoNotice: "Демо-дані — заняття будуть зібрані з ваших записів",
@@ -235,8 +264,13 @@ const uk: ResultsCopy = {
   insightUnavailable:
     "Свіжого висновку поки немає. Athena збереже тут вихідні записи й оновить картину, коли аналіз буде доступний.",
   insightUpdating: "Athena оновлює поточну картину…",
+  insightDailyLimit: "AI-огляд доступний не частіше одного разу на день.",
   latest: (date) => `останнє · ${date}`,
   openInResults: "Відкрити в Results",
+  reviewPeriod: "Останні 7 днів",
+  snapshotMentions: "Згадок",
+  snapshotResults: "Результатів",
+  snapshotBlockers: "Перешкод",
   rhythm: {
     insufficient: "історії поки мало",
     irregular: "нерегулярно",

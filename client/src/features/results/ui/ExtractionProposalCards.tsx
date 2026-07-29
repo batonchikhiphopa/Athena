@@ -100,6 +100,7 @@ export function ExtractionProposalCards({
                     >
                       <option value="task">{copy.kind.task}</option>
                       <option value="activity">{copy.kind.activity}</option>
+                      <option value="habit">{copy.kind.habit}</option>
                     </select>
                     <select
                       aria-label={copy.event}

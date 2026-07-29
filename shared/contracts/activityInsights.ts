@@ -1,7 +1,7 @@
 import type { ActivityContext, ConfidenceLevel } from "./signal.js";
 
 export const ACTIVITY_INSIGHT_LANGUAGES = ["en", "de", "ru", "uk"] as const;
-export const ACTIVITY_INSIGHT_KINDS = ["task", "activity"] as const;
+export const ACTIVITY_INSIGHT_KINDS = ["task", "activity", "habit"] as const;
 export const ACTIVITY_INSIGHT_STAGES = [
   "starting",
   "active",

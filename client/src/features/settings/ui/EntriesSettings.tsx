@@ -70,7 +70,7 @@ export function EntriesSettings({
   const visibleQueueError = latestJob?.last_error ?? queueSnapshot.lastError;
   const queueErrorDetails = parseQueueErrorDetails(visibleQueueError);
   const queueHint = queueErrorDetails
-    ? formatQueueErrorHint(queueErrorDetails, language)
+    ? formatQueueErrorHint(queueErrorDetails, t)
     : null;
   const queueProcessingState = formatQueueProcessingState(queueSnapshot, t);
 
@@ -213,7 +213,7 @@ export function EntriesSettings({
               <div className="flex flex-wrap items-center gap-2">
                 <span>{t("settings.records.queueLatest")}:</span>
                 <span className="font-mono text-zinc-700">{latestJob.type}</span>
-                <QueueStatusBadge status={latestJob.status} />
+                <QueueStatusBadge status={latestJob.status} t={t} />
                 {latestJob.reason ? (
                   <span className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[11px] text-zinc-500">
                     {latestJob.reason}
@@ -223,27 +223,27 @@ export function EntriesSettings({
 
               <div className="mt-2 grid gap-1 text-[11px] text-zinc-400 sm:grid-cols-2">
                 <div>
-                  entity:{" "}
+                  {t("settings.records.queueEntity")}:{" "}
                   <span className="font-mono text-zinc-500">
                     {latestJob.entity_id ?? "-"}
                   </span>
                 </div>
                 <div>
-                  attempts:{" "}
+                  {t("settings.records.queueAttempts")}:{" "}
                   <span className="font-mono text-zinc-500">
                     {latestJob.attempts}/{latestJob.max_attempts}
                   </span>
                 </div>
                 <div>
-                  updated:{" "}
+                  {t("settings.records.queueUpdated")}:{" "}
                   <span className="font-mono text-zinc-500">
-                    {formatDateTime(latestJob.updated_at)}
+                    {formatDateTime(latestJob.updated_at, language)}
                   </span>
                 </div>
                 <div>
-                  next retry:{" "}
+                  {t("settings.records.queueNextRetry")}:{" "}
                   <span className="font-mono text-zinc-500">
-                    {latestJob.run_after ? formatDateTime(latestJob.run_after) : "-"}
+                    {latestJob.run_after ? formatDateTime(latestJob.run_after, language) : "-"}
                   </span>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export function EntriesSettings({
             <div className="mt-3 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-red-200 bg-white/70 px-2 py-0.5 font-mono text-[11px]">
-                  {queueErrorDetails.kind}
+                  {formatQueueErrorKind(queueErrorDetails.kind, t)}
                 </span>
                 <span className="font-mono">{queueErrorDetails.code}</span>
               </div>
@@ -302,14 +302,20 @@ export function EntriesSettings({
   );
 }
 
-function QueueStatusBadge({ status }: { status: QueueJobStatus }) {
+function QueueStatusBadge({
+  status,
+  t,
+}: {
+  status: QueueJobStatus;
+  t: (key: MessageKey, values?: Record<string, string | number>) => string;
+}) {
   return (
     <span
       className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${formatQueueStatusClass(
         status,
       )}`}
     >
-      {status}
+      {formatQueueStatus(status, t)}
     </span>
   );
 }
@@ -342,6 +348,22 @@ function formatQueueStatusClass(status: QueueJobStatus) {
   }
 
   return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
+function formatQueueStatus(
+  status: QueueJobStatus,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
+) {
+  const keys = {
+    blocked: "settings.records.queueBlocked",
+    cancelled: "settings.records.queueCancelled",
+    failed: "settings.records.queueFailed",
+    queued: "settings.records.queueQueued",
+    running: "settings.records.queueRunning",
+    succeeded: "settings.records.queueSucceeded",
+  } satisfies Record<QueueJobStatus, MessageKey>;
+
+  return t(keys[status]);
 }
 
 function parseQueueErrorDetails(error: string | null): QueueErrorDetails | null {
@@ -409,43 +431,48 @@ function classifyQueueErrorCode(code: string): QueueErrorDetails["kind"] {
 
 function formatQueueErrorHint(
   error: QueueErrorDetails,
-  language: string,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
 ): string {
-  const ru = language === "ru";
-
   if (error.kind === "retryable") {
-    return ru
-      ? "Похоже на временный сбой. Очередь попробует позже или после ручного retry."
-      : "This looks temporary. The queue can retry later or after manual retry.";
+    return t("settings.records.queueHintRetryable");
   }
 
   if (error.kind === "blocked") {
-    return ru
-      ? "Автоповтор остановлен: нужно новое локальное действие или исправление payload/state."
-      : "Automatic retry is stopped: a new local action or payload/state fix is needed.";
+    return t("settings.records.queueHintBlocked");
   }
 
   if (error.kind === "conflict") {
-    return ru
-      ? "Конфликт не скрывается: локальная запись считается источником правды."
-      : "Conflict is explicit: the local entry remains the source of truth.";
+    return t("settings.records.queueHintConflict");
   }
 
   if (error.kind === "cancelled") {
-    return ru ? "Job был отменён." : "The job was cancelled.";
+    return t("settings.records.queueHintCancelled");
   }
 
-  return ru
-    ? "Неизвестный тип ошибки. Смотри код и latest job."
-    : "Unknown error kind. Check the code and latest job.";
+  return t("settings.records.queueHintUnknown");
 }
 
-function formatDateTime(value: string): string {
+function formatQueueErrorKind(
+  kind: QueueErrorDetails["kind"],
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
+) {
+  const keys = {
+    blocked: "settings.records.queueKindBlocked",
+    cancelled: "settings.records.queueKindCancelled",
+    conflict: "settings.records.queueKindConflict",
+    retryable: "settings.records.queueKindRetryable",
+    unknown: "settings.records.queueKindUnknown",
+  } satisfies Record<QueueErrorDetails["kind"], MessageKey>;
+
+  return t(keys[kind]);
+}
+
+function formatDateTime(value: string, language: string): string {
   const timestamp = new Date(value).getTime();
 
   if (!Number.isFinite(timestamp)) return value;
 
-  return new Date(timestamp).toLocaleString();
+  return new Date(timestamp).toLocaleString(language);
 }
 
 function formatStatus(
